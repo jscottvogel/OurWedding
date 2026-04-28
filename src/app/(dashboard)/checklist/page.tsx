@@ -123,6 +123,7 @@ export default function ChecklistPage() {
                 title={CATEGORY_LABELS[catKey]}
                 tasks={categoryTasks}
                 onToggleTask={(id, isCompleted) => updateTask(id, { isCompleted, completedAt: isCompleted ? new Date().toISOString() : null })}
+                onUpdateTask={updateTask}
                 onDeleteTask={deleteTask}
                 onAddTask={addTask}
                 onReorderTasks={handleReorder}

@@ -18,24 +18,33 @@ export const DEFAULT_TASKS: DefaultTaskTemplate[] = [
   { category: 'TWELVE_MONTHS', title: 'Book a wedding venue', daysBeforeWedding: 330, sortOrder: 30 },
   { category: 'TWELVE_MONTHS', title: 'Hire a wedding planner (optional)', daysBeforeWedding: 320, sortOrder: 40 },
   { category: 'TWELVE_MONTHS', title: 'Book a photographer & videographer', daysBeforeWedding: 300, sortOrder: 50 },
+  { category: 'TWELVE_MONTHS', title: 'Find an officiant', daysBeforeWedding: 280, sortOrder: 60 },
 
   // 6 Months Out
   { category: 'SIX_MONTHS', title: 'Order wedding attire (dress/suit)', daysBeforeWedding: 180, sortOrder: 100 },
   { category: 'SIX_MONTHS', title: 'Book caterer and schedule tastings', daysBeforeWedding: 170, sortOrder: 110 },
+  { category: 'SIX_MONTHS', title: 'Book hotel blocks for out-of-town guests', daysBeforeWedding: 165, sortOrder: 115 },
+  { category: 'SIX_MONTHS', title: 'Book transportation (shuttles, limo)', daysBeforeWedding: 165, sortOrder: 116 },
   { category: 'SIX_MONTHS', title: 'Send Save the Dates', daysBeforeWedding: 160, sortOrder: 120 },
   { category: 'SIX_MONTHS', title: 'Book florist and design decor', daysBeforeWedding: 150, sortOrder: 130 },
   { category: 'SIX_MONTHS', title: 'Book entertainment/DJ/Band', daysBeforeWedding: 140, sortOrder: 140 },
 
   // 3 Months Out
+  { category: 'THREE_MONTHS', title: 'Start dance lessons for First Dance', description: 'Include parent dances or any other traditional dances.', daysBeforeWedding: 100, sortOrder: 190 },
   { category: 'THREE_MONTHS', title: 'Send official wedding invitations', daysBeforeWedding: 90, sortOrder: 200 },
   { category: 'THREE_MONTHS', title: 'Finalize menu and bar packages', daysBeforeWedding: 85, sortOrder: 210 },
+  { category: 'THREE_MONTHS', title: 'Order wedding favors', daysBeforeWedding: 80, sortOrder: 215 },
   { category: 'THREE_MONTHS', title: 'Order wedding rings', daysBeforeWedding: 80, sortOrder: 220 },
+  { category: 'THREE_MONTHS', title: 'Schedule dress/suit alterations', daysBeforeWedding: 70, sortOrder: 225 },
   { category: 'THREE_MONTHS', title: 'Finalize hair and makeup trial', daysBeforeWedding: 75, sortOrder: 230 },
 
   // 1 Month Out
   { category: 'ONE_MONTH', title: 'Apply for marriage license', daysBeforeWedding: 30, sortOrder: 300 },
+  { category: 'ONE_MONTH', title: 'Write your wedding vows', daysBeforeWedding: 28, sortOrder: 305 },
   { category: 'ONE_MONTH', title: 'Final dress/suit fittings', daysBeforeWedding: 25, sortOrder: 310 },
+  { category: 'ONE_MONTH', title: 'Purchase wedding party gifts', daysBeforeWedding: 20, sortOrder: 315 },
   { category: 'ONE_MONTH', title: 'Finalize seating chart', daysBeforeWedding: 20, sortOrder: 320 },
+  { category: 'ONE_MONTH', title: 'Finalize music playlists (must-plays, do-not-plays)', daysBeforeWedding: 18, sortOrder: 325 },
   { category: 'ONE_MONTH', title: 'Confirm final headcount with venue/caterer', daysBeforeWedding: 18, sortOrder: 330 },
 
   // 2 Weeks Out

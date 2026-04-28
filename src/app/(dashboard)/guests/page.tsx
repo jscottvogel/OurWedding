@@ -1,8 +1,11 @@
 'use client';
 
+import { useState } from 'react';
+
 import { useGuests } from '@/lib/hooks/useGuests';
 import GuestTable from '@/components/features/guests/GuestTable';
-import { Download, Users, UserCheck, UserX, Clock } from 'lucide-react';
+import GuestBulkImport from '@/components/features/guests/GuestBulkImport';
+import { Download, Upload, Users, UserCheck, UserX, Clock } from 'lucide-react';
 import { exportGuestListToCsv } from '@/lib/actions/guests';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { toast } from 'sonner';
@@ -10,6 +13,7 @@ import { toast } from 'sonner';
 export default function GuestsPage() {
   const { guests, loading, addGuest, updateGuest, deleteGuest } = useGuests();
   const { weddingId } = useAuth();
+  const [isImportOpen, setIsImportOpen] = useState(false);
 
   const handleExport = async () => {
     if (!weddingId) return;
@@ -28,6 +32,19 @@ export default function GuestsPage() {
     }
   };
 
+  const handleBulkImport = async (parsedGuests: any[]) => {
+    let successCount = 0;
+    for (const g of parsedGuests) {
+      try {
+        await addGuest(g);
+        successCount++;
+      } catch (err) {
+        console.error('Failed to import guest', g, err);
+      }
+    }
+    toast.success(`Successfully imported ${successCount} guests!`);
+  };
+
   if (loading) {
     return <div className="p-8 animate-pulse text-sage font-medium text-lg">Loading guest list...</div>;
   }
@@ -44,12 +61,20 @@ export default function GuestsPage() {
           <h1 className="text-3xl font-display text-sage mb-2">Guest List & RSVPs</h1>
           <p className="text-mid-gray">Manage your invitations and track responses.</p>
         </div>
-        <button 
-          onClick={handleExport}
-          className="bg-white border border-light-gray text-charcoal px-4 py-2 rounded-lg font-medium hover:bg-light-gray transition-colors flex items-center shadow-sm"
-        >
-          <Download className="w-5 h-5 mr-2" /> Export CSV
-        </button>
+        <div className="flex space-x-3">
+          <button 
+            onClick={() => setIsImportOpen(true)}
+            className="bg-ivory border border-sage text-sage px-4 py-2 rounded-lg font-medium hover:bg-sage hover:text-white transition-colors flex items-center shadow-sm"
+          >
+            <Upload className="w-5 h-5 mr-2" /> Import CSV
+          </button>
+          <button 
+            onClick={handleExport}
+            className="bg-white border border-light-gray text-charcoal px-4 py-2 rounded-lg font-medium hover:bg-light-gray transition-colors flex items-center shadow-sm"
+          >
+            <Download className="w-5 h-5 mr-2" /> Export CSV
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 flex-shrink-0">
@@ -99,6 +124,12 @@ export default function GuestsPage() {
           onDelete={deleteGuest}
         />
       </div>
+
+      <GuestBulkImport 
+        isOpen={isImportOpen} 
+        onClose={() => setIsImportOpen(false)} 
+        onImport={handleBulkImport} 
+      />
     </div>
   );
 }

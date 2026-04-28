@@ -9,21 +9,24 @@ interface VendorModalProps {
   onClose: () => void;
   onSave: (vendor: Omit<Schema['Vendor']['type'], 'id' | 'createdAt' | 'updatedAt' | 'weddingId'>) => Promise<void>;
   initialCategory?: string;
+  initialData?: Partial<Schema['Vendor']['type']>;
 }
 
-export default function VendorModal({ isOpen, onClose, onSave, initialCategory = '' }: VendorModalProps) {
-  const [companyName, setCompanyName] = useState('');
-  const [categoryDropdown, setCategoryDropdown] = useState(
-    ['Venue', 'Catering', 'Photography', 'Florist', 'Entertainment', 'Attire'].includes(initialCategory) ? initialCategory : initialCategory ? 'Other' : ''
-  );
-  const [categoryOther, setCategoryOther] = useState(
-    !['Venue', 'Catering', 'Photography', 'Florist', 'Entertainment', 'Attire', ''].includes(initialCategory) ? initialCategory : ''
-  );
-  const [contactPerson, setContactPerson] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [quotedAmount, setQuotedAmount] = useState('');
+export default function VendorModal({ isOpen, onClose, onSave, initialCategory = '', initialData }: VendorModalProps) {
+  const [companyName, setCompanyName] = useState(initialData?.companyName || '');
+  const [categoryDropdown, setCategoryDropdown] = useState(() => {
+    const cat = initialData?.category || initialCategory;
+    return ['Venue', 'Catering', 'Photography', 'Florist', 'Entertainment', 'Attire'].includes(cat) ? cat : cat ? 'Other' : '';
+  });
+  const [categoryOther, setCategoryOther] = useState(() => {
+    const cat = initialData?.category || initialCategory;
+    return !['Venue', 'Catering', 'Photography', 'Florist', 'Entertainment', 'Attire', ''].includes(cat) ? cat : '';
+  });
+  const [contactPerson, setContactPerson] = useState(initialData?.contactPerson || '');
+  const [email, setEmail] = useState(initialData?.email || '');
+  const [phone, setPhone] = useState(initialData?.phone || '');
+  const [address, setAddress] = useState(initialData?.address || '');
+  const [quotedAmount, setQuotedAmount] = useState(initialData?.quotedAmount?.toString() || '');
   const [saving, setSaving] = useState(false);
 
   if (!isOpen) return null;
@@ -57,7 +60,7 @@ export default function VendorModal({ isOpen, onClose, onSave, initialCategory =
     <div className="fixed inset-0 bg-charcoal/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden">
         <div className="flex justify-between items-center p-6 border-b border-light-gray">
-          <h2 className="text-xl font-display text-sage">Add New Vendor</h2>
+          <h2 className="text-xl font-display text-sage">{initialData ? 'Edit Vendor' : 'Add New Vendor'}</h2>
           <button onClick={onClose} className="text-mid-gray hover:text-charcoal">
             <X className="w-5 h-5" />
           </button>
@@ -177,7 +180,7 @@ export default function VendorModal({ isOpen, onClose, onSave, initialCategory =
               disabled={saving}
               className="px-4 py-2 bg-sage text-white rounded-md hover:bg-dark-sage transition-colors disabled:opacity-50"
             >
-              {saving ? 'Saving...' : 'Add Vendor'}
+              {saving ? 'Saving...' : initialData ? 'Save Changes' : 'Add Vendor'}
             </button>
           </div>
         </form>

@@ -19,6 +19,7 @@ const schema = a.schema({
       allow.authenticated().to(['create', 'read', 'update', 'delete']),
       allow.groups(['vendor']).to(['read']),
       allow.guest().to(['read']),
+      allow.publicApiKey().to(['read']),
     ]),
 
   Profile: a
@@ -120,6 +121,7 @@ const schema = a.schema({
     .authorization((allow) => [
       allow.authenticated().to(['create', 'read', 'update', 'delete']),
       allow.guest().to(['create']),
+      allow.publicApiKey().to(['create']),
     ]),
 
   Guest: a
@@ -145,6 +147,7 @@ const schema = a.schema({
     .authorization((allow) => [
       allow.authenticated().to(['create', 'read', 'update', 'delete']),
       allow.guest().to(['create']),
+      allow.publicApiKey().to(['create']),
     ]),
 
   SeatingTable: a
@@ -184,6 +187,7 @@ const schema = a.schema({
     .authorization((allow) => [
       allow.authenticated().to(['create', 'read', 'update', 'delete']),
       allow.guest().to(['read']),
+      allow.publicApiKey().to(['read']),
     ]),
 
   MoodPin: a
@@ -199,13 +203,14 @@ const schema = a.schema({
     .authorization((allow) => [
       allow.authenticated().to(['create', 'read', 'update', 'delete']),
       allow.guest().to(['read']),
+      allow.publicApiKey().to(['read']),
     ]),
 
   getWeddingBySlug: a
     .query()
     .arguments({ slug: a.string() })
     .returns(a.ref('Wedding'))
-    .authorization((allow) => [allow.guest()])
+    .authorization((allow) => [allow.guest(), allow.publicApiKey()])
     .handler(a.handler.function('')), // Placeholder until custom resolver defined
     
   exportPDF: a
@@ -226,7 +231,7 @@ const schema = a.schema({
     .query()
     .arguments({ token: a.string() })
     .returns(a.ref('MoodBoard'))
-    .authorization((allow) => [allow.guest()])
+    .authorization((allow) => [allow.guest(), allow.publicApiKey()])
     .handler(a.handler.function('')),
 
   askIvy: a

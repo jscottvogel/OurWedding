@@ -3,14 +3,17 @@
 import { useVendor, useVendors } from '@/lib/hooks/useVendors';
 import VendorDetail from '@/components/features/vendors/VendorDetail';
 import PaymentTracker from '@/components/features/vendors/PaymentTracker';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import VendorModal from '@/components/features/vendors/VendorModal';
+import { ArrowLeft, Trash2, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function VendorDetailPage({ params }: { params: { id: string } }) {
   const { vendor, loading } = useVendor(params.id);
   const { updateVendor, deleteVendor } = useVendors();
   const router = useRouter();
+  const [isEditing, setIsEditing] = useState(false);
 
   if (loading) {
     return <div className="p-8 animate-pulse text-sage font-medium text-lg">Loading vendor details...</div>;
@@ -55,13 +58,22 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
           {vendor.contactPerson && <p className="text-mid-gray">Contact: {vendor.contactPerson}</p>}
         </div>
         
-        <button 
-          onClick={handleDelete}
-          className="p-2 text-mid-gray hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-          title="Delete Vendor"
-        >
-          <Trash2 className="w-5 h-5" />
-        </button>
+        <div className="flex space-x-2">
+          <button 
+            onClick={() => setIsEditing(true)}
+            className="p-2 text-mid-gray hover:text-sage hover:bg-sage/10 rounded-lg transition-colors"
+            title="Edit Vendor"
+          >
+            <Edit className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={handleDelete}
+            className="p-2 text-mid-gray hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+            title="Delete Vendor"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -72,6 +84,16 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
           <PaymentTracker vendor={vendor} onUpdate={handleUpdate} />
         </div>
       </div>
+      
+      <VendorModal 
+        isOpen={isEditing} 
+        onClose={() => setIsEditing(false)} 
+        onSave={async (updates) => {
+          await handleUpdate(updates);
+          setIsEditing(false);
+        }}
+        initialData={vendor}
+      />
     </div>
   );
 }

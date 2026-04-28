@@ -13,13 +13,14 @@ interface ChecklistCategoryProps {
   title: string;
   tasks: Schema['ChecklistItem']['type'][];
   onToggleTask: (id: string, isCompleted: boolean) => void;
+  onUpdateTask?: (id: string, updates: Partial<Schema['ChecklistItem']['type']>) => void;
   onDeleteTask: (id: string) => void;
   onAddTask: (task: { title: string; category: Schema['ChecklistItem']['type']['category']; dueDate?: string; assignedTo?: string }) => void;
   onReorderTasks: (tasks: Schema['ChecklistItem']['type'][]) => void;
 }
 
 export default function ChecklistCategory({ 
-  category, title, tasks, onToggleTask, onDeleteTask, onAddTask, onReorderTasks 
+  category, title, tasks, onToggleTask, onUpdateTask, onDeleteTask, onAddTask, onReorderTasks 
 }: ChecklistCategoryProps) {
   const [expanded, setExpanded] = useState(true);
   
@@ -71,6 +72,7 @@ export default function ChecklistCategory({
                     key={task.id} 
                     task={task} 
                     onToggle={onToggleTask} 
+                    onUpdate={onUpdateTask}
                     onDelete={onDeleteTask} 
                   />
                 ))}

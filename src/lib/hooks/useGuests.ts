@@ -42,14 +42,14 @@ export function useGuests(publicWeddingId?: string) {
     return await client.models.Guest.create({
       ...guest,
       weddingId
-    });
+    }, { authMode: publicWeddingId ? 'apiKey' : undefined });
   };
 
   const updateGuest = async (id: string, updates: Partial<Schema['Guest']['type']>) => {
     return await client.models.Guest.update({
       id,
       ...updates
-    });
+    }, { authMode: publicWeddingId ? 'apiKey' : undefined });
   };
 
   const deleteGuest = async (id: string) => {

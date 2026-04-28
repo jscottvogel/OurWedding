@@ -10,11 +10,19 @@ import { CSS } from '@dnd-kit/utilities';
 interface TaskItemProps {
   task: Schema['ChecklistItem']['type'];
   onToggle: (id: string, isCompleted: boolean) => void;
+  onUpdate?: (id: string, updates: Partial<Schema['ChecklistItem']['type']>) => void;
   onDelete: (id: string) => void;
 }
 
-export default function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
+export default function TaskItem({ task, onToggle, onUpdate, onDelete }: TaskItemProps) {
   const [expanded, setExpanded] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  
+  // Edit state
+  const [editTitle, setEditTitle] = useState(task.title);
+  const [editCategory, setEditCategory] = useState(task.category);
+  const [editDueDate, setEditDueDate] = useState(task.dueDate || '');
+  const [editNotes, setEditNotes] = useState(task.notes || '');
   
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: task.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
@@ -22,6 +30,84 @@ export default function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
   const dueDate = task.dueDate ? new Date(task.dueDate) : null;
   const isOverdue = dueDate && isPast(dueDate) && !isToday(dueDate) && !task.isCompleted;
   const isSoon = dueDate && dueDate <= addDays(new Date(), 14) && !isPast(dueDate) && !task.isCompleted;
+
+  const handleSaveEdit = () => {
+    if (onUpdate && editTitle.trim()) {
+      onUpdate(task.id, {
+        title: editTitle.trim(),
+        category: editCategory,
+        dueDate: editDueDate || null,
+        notes: editNotes || null
+      });
+      setIsEditing(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditTitle(task.title);
+    setEditCategory(task.category);
+    setEditDueDate(task.dueDate || '');
+    setEditNotes(task.notes || '');
+    setIsEditing(false);
+  };
+
+  if (isEditing) {
+    return (
+      <div className="bg-white border-b border-light-gray last:border-0 p-4">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-mid-gray mb-1">Task Title</label>
+            <input 
+              type="text" 
+              value={editTitle}
+              onChange={e => setEditTitle(e.target.value)}
+              className="w-full border border-light-gray rounded px-3 py-2 text-sm focus:outline-none focus:border-sage"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-mid-gray mb-1">Timeline Phase</label>
+              <select 
+                value={editCategory || ''}
+                onChange={e => setEditCategory(e.target.value as any)}
+                className="w-full border border-light-gray rounded px-3 py-2 text-sm focus:outline-none focus:border-sage bg-white"
+              >
+                <option value="TWELVE_MONTHS">12+ Months</option>
+                <option value="SIX_MONTHS">6-9 Months</option>
+                <option value="THREE_MONTHS">3-5 Months</option>
+                <option value="ONE_MONTH">1-2 Months</option>
+                <option value="TWO_WEEKS">2-4 Weeks</option>
+                <option value="ONE_WEEK">1 Week</option>
+                <option value="DAY_BEFORE">Day Before</option>
+                <option value="DAY_OF">Day Of</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-mid-gray mb-1">Due Date (Optional)</label>
+              <input 
+                type="date" 
+                value={editDueDate}
+                onChange={e => setEditDueDate(e.target.value)}
+                className="w-full border border-light-gray rounded px-3 py-2 text-sm focus:outline-none focus:border-sage"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-mid-gray mb-1">Notes (Optional)</label>
+            <textarea 
+              value={editNotes}
+              onChange={e => setEditNotes(e.target.value)}
+              className="w-full border border-light-gray rounded px-3 py-2 text-sm focus:outline-none focus:border-sage h-20"
+            />
+          </div>
+          <div className="flex justify-end space-x-3 pt-2">
+            <button onClick={handleCancelEdit} className="text-mid-gray hover:text-charcoal text-sm font-medium">Cancel</button>
+            <button onClick={handleSaveEdit} className="bg-sage text-white px-4 py-1.5 rounded text-sm font-medium hover:bg-dark-sage">Save Changes</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div ref={setNodeRef} style={style} className="bg-white border-b border-light-gray last:border-0 hover:bg-ivory/30 transition-colors">
@@ -83,7 +169,7 @@ export default function TaskItem({ task, onToggle, onDelete }: TaskItemProps) {
           
           <div className="mt-4 flex justify-end space-x-3">
             <button onClick={() => onDelete(task.id)} className="text-red-500 hover:text-red-700 font-medium">Delete</button>
-            <button className="text-sage hover:text-dark-sage font-medium">Edit</button>
+            <button onClick={() => setIsEditing(true)} className="text-sage hover:text-dark-sage font-medium">Edit</button>
           </div>
         </div>
       )}

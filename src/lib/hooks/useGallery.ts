@@ -66,7 +66,7 @@ export function useGallery(publicWeddingId?: string) {
     await client.models.GalleryUpload.create({
       ...record,
       weddingId
-    });
+    }, { authMode: publicWeddingId ? 'apiKey' : undefined });
   };
 
   const deletePhoto = async (photo: GalleryPhoto) => {
