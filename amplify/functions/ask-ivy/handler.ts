@@ -26,12 +26,28 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
     console.error('Failed to parse wedding context:', e);
   }
 
-  const systemPrompt = `
+  const isChecklistGeneration = message === 'GENERATE_CHECKLIST_JSON';
+
+  let systemPrompt = `
     You are Ivy, a helpful, enthusiastic, and highly organized virtual wedding planner assistant.
     You assist the couple in planning their wedding. Be concise and keep answers short (under 3 paragraphs).
     Here is the context about their wedding:
     ${contextStr}
   `;
+
+  if (isChecklistGeneration) {
+    systemPrompt = `
+      You are Ivy, a master wedding planner. Based on the couple's context:
+      ${contextStr}
+      Generate a comprehensive, tailored timeline of 25-35 tasks.
+      Return ONLY a raw JSON array of objects.
+      DO NOT include any conversational text, greetings, or markdown formatting blocks (like \`\`\`json).
+      Each object MUST have exactly these keys:
+      - "title" (string, the name of the task)
+      - "category" (string, MUST BE EXACTLY ONE OF: 'TWELVE_MONTHS', 'SIX_MONTHS', 'THREE_MONTHS', 'ONE_MONTH', 'TWO_WEEKS', 'ONE_WEEK', 'DAY_BEFORE', 'DAY_OF')
+      - "notes" (string, a short helpful tip or context for this specific couple)
+    `;
+  }
 
   try {
     const command = new InvokeModelCommand({
@@ -40,7 +56,7 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
       accept: 'application/json',
       body: JSON.stringify({
         anthropic_version: 'bedrock-2023-05-31',
-        max_tokens: 500,
+        max_tokens: isChecklistGeneration ? 4000 : 500,
         system: systemPrompt,
         messages: [
           {
@@ -56,7 +72,14 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
     const result = JSON.parse(resultString);
 
     if (result.content && result.content.length > 0) {
-      return result.content[0].text;
+      let responseText = result.content[0].text;
+      
+      // If we asked for JSON, cleanly strip any accidental markdown blocks Claude might return
+      if (isChecklistGeneration) {
+        responseText = responseText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      }
+      
+      return responseText;
     }
 
     return "I'm sorry, I couldn't process that request right now.";

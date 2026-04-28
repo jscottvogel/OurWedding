@@ -50,16 +50,21 @@ export default function IvyChat() {
         weddingContext: JSON.stringify(wedding)
       });
       
+      if (response.errors) {
+        throw new Error(response.errors[0].message);
+      }
+      
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: response.data || 'Sorry, I got an empty response.'
       }]);
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Ivy Error:", error);
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Sorry, I\'m having trouble connecting to my brain right now. Please try again later!'
+        content: `Sorry, I'm having trouble connecting to my brain right now. (${error.message || 'Unknown error'})`
       }]);
     } finally {
       setIsTyping(false);

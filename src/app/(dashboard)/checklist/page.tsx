@@ -6,7 +6,9 @@ import ChecklistCategory from '@/components/features/checklist/ChecklistCategory
 import type { Schema } from '../../../amplify/data/resource';
 import { useWedding } from '@/lib/hooks/useWedding';
 import { generateDefaultChecklist } from '@/lib/utils/defaultChecklist';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, AlertCircle } from 'lucide-react';
+import { generateClient } from 'aws-amplify/data';
+import { toast } from 'sonner';
 
 const CATEGORY_LABELS: Record<string, string> = {
   TWELVE_MONTHS: '12+ Months Before',
@@ -24,6 +26,8 @@ const CATEGORY_ORDER = [
   'TWO_WEEKS', 'ONE_WEEK', 'DAY_BEFORE', 'DAY_OF'
 ];
 
+const client = generateClient<Schema>();
+
 export default function ChecklistPage() {
   const { wedding } = useWedding();
   const { tasks, loading, addTask, updateTask, deleteTask } = useChecklist();
@@ -34,13 +38,48 @@ export default function ChecklistPage() {
     if (!wedding) return;
     setIsGenerating(true);
     try {
-      const defaultTasks = generateDefaultChecklist(wedding.id, wedding.weddingDate);
-      await Promise.all(defaultTasks.map(task => {
-        const { weddingId, ...taskData } = task;
-        return addTask(taskData as any);
+      // Ask Ivy to generate the custom checklist
+      const response = await client.mutations.askIvy({
+        message: 'GENERATE_CHECKLIST_JSON',
+        weddingContext: JSON.stringify(wedding)
+      });
+
+      if (response.errors) {
+        throw new Error(response.errors[0].message);
+      }
+
+      if (!response.data) {
+        throw new Error('Ivy returned an empty response.');
+      }
+
+      let generatedTasks = [];
+      try {
+        generatedTasks = JSON.parse(response.data);
+      } catch (e) {
+        console.error("Failed to parse Ivy's raw JSON:", response.data);
+        throw new Error('Ivy got a little confused and generated invalid data. Let\'s try that again!');
+      }
+
+      if (!Array.isArray(generatedTasks) || generatedTasks.length === 0) {
+        throw new Error('Ivy did not return any tasks. Please try again.');
+      }
+
+      // Add all generated tasks
+      await Promise.all(generatedTasks.map((task: any, index: number) => {
+        return addTask({
+          title: task.title || 'Untitled Task',
+          category: task.category || 'SIX_MONTHS',
+          notes: task.notes || '',
+          sortOrder: index,
+          isTemplate: true
+        } as any);
       }));
-    } catch (err) {
+      
+      toast.success('Your custom Ivy timeline is ready!');
+
+    } catch (err: any) {
       console.error('Failed to generate plan:', err);
+      toast.error(err.message || 'Failed to generate timeline. Please try again.');
     } finally {
       setIsGenerating(false);
     }
