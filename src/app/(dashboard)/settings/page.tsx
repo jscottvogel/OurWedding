@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { signOut } from 'aws-amplify/auth';
 import { useRouter } from 'next/navigation';
 import { LogOut, User, Key, Shield, Users } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../../amplify/data/resource';
 
@@ -19,6 +19,19 @@ export default function SettingsPage() {
   const [isInviting, setIsInviting] = useState(false);
   const [inviteSuccess, setInviteSuccess] = useState(false);
   const [inviteError, setInviteError] = useState('');
+  const [team, setTeam] = useState<Schema['Profile']['type'][]>([]);
+
+  useEffect(() => {
+    if (!weddingId) return;
+    const sub = client.models.Profile.observeQuery({
+      filter: { weddingId: { eq: weddingId } }
+    }).subscribe({
+      next: ({ items }) => {
+        setTeam([...items].sort((a, b) => (a.email || '').localeCompare(b.email || '')));
+      }
+    });
+    return () => sub.unsubscribe();
+  }, [weddingId]);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +51,15 @@ export default function SettingsPage() {
       if (errors) {
         throw new Error(errors[0].message);
       }
+      
+      // Track invitation in the database so it appears in the UI list
+      await client.models.Profile.create({
+        cognitoSub: `INVITE_${Date.now()}`,
+        email: inviteEmail,
+        role: inviteRole as any,
+        weddingId: weddingId,
+        fullName: 'Pending Registration'
+      });
       
       setInviteSuccess(true);
       setInviteEmail('');
@@ -161,6 +183,48 @@ export default function SettingsPage() {
               </button>
             </div>
           </form>
+
+          {/* Team Members List */}
+          <div className="mt-8">
+            <h3 className="text-lg font-medium text-charcoal mb-4">Current Team & Invitations</h3>
+            
+            {team.length === 0 ? (
+              <div className="text-center py-6 border border-dashed border-light-gray rounded bg-ivory/30 text-mid-gray text-sm">
+                No collaborators have been invited yet.
+              </div>
+            ) : (
+              <div className="border border-light-gray rounded overflow-hidden">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-ivory border-b border-light-gray text-mid-gray uppercase text-xs">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">Email</th>
+                      <th className="px-4 py-3 font-medium">Role</th>
+                      <th className="px-4 py-3 font-medium">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-light-gray bg-white">
+                    {team.map((member) => (
+                      <tr key={member.id} className="hover:bg-ivory/30 transition-colors">
+                        <td className="px-4 py-3 text-charcoal font-medium">{member.email}</td>
+                        <td className="px-4 py-3 text-mid-gray capitalize">{member.role}</td>
+                        <td className="px-4 py-3">
+                          {member.cognitoSub.startsWith('INVITE_') ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                              Invitation Sent (Pending)
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                              Active
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="p-6 bg-ivory/50">
