@@ -3,6 +3,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { Sparkles, X, Send, User, Loader2 } from 'lucide-react';
 import { useWedding } from '@/lib/hooks/useWedding';
+import { useChecklist } from '@/lib/hooks/useChecklist';
+import { useVendors } from '@/lib/hooks/useVendors';
+import { useRunSheet } from '@/lib/hooks/useRunSheet';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../../amplify/data/resource';
 
@@ -22,7 +25,11 @@ export default function IvyChat() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
   const { wedding } = useWedding();
+  const { tasks } = useChecklist();
+  const { vendors } = useVendors();
+  const { items: runsheet } = useRunSheet();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -44,10 +51,18 @@ export default function IvyChat() {
     setIsTyping(true);
 
     try {
+      // Compress the full state to save AI tokens
+      const fullContext = {
+        ...wedding,
+        checklist: tasks.map(t => ({ title: t.title, status: t.isCompleted ? 'done' : 'pending', category: t.category })),
+        vendors: vendors.map(v => ({ name: v.companyName, category: v.category, status: v.contractStatus })),
+        runsheet: runsheet.map(r => ({ title: r.title, time: r.eventTime }))
+      };
+
       // Pass the full conversation history and wedding context
       const response = await client.mutations.askIvy({
         message: userMsg.content,
-        weddingContext: JSON.stringify(wedding)
+        weddingContext: JSON.stringify(fullContext)
       });
       
       console.log("IVY RAW RESPONSE:", response);

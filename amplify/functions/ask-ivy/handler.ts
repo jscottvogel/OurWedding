@@ -15,11 +15,24 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
   try {
     if (weddingContext) {
       const parsed = JSON.parse(weddingContext);
+      
+      let additionalInfo = '';
+      if (parsed.checklist && parsed.checklist.length > 0) {
+        additionalInfo += `\nChecklist (${parsed.checklist.length} items):\n` + parsed.checklist.map((t: any) => `- [${t.status}] ${t.title} (${t.category})`).join('\n');
+      }
+      if (parsed.vendors && parsed.vendors.length > 0) {
+        additionalInfo += `\n\nHired Vendors:\n` + parsed.vendors.map((v: any) => `- ${v.category}: ${v.name} (${v.status})`).join('\n');
+      }
+      if (parsed.runsheet && parsed.runsheet.length > 0) {
+        additionalInfo += `\n\nWedding Day Schedule:\n` + parsed.runsheet.map((r: any) => `- ${r.time}: ${r.title}`).join('\n');
+      }
+
       contextStr = `
         Couple: ${parsed.coupleName1} and ${parsed.coupleName2}
         Date: ${parsed.weddingDate}
         Venue: ${parsed.venueName || 'Not decided'}
         Budget: $${parsed.budgetTotal || 'Not set'}
+        ${additionalInfo}
       `;
     }
   } catch (e) {
