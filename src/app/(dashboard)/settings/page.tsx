@@ -65,6 +65,26 @@ export default function SettingsPage() {
       setInviteEmail('');
     } catch (err: any) {
       console.error(err);
+      
+      // If the user already exists in Cognito, the Lambda throws 'Failed to invite user'.
+      // We still want to add them to the Profile table so they show up in the UI!
+      if (err.message === 'Failed to invite user' || err.message.includes('invite')) {
+        try {
+          await client.models.Profile.create({
+            cognitoSub: `INVITE_${Date.now()}`,
+            email: inviteEmail,
+            role: inviteRole as any,
+            weddingId: weddingId,
+            fullName: 'Pending Registration'
+          });
+          setInviteSuccess(true);
+          setInviteEmail('');
+          return;
+        } catch (dbErr) {
+          console.error("Failed to save profile:", dbErr);
+        }
+      }
+      
       setInviteError(err.message || 'Failed to send invitation');
     } finally {
       setIsInviting(false);

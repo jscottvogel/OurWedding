@@ -47,7 +47,11 @@ export const handler: AppSyncResolverHandler<{ email: string; role: string; wedd
 
     console.log(`Successfully invited ${email} and added to group ${groupName}.`);
     return true;
-  } catch (error) {
+  } catch (error: any) {
+    if (error.name === 'UsernameExistsException') {
+      console.log(`User ${email} already exists in Cognito. Proceeding anyway.`);
+      return true;
+    }
     console.error('Failed to invite user:', error);
     throw new Error('Failed to invite user');
   }

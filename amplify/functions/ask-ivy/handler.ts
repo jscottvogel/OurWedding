@@ -51,7 +51,7 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
 
   try {
     const command = new InvokeModelCommand({
-      modelId: 'anthropic.claude-3-haiku-20240307-v1:0',
+      modelId: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
       contentType: 'application/json',
       accept: 'application/json',
       body: JSON.stringify({
@@ -83,8 +83,8 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
     }
 
     return "I'm sorry, I couldn't process that request right now.";
-  } catch (error) {
+  } catch (error: any) {
     console.error('Bedrock invocation failed:', error);
-    throw new Error('Failed to generate response from Ivy.');
+    throw new Error(`Bedrock Error: ${error.message || 'Unknown failure'}`);
   }
 };
