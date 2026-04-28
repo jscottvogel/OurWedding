@@ -27,7 +27,8 @@ export default function TaskItem({ task, onToggle, onUpdate, onDelete }: TaskIte
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: task.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
 
-  const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+  // Append T12:00:00 to prevent local timezone from shifting the date back a day
+  const dueDate = task.dueDate ? new Date(`${task.dueDate}T12:00:00`) : null;
   const isOverdue = dueDate && isPast(dueDate) && !isToday(dueDate) && !task.isCompleted;
   const isSoon = dueDate && dueDate <= addDays(new Date(), 14) && !isPast(dueDate) && !task.isCompleted;
 

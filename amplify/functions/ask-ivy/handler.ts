@@ -130,7 +130,8 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
                 title: { type: "string" },
                 category: { type: "string" },
                 isCompleted: { type: "boolean" },
-                notes: { type: "string" }
+                notes: { type: "string" },
+                dueDate: { type: "string", description: "YYYY-MM-DD format" }
               }
             }
           },

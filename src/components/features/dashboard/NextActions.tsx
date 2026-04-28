@@ -51,7 +51,7 @@ export default function NextActions() {
                 <p className="text-sm font-medium text-charcoal truncate">{task.title}</p>
                 {task.dueDate && (
                   <p className="text-xs text-mid-gray">
-                    Due {new Date(task.dueDate).toLocaleDateString()}
+                    Due {new Date(`${task.dueDate}T12:00:00`).toLocaleDateString()}
                   </p>
                 )}
               </div>

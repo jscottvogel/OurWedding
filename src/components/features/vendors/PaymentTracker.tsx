@@ -43,7 +43,7 @@ export default function PaymentTracker({ vendor, onUpdate }: PaymentTrackerProps
               <div>
                 <p className="font-medium">Deposit (${depositAmount.toLocaleString()})</p>
                 {vendor.depositDueDate && (
-                  <p className="text-xs text-mid-gray">Due {format(new Date(vendor.depositDueDate), 'MMM d, yyyy')}</p>
+                  <p className="text-xs text-mid-gray">Due {format(new Date(`${vendor.depositDueDate}T12:00:00`), 'MMM d, yyyy')}</p>
                 )}
               </div>
             </div>
@@ -63,7 +63,7 @@ export default function PaymentTracker({ vendor, onUpdate }: PaymentTrackerProps
               <div>
                 <p className="font-medium">Balance (${balanceAmount.toLocaleString()})</p>
                 {vendor.balanceDueDate && (
-                  <p className="text-xs text-mid-gray">Due {format(new Date(vendor.balanceDueDate), 'MMM d, yyyy')}</p>
+                  <p className="text-xs text-mid-gray">Due {format(new Date(`${vendor.balanceDueDate}T12:00:00`), 'MMM d, yyyy')}</p>
                 )}
               </div>
             </div>
