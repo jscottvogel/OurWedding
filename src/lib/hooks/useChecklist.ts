@@ -23,7 +23,7 @@ export function useChecklist() {
       filter: { weddingId: { eq: weddingId } }
     }).subscribe({
       next: ({ items }) => {
-        setTasks(items.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)));
+        setTasks([...items].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)));
         setLoading(false);
       },
       error: (err) => {

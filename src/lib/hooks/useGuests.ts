@@ -25,7 +25,7 @@ export function useGuests(publicWeddingId?: string) {
       filter: { weddingId: { eq: weddingId } }
     }).subscribe({
       next: ({ items }) => {
-        setGuests(items.sort((a, b) => a.firstName.localeCompare(b.firstName)));
+        setGuests([...items].sort((a, b) => a.firstName.localeCompare(b.firstName)));
         setLoading(false);
       },
       error: (err) => {

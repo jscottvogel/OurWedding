@@ -33,13 +33,21 @@ export default function PhotoGrid({ photos, onDelete, isAdmin = false }: PhotoGr
             onClick={() => setSelectedPhoto(photo)}
           >
             {photo.url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img 
-                src={photo.url} 
-                alt={`Uploaded by ${photo.uploaderName}`} 
-                className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
-                loading="lazy"
-              />
+              photo.fileType?.startsWith('video/') ? (
+                <video 
+                  src={photo.url} 
+                  className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                  autoPlay muted loop playsInline
+                />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img 
+                  src={photo.url} 
+                  alt={`Uploaded by ${photo.uploaderName}`} 
+                  className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                  loading="lazy"
+                />
+              )
             ) : (
               <div className="w-full h-full animate-pulse bg-sage/20"></div>
             )}
@@ -74,12 +82,20 @@ export default function PhotoGrid({ photos, onDelete, isAdmin = false }: PhotoGr
           </button>
           
           <div className="relative max-w-5xl w-full max-h-full flex flex-col items-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img 
-              src={selectedPhoto.url} 
-              alt="Enlarged gallery photo" 
-              className="max-w-full max-h-[80vh] object-contain rounded-lg"
-            />
+            {selectedPhoto.fileType?.startsWith('video/') ? (
+              <video 
+                src={selectedPhoto.url} 
+                controls autoPlay
+                className="max-w-full max-h-[80vh] object-contain rounded-lg"
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img 
+                src={selectedPhoto.url} 
+                alt="Enlarged gallery photo" 
+                className="max-w-full max-h-[80vh] object-contain rounded-lg"
+              />
+            )}
             
             <div className="mt-4 flex items-center justify-between w-full max-w-lg bg-white/10 backdrop-blur-sm rounded-lg p-4">
               <div>

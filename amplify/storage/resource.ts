@@ -5,7 +5,8 @@ export const storage = defineStorage({
   access: (allow) => ({
     'gallery/*': [
       allow.groups(['admin', 'planner']).to(['read', 'write', 'delete']),
-      allow.guest.to(['write'])
+      allow.authenticated.to(['read', 'write', 'delete']),
+      allow.guest.to(['read', 'write'])
     ],
     'assets/*': [
       allow.groups(['admin', 'planner']).to(['read', 'write', 'delete']),

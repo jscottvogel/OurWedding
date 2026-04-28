@@ -23,7 +23,8 @@ export function useRunSheet() {
       filter: { weddingId: { eq: weddingId } }
     }).subscribe({
       next: ({ items }) => {
-        setItems(items.sort((a, b) => {
+        setItems([...items].sort((a, b) => {
+          if (!a.eventTime || !b.eventTime) return 0;
           const timeA = a.eventTime || '00:00';
           const timeB = b.eventTime || '00:00';
           return timeA.localeCompare(timeB);

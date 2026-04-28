@@ -1,4 +1,7 @@
 import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
+import { sendEmail } from '../functions/send-email/resource';
+import { pdfExport } from '../functions/pdf-export/resource';
+import { askIvy } from '../functions/ask-ivy/resource';
 
 const schema = a.schema({
   Wedding: a
@@ -218,14 +221,14 @@ const schema = a.schema({
     .arguments({ type: a.string(), weddingId: a.string() })
     .returns(a.string())
     .authorization((allow) => [allow.authenticated()])
-    .handler(a.handler.function('pdf-export')), // Need to inject function ref in backend.ts
+    .handler(a.handler.function(pdfExport)),
 
   inviteUser: a
     .mutation()
     .arguments({ email: a.string(), role: a.string(), weddingId: a.string() })
     .returns(a.boolean())
     .authorization((allow) => [allow.authenticated()])
-    .handler(a.handler.function('send-email')),
+    .handler(a.handler.function(sendEmail)),
 
   getMoodBoardByShareToken: a
     .query()
@@ -239,7 +242,7 @@ const schema = a.schema({
     .arguments({ message: a.string(), weddingContext: a.string() })
     .returns(a.string())
     .authorization((allow) => [allow.authenticated()])
-    .handler(a.handler.function('ask-ivy')),
+    .handler(a.handler.function(askIvy)),
 });
 
 export type Schema = ClientSchema<typeof schema>;
