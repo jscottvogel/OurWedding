@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: 'DM Sans', sans-serif; color: #2C2C2C; }
+    h1 { font-family: 'Playfair Display', serif; color: #6B8F71; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #EEEEEE; padding: 10px; text-align: left; }
+    th { background-color: #FAF7F0; }
+  </style>
+</head>
+<body>
+  <h1>Run Sheet: {{couple_names}}</h1>
+  <p>Date: {{wedding_date}}</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Time</th>
+        <th>Event</th>
+        <th>Location</th>
+        <th>Assigned</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#items}}
+      <tr>
+        <td>{{event_time}}</td>
+        <td>{{title}}</td>
+        <td>{{location}}</td>
+        <td>{{assigned}}</td>
+      </tr>
+      {{/items}}
+    </tbody>
+  </table>
+</body>
+</html>

@@ -1,0 +1,104 @@
+'use client';
+
+import { useGuests } from '@/lib/hooks/useGuests';
+import GuestTable from '@/components/features/guests/GuestTable';
+import { Download, Users, UserCheck, UserX, Clock } from 'lucide-react';
+import { exportGuestListToCsv } from '@/lib/actions/guests';
+import { useAuth } from '@/lib/hooks/useAuth';
+import { toast } from 'sonner';
+
+export default function GuestsPage() {
+  const { guests, loading, addGuest, updateGuest, deleteGuest } = useGuests();
+  const { weddingId } = useAuth();
+
+  const handleExport = async () => {
+    if (!weddingId) return;
+    try {
+      const csvContent = await exportGuestListToCsv(weddingId);
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'wedding_guests.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      toast.error('Failed to export guest list');
+    }
+  };
+
+  if (loading) {
+    return <div className="p-8 animate-pulse text-sage font-medium text-lg">Loading guest list...</div>;
+  }
+
+  const totalGuests = guests.length;
+  const confirmed = guests.filter(g => g.rsvpStatus === 'CONFIRMED').length;
+  const declined = guests.filter(g => g.rsvpStatus === 'DECLINED').length;
+  const pending = guests.filter(g => g.rsvpStatus === 'PENDING').length;
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex justify-between items-end mb-8 flex-shrink-0">
+        <div>
+          <h1 className="text-3xl font-display text-sage mb-2">Guest List & RSVPs</h1>
+          <p className="text-mid-gray">Manage your invitations and track responses.</p>
+        </div>
+        <button 
+          onClick={handleExport}
+          className="bg-white border border-light-gray text-charcoal px-4 py-2 rounded-lg font-medium hover:bg-light-gray transition-colors flex items-center shadow-sm"
+        >
+          <Download className="w-5 h-5 mr-2" /> Export CSV
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 flex-shrink-0">
+        <div className="bg-white p-4 rounded-xl border border-light-gray shadow-sm flex items-center">
+          <div className="w-10 h-10 rounded-full bg-light-gray/50 flex items-center justify-center mr-3">
+            <Users className="w-5 h-5 text-charcoal" />
+          </div>
+          <div>
+            <p className="text-2xl font-display text-charcoal leading-none">{totalGuests}</p>
+            <p className="text-xs font-medium text-mid-gray uppercase tracking-wider mt-1">Total</p>
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-sage/30 shadow-sm flex items-center">
+          <div className="w-10 h-10 rounded-full bg-sage/10 flex items-center justify-center mr-3">
+            <UserCheck className="w-5 h-5 text-sage" />
+          </div>
+          <div>
+            <p className="text-2xl font-display text-sage leading-none">{confirmed}</p>
+            <p className="text-xs font-medium text-mid-gray uppercase tracking-wider mt-1">Attending</p>
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-red-200 shadow-sm flex items-center">
+          <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mr-3">
+            <UserX className="w-5 h-5 text-red-500" />
+          </div>
+          <div>
+            <p className="text-2xl font-display text-red-500 leading-none">{declined}</p>
+            <p className="text-xs font-medium text-mid-gray uppercase tracking-wider mt-1">Declined</p>
+          </div>
+        </div>
+        <div className="bg-white p-4 rounded-xl border border-light-gray shadow-sm flex items-center">
+          <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center mr-3">
+            <Clock className="w-5 h-5 text-amber-600" />
+          </div>
+          <div>
+            <p className="text-2xl font-display text-amber-600 leading-none">{pending}</p>
+            <p className="text-xs font-medium text-mid-gray uppercase tracking-wider mt-1">Pending</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 min-h-0">
+        <GuestTable 
+          guests={guests}
+          onAdd={addGuest}
+          onUpdate={updateGuest}
+          onDelete={deleteGuest}
+        />
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --sage: #6B8F71;
+  --dark-sage: #4A6B50;
+  --light-sage: #D4E6D6;
+  --terra: #C1693C;
+  --dark-terra: #9A4F2A;
+  --light-terra: #F2D5C4;
+  --ivory: #FAF7F0;
+  --gold: #B8972A;
+  --charcoal: #2C2C2C;
+  --mid-gray: #666666;
+  --light-gray: #EEEEEE;
+}
+
+body {
+  background-color: var(--ivory);
+  color: var(--charcoal);
+}

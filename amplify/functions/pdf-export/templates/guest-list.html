@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: 'DM Sans', sans-serif; color: #2C2C2C; }
+    h1 { font-family: 'Playfair Display', serif; color: #6B8F71; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #EEEEEE; padding: 10px; text-align: left; }
+    th { background-color: #FAF7F0; }
+  </style>
+</head>
+<body>
+  <h1>Guest List: {{couple_names}}</h1>
+  <p>Date: {{wedding_date}}</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>RSVP</th>
+        <th>Meal</th>
+        <th>Dietary</th>
+        <th>Table</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#guests}}
+      <tr>
+        <td>{{first_name}} {{last_name}}</td>
+        <td>{{rsvp_status}}</td>
+        <td>{{meal_choice}}</td>
+        <td>{{dietary}}</td>
+        <td>{{table}}</td>
+      </tr>
+      {{/guests}}
+    </tbody>
+  </table>
+</body>
+</html>
