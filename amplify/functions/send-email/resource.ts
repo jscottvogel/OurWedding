@@ -6,6 +6,7 @@ export const sendEmail = defineFunction({
   timeoutSeconds: 15,
   memoryMB: 256,
   runtime: 20,
+  resourceGroupName: 'data',
   environment: {
     DOMAIN: process.env.NEXT_PUBLIC_DOMAIN || 'example.com'
   }

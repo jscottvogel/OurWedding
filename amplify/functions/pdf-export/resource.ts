@@ -6,4 +6,5 @@ export const pdfExport = defineFunction({
   timeoutSeconds: 60,
   memoryMB: 1024,
   runtime: 20,
+  resourceGroupName: 'data',
 });
