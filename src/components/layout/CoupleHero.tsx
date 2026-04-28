@@ -99,24 +99,34 @@ export default function CoupleHero() {
         <>
           {/* Blurred backdrop to fill empty letterboxing elegantly */}
           <div 
-            className="absolute inset-0 bg-cover bg-center blur-xl scale-110 opacity-50"
+            className="absolute inset-0 bg-cover bg-center blur-2xl scale-110 opacity-60"
             style={{ backgroundImage: `url(${heroImageUrl})` }} 
           />
-          {/* Foreground layer showing the complete uncropped image */}
-          <div 
-            className="absolute inset-0 bg-contain bg-center bg-no-repeat drop-shadow-2xl"
-            style={{ backgroundImage: `url(${heroImageUrl})` }} 
-          />
+          {/* Creative Oval Frame Foreground */}
+          <div className="absolute inset-0 flex justify-center items-center py-6 pb-16 z-10 pointer-events-none">
+            <div className="relative group-hover:scale-105 transition-transform duration-700 ease-out pointer-events-auto">
+              {/* Outer decorative ring */}
+              <div className="absolute -inset-3 rounded-[50%] border-2 border-white/20 animate-pulse" />
+              <div className="absolute -inset-6 rounded-[50%] border border-white/10" />
+              {/* The Image */}
+              <img 
+                src={heroImageUrl} 
+                alt="Couple"
+                className="max-h-[220px] md:max-h-[280px] w-auto object-contain shadow-[0_0_50px_rgba(0,0,0,0.5)] ring-[6px] ring-white/15"
+                style={{ borderRadius: '50%' }}
+              />
+            </div>
+          </div>
         </>
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-sage via-ivory to-light-terra opacity-80" />
       )}
       
       {/* Gradient overlay for text legibility */}
-      <div className="absolute inset-0 bg-gradient-to-t from-charcoal/90 via-charcoal/30 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-charcoal/90 via-charcoal/40 to-transparent z-10 pointer-events-none" />
 
       {/* Content */}
-      <div className="absolute bottom-0 left-0 p-8 w-full">
+      <div className="absolute bottom-0 left-0 p-8 w-full z-20 pointer-events-none">
         <h1 className="text-4xl md:text-5xl font-display text-white mb-2">
           {wedding.coupleName1} & {wedding.coupleName2}
         </h1>
@@ -140,7 +150,7 @@ export default function CoupleHero() {
       {/* Edit button (shows on hover) */}
       <button 
         onClick={() => setIsEditing(true)}
-        className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/40 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all text-white"
+        className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/40 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all text-white z-30 pointer-events-auto shadow-lg"
       >
         <Edit2 className="w-5 h-5" />
       </button>

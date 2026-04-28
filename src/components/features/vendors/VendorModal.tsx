@@ -13,10 +13,16 @@ interface VendorModalProps {
 
 export default function VendorModal({ isOpen, onClose, onSave, initialCategory = '' }: VendorModalProps) {
   const [companyName, setCompanyName] = useState('');
-  const [category, setCategory] = useState(initialCategory);
+  const [categoryDropdown, setCategoryDropdown] = useState(
+    ['Venue', 'Catering', 'Photography', 'Florist', 'Entertainment', 'Attire'].includes(initialCategory) ? initialCategory : initialCategory ? 'Other' : ''
+  );
+  const [categoryOther, setCategoryOther] = useState(
+    !['Venue', 'Catering', 'Photography', 'Florist', 'Entertainment', 'Attire', ''].includes(initialCategory) ? initialCategory : ''
+  );
   const [contactPerson, setContactPerson] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   const [quotedAmount, setQuotedAmount] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -28,10 +34,11 @@ export default function VendorModal({ isOpen, onClose, onSave, initialCategory =
     try {
       await onSave({
         companyName,
-        category,
+        category: categoryDropdown === 'Other' ? categoryOther : categoryDropdown,
         contactPerson,
         email,
         phone,
+        address,
         quotedAmount: quotedAmount ? parseFloat(quotedAmount) : undefined,
         contractStatus: 'NOT_STARTED',
         depositPaid: false,
@@ -70,15 +77,39 @@ export default function VendorModal({ isOpen, onClose, onSave, initialCategory =
             </div>
             <div className="col-span-2 sm:col-span-1">
               <label className="block text-sm font-medium mb-1">Category *</label>
-              <input 
+              <select 
                 required 
-                type="text" 
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full border border-light-gray rounded-md p-2 focus:border-sage focus:outline-none"
-              />
+                value={categoryDropdown}
+                onChange={(e) => setCategoryDropdown(e.target.value)}
+                className="w-full border border-light-gray rounded-md p-2 focus:border-sage focus:outline-none bg-white"
+              >
+                <option value="" disabled>Select a category</option>
+                <option value="Venue">Venue</option>
+                <option value="Catering">Catering</option>
+                <option value="Photography">Photography</option>
+                <option value="Florist">Florist</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Attire">Attire</option>
+                <option value="Other">Other...</option>
+              </select>
             </div>
           </div>
+
+          {categoryDropdown === 'Other' && (
+            <div className="grid grid-cols-1">
+              <div>
+                <label className="block text-sm font-medium mb-1">Other Category Details *</label>
+                <input 
+                  required 
+                  type="text" 
+                  placeholder="e.g. Balloon Artist, Photo Booth"
+                  value={categoryOther}
+                  onChange={(e) => setCategoryOther(e.target.value)}
+                  className="w-full border border-light-gray rounded-md p-2 focus:border-sage focus:outline-none"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 sm:col-span-1">
@@ -104,6 +135,15 @@ export default function VendorModal({ isOpen, onClose, onSave, initialCategory =
           </div>
 
           <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="block text-sm font-medium mb-1">Address</label>
+              <input 
+                type="text" 
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="w-full border border-light-gray rounded-md p-2 focus:border-sage focus:outline-none"
+              />
+            </div>
             <div className="col-span-2 sm:col-span-1">
               <label className="block text-sm font-medium mb-1">Email</label>
               <input 
