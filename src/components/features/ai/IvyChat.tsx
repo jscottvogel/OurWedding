@@ -50,6 +50,8 @@ export default function IvyChat() {
         weddingContext: JSON.stringify(wedding)
       });
       
+      console.log("IVY RAW RESPONSE:", response);
+
       if (response.errors) {
         throw new Error(response.errors[0].message);
       }
