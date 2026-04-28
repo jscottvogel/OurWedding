@@ -27,8 +27,8 @@ export default function IvyChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { wedding } = useWedding();
-  const { tasks, addTask } = useChecklist();
-  const { vendors, addVendor } = useVendors();
+  const { tasks, addTask, updateTask, deleteTask } = useChecklist();
+  const { vendors, addVendor, updateVendor, deleteVendor } = useVendors();
   const { items: runsheet } = useRunSheet();
 
   const scrollToBottom = () => {
@@ -54,9 +54,9 @@ export default function IvyChat() {
       // Compress the full state to save AI tokens
       const fullContext = {
         ...wedding,
-        checklist: tasks.map(t => ({ title: t.title, status: t.isCompleted ? 'done' : 'pending', category: t.category })),
-        vendors: vendors.map(v => ({ name: v.companyName, category: v.category, status: v.contractStatus })),
-        runsheet: runsheet.map(r => ({ title: r.title, time: r.eventTime }))
+        checklist: tasks.map(t => ({ id: t.id, title: t.title, status: t.isCompleted ? 'done' : 'pending', category: t.category })),
+        vendors: vendors.map(v => ({ id: v.id, name: v.companyName, category: v.category, status: v.contractStatus })),
+        runsheet: runsheet.map(r => ({ id: r.id, title: r.title, time: r.eventTime }))
       };
 
       // Pass the full conversation history and wedding context
@@ -88,6 +88,12 @@ export default function IvyChat() {
             sortOrder: 0
           });
           successMessage = `I've successfully added "${toolCall.input.title}" to your checklist under ${toolCall.input.category}!`;
+        } else if (toolCall.name === 'update_task') {
+          await updateTask(toolCall.input.id, toolCall.input.updates);
+          successMessage = "I've updated that task for you!";
+        } else if (toolCall.name === 'delete_task') {
+          await deleteTask(toolCall.input.id);
+          successMessage = "I've removed that task from your checklist!";
         } else if (toolCall.name === 'add_vendor') {
           await addVendor({
             companyName: toolCall.input.companyName,
@@ -98,6 +104,12 @@ export default function IvyChat() {
             portalAccess: false
           });
           successMessage = `I've added "${toolCall.input.companyName}" to your vendors list under ${toolCall.input.category}!`;
+        } else if (toolCall.name === 'update_vendor') {
+          await updateVendor(toolCall.input.id, toolCall.input.updates);
+          successMessage = "I've updated that vendor's details!";
+        } else if (toolCall.name === 'delete_vendor') {
+          await deleteVendor(toolCall.input.id);
+          successMessage = "I've removed that vendor from your list!";
         }
 
         setMessages(prev => [...prev, {

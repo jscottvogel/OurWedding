@@ -18,10 +18,10 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
       
       let additionalInfo = '';
       if (parsed.checklist && parsed.checklist.length > 0) {
-        additionalInfo += `\nChecklist (${parsed.checklist.length} items):\n` + parsed.checklist.map((t: any) => `- [${t.status}] ${t.title} (${t.category})`).join('\n');
+        additionalInfo += `\nChecklist (${parsed.checklist.length} items):\n` + parsed.checklist.map((t: any) => `- [ID: ${t.id}] [${t.status}] ${t.title} (${t.category})`).join('\n');
       }
       if (parsed.vendors && parsed.vendors.length > 0) {
-        additionalInfo += `\n\nHired Vendors:\n` + parsed.vendors.map((v: any) => `- ${v.category}: ${v.name} (${v.status})`).join('\n');
+        additionalInfo += `\n\nHired Vendors:\n` + parsed.vendors.map((v: any) => `- [ID: ${v.id}] ${v.category}: ${v.name} (${v.status})`).join('\n');
       }
       if (parsed.runsheet && parsed.runsheet.length > 0) {
         additionalInfo += `\n\nWedding Day Schedule:\n` + parsed.runsheet.map((r: any) => `- ${r.time}: ${r.title}`).join('\n');
@@ -115,6 +115,67 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
             category: { type: "string", description: "The vendor category (e.g. Photography, Catering, Florist)." }
           },
           required: ["companyName", "category"]
+        }
+      },
+      {
+        name: "update_task",
+        description: "Update an existing task in the checklist.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "The ID of the task to update." },
+            updates: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                category: { type: "string" },
+                isCompleted: { type: "boolean" },
+                notes: { type: "string" }
+              }
+            }
+          },
+          required: ["id", "updates"]
+        }
+      },
+      {
+        name: "delete_task",
+        description: "Delete an existing task from the checklist.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "The ID of the task to delete." }
+          },
+          required: ["id"]
+        }
+      },
+      {
+        name: "update_vendor",
+        description: "Update an existing vendor.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "The ID of the vendor to update." },
+            updates: {
+              type: "object",
+              properties: {
+                companyName: { type: "string" },
+                category: { type: "string" },
+                contractStatus: { type: "string" }
+              }
+            }
+          },
+          required: ["id", "updates"]
+        }
+      },
+      {
+        name: "delete_vendor",
+        description: "Delete an existing vendor from the list.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "The ID of the vendor to delete." }
+          },
+          required: ["id"]
         }
       }
     ];
