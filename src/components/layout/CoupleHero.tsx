@@ -96,16 +96,24 @@ export default function CoupleHero() {
   return (
     <div className="relative h-80 md:h-96 w-full bg-dark-sage overflow-hidden group">
       {heroImageUrl ? (
-        <div 
-          className="absolute inset-0 bg-cover bg-[center_25%]"
-          style={{ backgroundImage: `url(${heroImageUrl})` }} 
-        />
+        <>
+          {/* Blurred backdrop to fill empty letterboxing elegantly */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center blur-xl scale-110 opacity-50"
+            style={{ backgroundImage: `url(${heroImageUrl})` }} 
+          />
+          {/* Foreground layer showing the complete uncropped image */}
+          <div 
+            className="absolute inset-0 bg-contain bg-center bg-no-repeat drop-shadow-2xl"
+            style={{ backgroundImage: `url(${heroImageUrl})` }} 
+          />
+        </>
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-sage via-ivory to-light-terra opacity-80" />
       )}
       
       {/* Gradient overlay for text legibility */}
-      <div className="absolute inset-0 bg-gradient-to-t from-charcoal/80 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-charcoal/90 via-charcoal/30 to-transparent" />
 
       {/* Content */}
       <div className="absolute bottom-0 left-0 p-8 w-full">
