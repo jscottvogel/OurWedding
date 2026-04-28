@@ -1,3 +1,5 @@
+'use client';
+
 import { ReactNode } from 'react';
 import AuthGuard from '@/components/layout/AuthGuard';
 import { LogOut, CalendarHeart } from 'lucide-react';
