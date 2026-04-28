@@ -228,6 +228,13 @@ const schema = a.schema({
     .returns(a.ref('MoodBoard'))
     .authorization((allow) => [allow.guest()])
     .handler(a.handler.function('')),
+
+  askIvy: a
+    .mutation()
+    .arguments({ message: a.string(), weddingContext: a.string() })
+    .returns(a.string())
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function('ask-ivy')),
 });
 
 export type Schema = ClientSchema<typeof schema>;

@@ -1,23 +1,23 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { MoodBoardItem } from '@/lib/hooks/useMoodBoard';
+import { MoodPinItem } from '@/lib/hooks/useMoodBoard';
 import { Trash2, Plus, Image as ImageIcon, Link as LinkIcon, Loader2, X } from 'lucide-react';
 import { uploadData } from 'aws-amplify/storage';
 import { toast } from 'sonner';
 
 interface MasonryLayoutProps {
-  items: MoodBoardItem[];
+  items: MoodPinItem[];
   weddingId: string;
   onAddItem: (item: any) => Promise<void>;
-  onDeleteItem: (item: MoodBoardItem) => Promise<void>;
+  onDeleteItem: (item: MoodPinItem) => Promise<void>;
 }
 
 export default function MasonryLayout({ items, weddingId, onAddItem, onDeleteItem }: MasonryLayoutProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [isAddingLink, setIsAddingLink] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
-  const [selectedImage, setSelectedImage] = useState<MoodBoardItem | null>(null);
+  const [selectedImage, setSelectedImage] = useState<MoodPinItem | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,7 +38,7 @@ export default function MasonryLayout({ items, weddingId, onAddItem, onDeleteIte
       
       await onAddItem({
         imageKey: fileKey,
-        description: 'Uploaded inspiration'
+        notes: 'Uploaded inspiration'
       });
       
       toast.success('Image added to mood board');
@@ -57,7 +57,7 @@ export default function MasonryLayout({ items, weddingId, onAddItem, onDeleteIte
     // In a real app, this would trigger the backend scraping lambda
     // For this UI, we'll just mock adding a link text item
     await onAddItem({
-      description: linkUrl,
+      notes: linkUrl,
       sourceUrl: linkUrl
     });
     
@@ -116,7 +116,7 @@ export default function MasonryLayout({ items, weddingId, onAddItem, onDeleteIte
               // eslint-disable-next-line @next/next/no-img-element
               <img 
                 src={item.url} 
-                alt={item.description || 'Mood board inspiration'} 
+                alt={item.notes || 'Mood board inspiration'} 
                 className="w-full object-cover cursor-zoom-in hover:opacity-90 transition-opacity"
                 onClick={() => setSelectedImage(item)}
                 loading="lazy"
@@ -125,7 +125,7 @@ export default function MasonryLayout({ items, weddingId, onAddItem, onDeleteIte
               <div className="p-6 bg-ivory text-center break-all">
                 <LinkIcon className="w-8 h-8 text-sage mx-auto mb-2" />
                 <a href={item.sourceUrl || '#'} target="_blank" rel="noreferrer" className="text-sm text-sage hover:underline">
-                  {item.description || item.sourceUrl}
+                  {item.notes || item.sourceUrl}
                 </a>
               </div>
             )}
@@ -139,9 +139,9 @@ export default function MasonryLayout({ items, weddingId, onAddItem, onDeleteIte
               </button>
             </div>
             
-            {item.url && item.description && item.description !== 'Uploaded inspiration' && (
+            {item.url && item.notes && item.notes !== 'Uploaded inspiration' && (
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-charcoal/80 to-transparent p-4 pt-8">
-                <p className="text-white text-sm">{item.description}</p>
+                <p className="text-white text-sm">{item.notes}</p>
               </div>
             )}
           </div>

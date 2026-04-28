@@ -109,7 +109,7 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
                   <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
                 </td>
                 <td className="p-3 text-center">
-                  <select value={rsvpStatus} onChange={e => setRsvpStatus(e.target.value as any)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white">
+                  <select value={rsvpStatus || 'PENDING'} onChange={e => setRsvpStatus(e.target.value as any)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white">
                     <option value="PENDING">Pending</option>
                     <option value="CONFIRMED">Confirmed</option>
                     <option value="DECLINED">Declined</option>
@@ -138,7 +138,7 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
                     <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
                   </td>
                   <td className="p-3 text-center">
-                    <select value={rsvpStatus} onChange={e => setRsvpStatus(e.target.value as any)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white">
+                    <select value={rsvpStatus || 'PENDING'} onChange={e => setRsvpStatus(e.target.value as any)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white">
                       <option value="PENDING">Pending</option>
                       <option value="CONFIRMED">Confirmed</option>
                       <option value="DECLINED">Declined</option>

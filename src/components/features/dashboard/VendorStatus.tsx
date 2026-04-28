@@ -1,45 +1,67 @@
 'use client';
 
+import { useVendors } from '@/lib/hooks/useVendors';
 import Link from 'next/link';
-import { ArrowRight, AlertCircle, FileText, CreditCard } from 'lucide-react';
 
 export default function VendorStatus() {
-  // Dummy data
-  const issues = [
-    { id: '1', vendor: 'Lush Florals', type: 'contract', message: 'Contract not signed' },
-    { id: '2', vendor: 'DJ Beats', type: 'deposit', message: 'Deposit overdue' },
-  ];
+  const { vendors, loading } = useVendors();
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-light-gray p-6">
+        <h2 className="text-xl font-display text-sage mb-4 animate-pulse bg-light-gray h-6 w-32 rounded"></h2>
+        <div className="space-y-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex justify-between items-center h-10 bg-light-gray rounded animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Group vendors by contract status
+  const bookedVendors = vendors.filter(v => v.contractStatus === 'SIGNED');
+  const researchingVendors = vendors.filter(v => v.contractStatus !== 'SIGNED');
 
   return (
-    <div className="bg-white rounded-xl border border-light-gray shadow-sm p-6 flex flex-col h-full">
+    <div className="bg-white rounded-xl shadow-sm border border-light-gray p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-display text-sage">Vendor Status</h2>
-        <Link href="/vendors" className="text-sm text-mid-gray hover:text-dark-sage flex items-center">
-          View all <ArrowRight className="w-4 h-4 ml-1" />
+        <Link href="/vendors" className="text-sm text-gold hover:text-charcoal transition-colors">
+          Manage
         </Link>
       </div>
 
-      <ul className="space-y-4 flex-1">
-        {issues.map((issue) => (
-          <li key={issue.id} className="flex items-start p-3 bg-red-50 text-red-800 rounded-lg">
-            {issue.type === 'contract' ? (
-              <FileText className="w-5 h-5 mr-3 mt-0.5 text-red-500" />
-            ) : (
-              <CreditCard className="w-5 h-5 mr-3 mt-0.5 text-red-500" />
-            )}
-            <div>
-              <p className="font-medium">{issue.vendor}</p>
-              <p className="text-sm opacity-90">{issue.message}</p>
-            </div>
-          </li>
-        ))}
-        {issues.length === 0 && (
-          <li className="flex flex-col items-center justify-center text-mid-gray h-full">
-            <AlertCircle className="w-8 h-8 mb-2 text-light-gray" />
-            <p>All vendors on track</p>
-          </li>
+      <div className="space-y-4">
+        {vendors.length === 0 ? (
+          <p className="text-sm text-mid-gray italic">No vendors added yet.</p>
+        ) : (
+          <>
+            {bookedVendors.map((vendor) => (
+              <div key={vendor.id} className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-charcoal">{(vendor.category || '').replace('_', ' ')}</p>
+                  <p className="text-xs text-mid-gray">{vendor.companyName}</p>
+                </div>
+                <span className="px-2 py-1 bg-sage/10 text-sage text-xs font-medium rounded-full">
+                  Booked
+                </span>
+              </div>
+            ))}
+            {researchingVendors.map((vendor) => (
+              <div key={vendor.id} className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-charcoal">{(vendor.category || '').replace('_', ' ')}</p>
+                  <p className="text-xs text-mid-gray">{vendor.companyName}</p>
+                </div>
+                <span className="px-2 py-1 bg-light-gray text-mid-gray text-xs font-medium rounded-full">
+                  Researching
+                </span>
+              </div>
+            ))}
+          </>
         )}
-      </ul>
+      </div>
     </div>
   );
 }

@@ -40,7 +40,7 @@ export default function RSVPForm({ guests, onUpdate }: RSVPFormProps) {
         setFoundGuest(match);
         setIsAttending(match.rsvpStatus === 'CONFIRMED' ? true : match.rsvpStatus === 'DECLINED' ? false : null);
         setMealChoice(match.mealChoice || '');
-        setDietaryRequirements(match.dietaryRequirements || '');
+        setDietaryRequirements(match.dietaryOther || '');
         setStep('RSVP');
       } else {
         toast.error('We couldn\'t find your invitation. Please check the spelling or contact the couple.');
@@ -58,7 +58,7 @@ export default function RSVPForm({ guests, onUpdate }: RSVPFormProps) {
       await onUpdate(foundGuest.id, {
         rsvpStatus: isAttending ? 'CONFIRMED' : 'DECLINED',
         mealChoice: isAttending ? mealChoice : undefined,
-        dietaryRequirements: isAttending ? dietaryRequirements : undefined,
+        dietaryOther: isAttending ? dietaryRequirements : undefined,
       });
       setStep('SUCCESS');
     } catch (err) {

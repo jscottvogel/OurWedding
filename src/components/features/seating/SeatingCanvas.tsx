@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, X, Users, Edit2, Trash2 } from 'lucide-react';
+import { Plus, X, Users, Edit2, Trash2, Check } from 'lucide-react';
 import type { Schema } from '../../../../amplify/data/resource';
 import { DndContext, useDroppable, useDraggable, DragOverlay } from '@dnd-kit/core';
 
 interface SeatingCanvasProps {
-  tables: Schema['Table']['type'][];
+  tables: Schema['SeatingTable']['type'][];
   guests: Schema['Guest']['type'][];
   onAddTable: (table: any) => Promise<any>;
   onUpdateTable: (id: string, updates: any) => Promise<any>;
@@ -15,7 +15,7 @@ interface SeatingCanvasProps {
 }
 
 // Droppable Table Component
-function TableNode({ table, assignedGuests, onEdit, onDelete }: { table: Schema['Table']['type'], assignedGuests: Schema['Guest']['type'][], onEdit: () => void, onDelete: () => void }) {
+function TableNode({ table, assignedGuests, onEdit, onDelete }: { table: Schema['SeatingTable']['type'], assignedGuests: Schema['Guest']['type'][], onEdit: () => void, onDelete: () => void }) {
   const { isOver, setNodeRef } = useDroppable({
     id: table.id,
   });
@@ -30,7 +30,7 @@ function TableNode({ table, assignedGuests, onEdit, onDelete }: { table: Schema[
       <div className="flex justify-between items-center mb-3 border-b border-light-gray pb-2">
         <div>
           <h4 className="font-display text-sage">{table.tableName}</h4>
-          <p className="text-xs text-mid-gray">{assignedGuests.length} / {table.capacity} seated</p>
+          <p className="text-xs text-mid-gray">{assignedGuests.length} / {table.seatCount} seated</p>
         </div>
         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
           <button onClick={onEdit} className="p-1 text-mid-gray hover:text-sage"><Edit2 className="w-3.5 h-3.5" /></button>
@@ -83,6 +83,7 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
   
   // Table form state
   const [isAddingTable, setIsAddingTable] = useState(false);
+  const [editingTableId, setEditingTableId] = useState<string | null>(null);
   const [tableName, setTableName] = useState('');
   const [capacity, setCapacity] = useState('8');
 
@@ -106,7 +107,7 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
         const table = tables.find(t => t.id === over.id);
         const assignedCount = guests.filter(g => g.tableId === over.id && g.id !== active.id).length;
         
-        if (table && assignedCount < (table.capacity || 0)) {
+        if (table && assignedCount < (table.seatCount || 0)) {
           onAssignGuest(active.id, over.id);
         } else {
           alert('Table is at full capacity!');
@@ -117,9 +118,24 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
 
   const handleAddTable = async () => {
     if (!tableName) return;
-    await onAddTable({ tableName, capacity: parseInt(capacity) });
+    await onAddTable({ tableName, seatCount: parseInt(capacity) });
     setTableName('');
     setCapacity('8');
+    setIsAddingTable(false);
+  };
+
+  const handleUpdateTable = async () => {
+    if (!tableName || !editingTableId) return;
+    await onUpdateTable(editingTableId, { tableName, seatCount: parseInt(capacity) });
+    setTableName('');
+    setCapacity('8');
+    setEditingTableId(null);
+  };
+
+  const startEditTable = (table: Schema['SeatingTable']['type']) => {
+    setEditingTableId(table.id);
+    setTableName(table.tableName || '');
+    setCapacity(table.seatCount?.toString() || '8');
     setIsAddingTable(false);
   };
 
@@ -179,13 +195,30 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
             </div>
           )}
 
+          {editingTableId && (
+            <div className="bg-white p-4 rounded-xl border border-sage shadow-sm mb-6 flex items-end space-x-3 animate-in fade-in">
+              <div>
+                <label className="block text-xs font-medium text-mid-gray mb-1">Edit Table Name</label>
+                <input type="text" value={tableName} onChange={e => setTableName(e.target.value)} className="w-40 p-2 border border-light-gray rounded text-sm focus:border-sage focus:outline-none" autoFocus />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-mid-gray mb-1">Capacity</label>
+                <input type="number" value={capacity} onChange={e => setCapacity(e.target.value)} className="w-20 p-2 border border-light-gray rounded text-sm focus:border-sage focus:outline-none" min="1" max="20" />
+              </div>
+              <div className="flex space-x-2">
+                <button onClick={() => setEditingTableId(null)} className="p-2 text-mid-gray hover:bg-light-gray rounded"><X className="w-4 h-4" /></button>
+                <button onClick={handleUpdateTable} disabled={!tableName} className="p-2 bg-sage text-white rounded hover:bg-dark-sage disabled:opacity-50"><Check className="w-4 h-4" /></button>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {tables.map(table => (
               <TableNode 
                 key={table.id} 
                 table={table} 
                 assignedGuests={activeGuests.filter(g => g.tableId === table.id)}
-                onEdit={() => {/* Simplified for MVP */}}
+                onEdit={() => startEditTable(table)}
                 onDelete={() => onDeleteTable(table.id)}
               />
             ))}

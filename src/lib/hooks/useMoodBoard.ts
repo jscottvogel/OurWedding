@@ -36,9 +36,10 @@ export function useMoodBoard() {
         if (!currentBoard) {
           const { data: newBoard } = await client.models.MoodBoard.create({
             weddingId,
-            title: 'Our Mood Board'
+            title: 'Our Mood Board',
+            shareToken: null
           });
-          currentBoard = newBoard as Schema['MoodBoard']['type'];
+          currentBoard = newBoard as any;
         }
         
         if (currentBoard) {

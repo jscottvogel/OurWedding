@@ -2,8 +2,11 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Sparkles, X, Send, User, Loader2 } from 'lucide-react';
-import { askIvy } from '@/lib/actions/ai';
 import { useWedding } from '@/lib/hooks/useWedding';
+import { generateClient } from 'aws-amplify/data';
+import type { Schema } from '../../../../amplify/data/resource';
+
+const client = generateClient<Schema>();
 
 interface Message {
   id: string;
@@ -41,13 +44,16 @@ export default function IvyChat() {
     setIsTyping(true);
 
     try {
-      // In a real app, we'd pass the full conversation history and wedding context
-      const response = await askIvy(userMsg.content, wedding);
+      // Pass the full conversation history and wedding context
+      const response = await client.mutations.askIvy({
+        message: userMsg.content,
+        weddingContext: JSON.stringify(wedding)
+      });
       
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: response
+        content: response.data || 'Sorry, I got an empty response.'
       }]);
     } catch (error) {
       setMessages(prev => [...prev, {
