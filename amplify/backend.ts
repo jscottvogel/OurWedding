@@ -23,7 +23,10 @@ const backend = defineBackend({
 backend.askIvy.resources.lambda.addToRolePolicy(
   new iam.PolicyStatement({
     actions: ['bedrock:InvokeModel'],
-    resources: ['arn:aws:bedrock:*::foundation-model/us.anthropic.claude-haiku-4-5-20251001-v1:0'],
+    resources: [
+      'arn:aws:bedrock:*::foundation-model/*',
+      'arn:aws:bedrock:*:*:inference-profile/*'
+    ],
   })
 );
 
