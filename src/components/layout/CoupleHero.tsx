@@ -10,6 +10,7 @@ export default function CoupleHero() {
   const [isEditing, setIsEditing] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
+  const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
   const [editData, setEditData] = useState({
     coupleName1: '',
     coupleName2: '',
@@ -41,6 +42,18 @@ export default function CoupleHero() {
     if (!wedding) return;
     setIsUpdating(true);
     try {
+      let updatedHeroImageKey = wedding.heroImageKey;
+
+      if (heroImageFile) {
+        const { uploadData } = await import('aws-amplify/storage');
+        const key = `assets/hero-${Date.now()}-${heroImageFile.name}`;
+        await uploadData({
+          path: key,
+          data: heroImageFile
+        });
+        updatedHeroImageKey = key;
+      }
+
       const { generateClient } = await import('aws-amplify/data');
       const client = generateClient({ authMode: 'userPool' });
       // @ts-ignore
@@ -49,9 +62,11 @@ export default function CoupleHero() {
         coupleName1: editData.coupleName1,
         coupleName2: editData.coupleName2,
         weddingDate: editData.weddingDate,
-        venueName: editData.venueName || null
+        venueName: editData.venueName || null,
+        heroImageKey: updatedHeroImageKey
       });
       setIsEditing(false);
+      setHeroImageFile(null);
     } catch (err) {
       console.error('Failed to update wedding details', err);
       alert('Failed to update. Check console.');
@@ -169,6 +184,17 @@ export default function CoupleHero() {
                   placeholder="e.g. The Grand Estate"
                   className="w-full border border-light-gray rounded px-3 py-2 text-sm"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Dashboard Hero Image (Optional)</label>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  onChange={(e) => setHeroImageFile(e.target.files?.[0] || null)}
+                  className="w-full border border-light-gray rounded px-3 py-2 text-sm"
+                />
+                <p className="text-xs text-mid-gray mt-1">Upload a new cover photo to replace the current one.</p>
               </div>
             </div>
 
