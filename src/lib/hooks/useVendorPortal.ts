@@ -8,7 +8,7 @@ import { useAuth } from './useAuth';
 const client = generateClient<Schema>();
 
 export function useVendorPortal() {
-  const { user, loading: authLoading } = useAuth();
+  const { vendorId, loading: authLoading } = useAuth();
   
   const [vendor, setVendor] = useState<Schema['Vendor']['type'] | null>(null);
   const [wedding, setWedding] = useState<Schema['Wedding']['type'] | null>(null);
@@ -19,41 +19,44 @@ export function useVendorPortal() {
   useEffect(() => {
     if (authLoading) return;
     
-    // In a real implementation, the vendor's email from Cognito would link to the Vendor record
-    // For MVP, we fetch the first vendor record the user has access to
     const fetchPortalData = async () => {
       try {
-        // Find the vendor profile for the logged in user
-        const vendorResult = await client.models.Vendor.list({
-          // filter: { email: { eq: user?.email } }
-        });
-        
-        const myVendor = vendorResult.data[0];
+        if (!vendorId) {
+          setLoading(false);
+          return;
+        }
+
+        // Fetch the specific vendor using vendorId from the session
+        const vendorResult = await client.models.Vendor.get({ id: vendorId });
+        const myVendor = vendorResult.data;
         setVendor(myVendor || null);
 
         if (myVendor && myVendor.weddingId) {
           // Get the wedding details
-          const weddingResult = await client.models.Wedding.list({
-            filter: { id: { eq: myVendor.weddingId } }
-          });
-          setWedding(weddingResult.data[0] || null);
+          const weddingResult = await client.models.Wedding.get({ id: myVendor.weddingId });
+          setWedding(weddingResult.data || null);
           
-          // Get tasks assigned to this vendor
+          // Get tasks assigned specifically to this vendor's company
           const taskSub = client.models.ChecklistItem.observeQuery({
             filter: { 
               weddingId: { eq: myVendor.weddingId },
-              // In real app, filter by assignedTo: myVendor.companyName
             }
           }).subscribe({
-            next: ({ items }) => setTasks(items),
+            next: ({ items }) => {
+              // Filter locally if necessary, or just show all vendor tasks
+              // since assignedTo is a string we might just show ones matching company name
+              const myTasks = items.filter(t => t.assignedTo?.includes(myVendor.companyName || ''));
+              setTasks(myTasks);
+            },
           });
           
-          // Get run sheet items
+          // Get run sheet items assigned to this vendorId
           const runSheetSub = client.models.RunSheetItem.observeQuery({
             filter: { weddingId: { eq: myVendor.weddingId } }
           }).subscribe({
             next: ({ items }) => {
-              setRunSheetItems(items.sort((a, b) => (a.eventTime || '').localeCompare(b.eventTime || '')));
+              const myRunsheet = items.filter(t => t.assignedVendorIds?.includes(myVendor.id));
+              setRunSheetItems(myRunsheet.sort((a, b) => (a.eventTime || '').localeCompare(b.eventTime || '')));
             }
           });
           
@@ -73,7 +76,7 @@ export function useVendorPortal() {
     };
     
     fetchPortalData();
-  }, [user, authLoading]);
+  }, [vendorId, authLoading]);
 
   return { vendor, wedding, tasks, runSheetItems, loading };
 }

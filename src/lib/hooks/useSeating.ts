@@ -10,7 +10,7 @@ const client = generateClient<Schema>();
 export function useSeating() {
   const { weddingId, loading: authLoading } = useAuth();
   
-  const [tables, setTables] = useState<Schema['Table']['type'][]>([]);
+  const [tables, setTables] = useState<Schema['SeatingTable']['type'][]>([]);
   const [guests, setGuests] = useState<Schema['Guest']['type'][]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -21,7 +21,7 @@ export function useSeating() {
       return;
     }
 
-    const subTables = client.models.Table.observeQuery({
+    const subTables = client.models.SeatingTable.observeQuery({
       filter: { weddingId: { eq: weddingId } }
     }).subscribe({
       next: ({ items }) => {
@@ -46,23 +46,23 @@ export function useSeating() {
     };
   }, [weddingId, authLoading]);
 
-  const addTable = async (table: Omit<Schema['Table']['type'], 'id' | 'createdAt' | 'updatedAt' | 'weddingId'>) => {
+  const addTable = async (table: Omit<Schema['SeatingTable']['type'], 'id' | 'createdAt' | 'updatedAt' | 'weddingId'>) => {
     if (!weddingId) return;
-    return await client.models.Table.create({
+    return await client.models.SeatingTable.create({
       ...table,
       weddingId
     });
   };
 
-  const updateTable = async (id: string, updates: Partial<Schema['Table']['type']>) => {
-    return await client.models.Table.update({
+  const updateTable = async (id: string, updates: Partial<Schema['SeatingTable']['type']>) => {
+    return await client.models.SeatingTable.update({
       id,
       ...updates
     });
   };
 
   const deleteTable = async (id: string) => {
-    await client.models.Table.delete({ id });
+    await client.models.SeatingTable.delete({ id });
   };
   
   const assignGuestToTable = async (guestId: string, tableId: string | null) => {

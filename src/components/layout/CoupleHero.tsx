@@ -51,40 +51,18 @@ export default function CoupleHero() {
     }
   };
 
-  const initializeWedding = async () => {
-    const { generateClient } = await import('aws-amplify/data');
-    // @ts-ignore - dynamic import schema typing workaround
-    const client = generateClient({ authMode: 'userPool' });
-    
-    try {
-      await client.models.Wedding.create({
-        slug: 'test-wedding-' + Math.floor(Math.random() * 1000),
-        coupleName1: 'Alex',
-        coupleName2: 'Sam',
-        weddingDate: new Date(new Date().setMonth(new Date().getMonth() + 6)).toISOString().split('T')[0],
-        venueName: 'The Grand Estate',
-        budgetTotal: 25000,
-        isActive: true
-      });
-      alert('Test wedding created successfully!');
-    } catch (e) {
-      console.error(e);
-      alert('Failed to create wedding. Check console.');
-    }
-  };
-
   if (loading) return <div className="h-64 bg-light-sage animate-pulse" />;
 
   if (!wedding) {
     return (
       <div className="h-64 bg-gradient-to-r from-sage to-ivory flex flex-col items-center justify-center">
         <h2 className="text-2xl font-display mb-4">No Wedding Configured</h2>
-        <button 
-          onClick={initializeWedding}
+        <a 
+          href="/onboarding"
           className="bg-charcoal text-white px-6 py-2 rounded-lg font-medium hover:bg-black transition-colors"
         >
-          Initialize Test Wedding
-        </button>
+          Set Up Your Wedding
+        </a>
       </div>
     );
   }

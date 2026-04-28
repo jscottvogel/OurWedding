@@ -8,14 +8,15 @@ import { useAuth } from './useAuth';
 
 const client = generateClient<Schema>();
 
-export type MoodBoardItem = Schema['MoodPin']['type'] & {
+export type MoodPinItem = Schema['MoodPin']['type'] & {
   url?: string;
 };
 
 export function useMoodBoard() {
   const { weddingId, loading: authLoading } = useAuth();
   
-  const [items, setItems] = useState<MoodBoardItem[]>([]);
+  const [boardId, setBoardId] = useState<string | null>(null);
+  const [items, setItems] = useState<MoodPinItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,8 +26,38 @@ export function useMoodBoard() {
       return;
     }
 
-    const sub = client.models.MoodBoardItem.observeQuery({
-      filter: { weddingId: { eq: weddingId } }
+    const initBoard = async () => {
+      try {
+        const { data: boards } = await client.models.MoodBoard.list({
+          filter: { weddingId: { eq: weddingId } }
+        });
+        let currentBoard = boards[0];
+        
+        if (!currentBoard) {
+          const { data: newBoard } = await client.models.MoodBoard.create({
+            weddingId,
+            title: 'Our Mood Board'
+          });
+          currentBoard = newBoard as Schema['MoodBoard']['type'];
+        }
+        
+        if (currentBoard) {
+          setBoardId(currentBoard.id);
+        }
+      } catch (err) {
+        console.error('Failed to init mood board:', err);
+        setLoading(false);
+      }
+    };
+    
+    initBoard();
+  }, [weddingId, authLoading]);
+
+  useEffect(() => {
+    if (!boardId) return;
+
+    const sub = client.models.MoodPin.observeQuery({
+      filter: { moodBoardId: { eq: boardId } }
     }).subscribe({
       next: async ({ items }) => {
         // Resolve S3 presigned URLs for each item
@@ -54,19 +85,19 @@ export function useMoodBoard() {
     });
 
     return () => sub.unsubscribe();
-  }, [weddingId, authLoading]);
+  }, [boardId]);
 
-  const addItem = async (item: Omit<Schema['MoodBoardItem']['type'], 'id' | 'createdAt' | 'updatedAt' | 'weddingId'>) => {
-    if (!weddingId) return;
-    await client.models.MoodBoardItem.create({
+  const addItem = async (item: Omit<Schema['MoodPin']['type'], 'id' | 'createdAt' | 'updatedAt' | 'moodBoardId'>) => {
+    if (!boardId) return;
+    await client.models.MoodPin.create({
       ...item,
-      weddingId
+      moodBoardId: boardId
     });
   };
 
-  const deleteItem = async (item: MoodBoardItem) => {
+  const deleteItem = async (item: MoodPinItem) => {
     try {
-      await client.models.MoodBoardItem.delete({ id: item.id });
+      await client.models.MoodPin.delete({ id: item.id });
       
       // If it has an S3 file, delete that too
       if (item.imageKey) {
