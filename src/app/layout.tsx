@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Playfair_Display, DM_Sans } from "next/font/google";
 import "./globals.css";
+import ConfigureAmplifyClientSide from "@/lib/amplify/client";
+import { Toaster } from 'sonner';
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -25,6 +27,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${playfair.variable} ${dmSans.variable} font-body antialiased`}>
+        <ConfigureAmplifyClientSide />
+        <Toaster position="top-center" richColors />
         {children}
       </body>
     </html>
