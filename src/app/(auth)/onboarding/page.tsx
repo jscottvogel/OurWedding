@@ -21,6 +21,8 @@ export default function OnboardingPage() {
     budgetTotal: ''
   });
 
+  const [heroImageFile, setHeroImageFile] = useState<File | null>(null);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -33,6 +35,17 @@ export default function OnboardingPage() {
 
     setIsLoading(true);
     try {
+      let heroImageKey;
+      if (heroImageFile) {
+        const { uploadData } = await import('aws-amplify/storage');
+        const key = `assets/hero-${Date.now()}-${heroImageFile.name}`;
+        await uploadData({
+          path: key,
+          data: heroImageFile
+        }).result;
+        heroImageKey = key;
+      }
+
       // Create the Wedding record
       const { data: newWedding, errors } = await client.models.Wedding.create({
         slug: `wedding-${Date.now()}`,
@@ -41,6 +54,7 @@ export default function OnboardingPage() {
         weddingDate: formData.weddingDate || new Date().toISOString().split('T')[0],
         venueName: formData.venueName || undefined,
         budgetTotal: formData.budgetTotal ? parseFloat(formData.budgetTotal) : undefined,
+        heroImageKey: heroImageKey,
         isActive: true
       });
 
@@ -104,7 +118,12 @@ export default function OnboardingPage() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-1">Hero Image</label>
-              <input type="file" className="w-full border p-2 rounded" accept="image/*" />
+              <input 
+                type="file" 
+                onChange={(e) => setHeroImageFile(e.target.files?.[0] || null)} 
+                className="w-full border p-2 rounded" 
+                accept="image/*" 
+              />
             </div>
           </div>
         )}

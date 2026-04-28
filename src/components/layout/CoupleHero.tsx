@@ -9,6 +9,7 @@ export default function CoupleHero() {
   const { wedding, loading } = useWedding();
   const [isEditing, setIsEditing] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [heroImageUrl, setHeroImageUrl] = useState<string | null>(null);
   const [editData, setEditData] = useState({
     coupleName1: '',
     coupleName2: '',
@@ -25,6 +26,14 @@ export default function CoupleHero() {
         weddingDate: wedding.weddingDate || '',
         venueName: wedding.venueName || ''
       });
+      
+      if (wedding.heroImageKey) {
+        import('aws-amplify/storage').then(({ getUrl }) => {
+          getUrl({ path: wedding.heroImageKey! })
+            .then((res) => setHeroImageUrl(res.url.toString()))
+            .catch((err) => console.error('Failed to load hero image', err));
+        });
+      }
     }
   }, [wedding]);
 
@@ -71,10 +80,10 @@ export default function CoupleHero() {
 
   return (
     <div className="relative h-64 w-full bg-dark-sage overflow-hidden group">
-      {wedding.heroImageKey ? (
+      {heroImageUrl ? (
         <div 
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${wedding.heroImageKey})` }} // In reality, this would be a presigned URL
+          style={{ backgroundImage: `url(${heroImageUrl})` }} 
         />
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-sage via-ivory to-light-terra opacity-80" />

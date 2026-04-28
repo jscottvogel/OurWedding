@@ -9,6 +9,7 @@ export const storage = defineStorage({
     ],
     'assets/*': [
       allow.groups(['admin', 'planner']).to(['read', 'write', 'delete']),
+      allow.authenticated.to(['read', 'write', 'delete']),
       allow.groups(['vendor']).to(['read'])
     ],
     'exports/*': [
