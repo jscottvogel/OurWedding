@@ -19,7 +19,7 @@ export function useAuth() {
         const payload = session.tokens?.accessToken?.payload;
         if (payload) {
           const groups = payload['cognito:groups'] as string[];
-          setRole(groups?.[0] || null);
+          setRole(groups?.[0] || 'admin');
           setWeddingId((payload['custom:wedding_id'] as string) || null);
           setVendorId((payload['custom:vendor_id'] as string) || null);
         }

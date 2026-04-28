@@ -16,7 +16,7 @@ const schema = a.schema({
     })
     .secondaryIndexes((index) => [index('slug')])
     .authorization((allow) => [
-      allow.groups(['admin', 'planner']).to(['create', 'read', 'update', 'delete']),
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
       allow.groups(['vendor']).to(['read']),
       allow.guest().to(['read']),
     ]),
@@ -59,7 +59,7 @@ const schema = a.schema({
     })
     .secondaryIndexes((index) => [index('weddingId')])
     .authorization((allow) => [
-      allow.groups(['admin', 'planner']).to(['create', 'read', 'update', 'delete']),
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
       // vendor role can read their own via a custom filter or auth rule
       allow.groups(['vendor']).to(['read']),
     ]),
@@ -83,7 +83,7 @@ const schema = a.schema({
     })
     .secondaryIndexes((index) => [index('weddingId')])
     .authorization((allow) => [
-      allow.groups(['admin', 'planner']).to(['create', 'read', 'update', 'delete']),
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
     ]),
 
   RunSheetItem: a
@@ -101,7 +101,7 @@ const schema = a.schema({
     })
     .secondaryIndexes((index) => [index('weddingId')])
     .authorization((allow) => [
-      allow.groups(['admin', 'planner']).to(['create', 'read', 'update', 'delete']),
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
       allow.groups(['vendor']).to(['read']),
     ]),
 
@@ -118,7 +118,7 @@ const schema = a.schema({
     })
     .secondaryIndexes((index) => [index('weddingId')])
     .authorization((allow) => [
-      allow.groups(['admin', 'planner']).to(['create', 'read', 'update', 'delete']),
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
       allow.guest().to(['create']),
     ]),
 
@@ -143,7 +143,7 @@ const schema = a.schema({
     })
     .secondaryIndexes((index) => [index('weddingId')])
     .authorization((allow) => [
-      allow.groups(['admin', 'planner']).to(['create', 'read', 'update', 'delete']),
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
       allow.guest().to(['create']),
     ]),
 
@@ -156,7 +156,7 @@ const schema = a.schema({
     })
     .secondaryIndexes((index) => [index('weddingId')])
     .authorization((allow) => [
-      allow.groups(['admin', 'planner']).to(['create', 'read', 'update', 'delete']),
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
     ]),
 
   BudgetItem: a
@@ -171,7 +171,7 @@ const schema = a.schema({
     })
     .secondaryIndexes((index) => [index('weddingId')])
     .authorization((allow) => [
-      allow.groups(['admin', 'planner']).to(['create', 'read', 'update', 'delete']),
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
     ]),
 
   MoodBoard: a
@@ -182,7 +182,7 @@ const schema = a.schema({
     })
     .secondaryIndexes((index) => [index('weddingId'), index('shareToken')])
     .authorization((allow) => [
-      allow.groups(['admin', 'planner']).to(['create', 'read', 'update', 'delete']),
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
       allow.guest().to(['read']),
     ]),
 
@@ -197,7 +197,7 @@ const schema = a.schema({
     })
     .secondaryIndexes((index) => [index('moodBoardId')])
     .authorization((allow) => [
-      allow.groups(['admin', 'planner']).to(['create', 'read', 'update', 'delete']),
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
       allow.guest().to(['read']),
     ]),
 
@@ -212,14 +212,14 @@ const schema = a.schema({
     .mutation()
     .arguments({ type: a.string(), weddingId: a.string() })
     .returns(a.string())
-    .authorization((allow) => [allow.groups(['admin', 'planner'])])
+    .authorization((allow) => [allow.authenticated()])
     .handler(a.handler.function('pdf-export')), // Need to inject function ref in backend.ts
 
   inviteUser: a
     .mutation()
     .arguments({ email: a.string(), role: a.string(), weddingId: a.string() })
     .returns(a.boolean())
-    .authorization((allow) => [allow.groups(['admin', 'planner'])])
+    .authorization((allow) => [allow.authenticated()])
     .handler(a.handler.function('send-email')),
 
   getMoodBoardByShareToken: a

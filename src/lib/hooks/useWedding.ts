@@ -15,14 +15,8 @@ export function useWedding() {
   useEffect(() => {
     if (authLoading) return;
 
-    if (!weddingId) {
-      setLoading(false);
-      return;
-    }
-
-    const sub = client.models.Wedding.observeQuery({
-      filter: { id: { eq: weddingId } }
-    }).subscribe({
+    // For MVP Testing: we fetch the first available wedding since custom Cognito attributes aren't synced
+    const sub = client.models.Wedding.observeQuery().subscribe({
       next: ({ items }) => {
         setWedding(items[0] || null);
         setLoading(false);
@@ -34,7 +28,7 @@ export function useWedding() {
     });
 
     return () => sub.unsubscribe();
-  }, [weddingId, authLoading]);
+  }, [authLoading]);
 
   return { wedding, loading };
 }

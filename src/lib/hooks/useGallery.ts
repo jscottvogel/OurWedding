@@ -8,9 +8,9 @@ import { useAuth } from './useAuth';
 
 const client = generateClient<Schema>();
 
-export interface GalleryPhoto extends Schema['GalleryUpload']['type'] {
+export type GalleryPhoto = Schema['GalleryUpload']['type'] & {
   url?: string;
-}
+};
 
 export function useGallery(publicWeddingId?: string) {
   const { weddingId: authWeddingId, loading: authLoading } = useAuth();

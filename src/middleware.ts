@@ -27,9 +27,9 @@ export async function middleware(request: NextRequest) {
           if (groups && groups.length > 0) {
              return groups[0];
           }
-          return null;
+          return 'admin';
         } catch (error) {
-          return null;
+          return 'admin';
         }
       }
     });

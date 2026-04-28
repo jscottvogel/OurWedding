@@ -8,9 +8,9 @@ import { useAuth } from './useAuth';
 
 const client = generateClient<Schema>();
 
-export interface MoodBoardItem extends Schema['MoodBoardItem']['type'] {
+export type MoodBoardItem = Schema['MoodPin']['type'] & {
   url?: string;
-}
+};
 
 export function useMoodBoard() {
   const { weddingId, loading: authLoading } = useAuth();
