@@ -4,7 +4,7 @@ import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedroc
 const bedrockClient = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' });
 
 export const handler: Schema['askIvy']['functionHandler'] = async (event, context) => {
-  const { message, weddingContext } = event.arguments;
+  const { message, weddingContext, conversationHistory } = event.arguments;
 
   if (!message) {
     throw new Error('Message is required');
@@ -62,30 +62,88 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
     `;
   }
 
+  let formattedMessages = [];
+  try {
+    if (conversationHistory) {
+      const parsedHistory = JSON.parse(conversationHistory);
+      // Filter out the initial greeting so it doesn't duplicate system prompt context
+      formattedMessages = parsedHistory
+        .filter((msg: any) => msg.id !== '1' && msg.content)
+        .map((msg: any) => ({
+          role: msg.role === 'assistant' ? 'assistant' : 'user',
+          content: msg.content
+        }));
+    }
+  } catch (e) {
+    console.error('Failed to parse history:', e);
+  }
+
+  // If no history or last message isn't the current message, append current message
+  if (formattedMessages.length === 0 || formattedMessages[formattedMessages.length - 1].content !== message) {
+    formattedMessages.push({ role: 'user', content: message });
+  }
+
+  const requestBody: any = {
+    anthropic_version: 'bedrock-2023-05-31',
+    max_tokens: isChecklistGeneration ? 4000 : 500,
+    system: systemPrompt,
+    messages: formattedMessages,
+  };
+
+  // Add tools if it's a standard chat
+  if (!isChecklistGeneration) {
+    requestBody.tools = [
+      {
+        name: "add_task",
+        description: "Add a new task to the user's wedding checklist.",
+        input_schema: {
+          type: "object",
+          properties: {
+            title: { type: "string", description: "The name of the task to add." },
+            category: { type: "string", description: "The timeline phase. Must be one of: 'TWELVE_MONTHS', 'SIX_MONTHS', 'THREE_MONTHS', 'ONE_MONTH', 'TWO_WEEKS', 'ONE_WEEK', 'DAY_BEFORE', 'DAY_OF'" }
+          },
+          required: ["title", "category"]
+        }
+      },
+      {
+        name: "add_vendor",
+        description: "Add a new vendor to the user's vendor list.",
+        input_schema: {
+          type: "object",
+          properties: {
+            companyName: { type: "string", description: "The name of the vendor company or person." },
+            category: { type: "string", description: "The vendor category (e.g. Photography, Catering, Florist)." }
+          },
+          required: ["companyName", "category"]
+        }
+      }
+    ];
+  }
+
   try {
     const command = new InvokeModelCommand({
       modelId: 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
       contentType: 'application/json',
       accept: 'application/json',
-      body: JSON.stringify({
-        anthropic_version: 'bedrock-2023-05-31',
-        max_tokens: isChecklistGeneration ? 4000 : 500,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: message
-          }
-        ],
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     const response = await bedrockClient.send(command);
     const resultString = new TextDecoder().decode(response.body);
     const result = JSON.parse(resultString);
 
+    if (result.stop_reason === 'tool_use') {
+      const toolUseBlock = result.content.find((block: any) => block.type === 'tool_use');
+      if (toolUseBlock) {
+        return `[TOOL_CALL] ${JSON.stringify({
+          name: toolUseBlock.name,
+          input: toolUseBlock.input
+        })}`;
+      }
+    }
+
     if (result.content && result.content.length > 0) {
-      let responseText = result.content[0].text;
+      let responseText = result.content.find((block: any) => block.type === 'text')?.text || '';
       
       // If we asked for JSON, cleanly strip any accidental markdown blocks Claude might return
       if (isChecklistGeneration) {

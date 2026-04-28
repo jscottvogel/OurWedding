@@ -27,8 +27,8 @@ export default function IvyChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { wedding } = useWedding();
-  const { tasks } = useChecklist();
-  const { vendors } = useVendors();
+  const { tasks, addTask } = useChecklist();
+  const { vendors, addVendor } = useVendors();
   const { items: runsheet } = useRunSheet();
 
   const scrollToBottom = () => {
@@ -62,7 +62,8 @@ export default function IvyChat() {
       // Pass the full conversation history and wedding context
       const response = await client.mutations.askIvy({
         message: userMsg.content,
-        weddingContext: JSON.stringify(fullContext)
+        weddingContext: JSON.stringify(fullContext),
+        conversationHistory: JSON.stringify(messages)
       });
       
       console.log("IVY RAW RESPONSE:", response);
@@ -71,11 +72,46 @@ export default function IvyChat() {
         throw new Error(response.errors[0].message);
       }
       
-      setMessages(prev => [...prev, {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: response.data || 'Sorry, I got an empty response.'
-      }]);
+      const responseData = response.data || '';
+
+      if (responseData.startsWith('[TOOL_CALL]')) {
+        const toolJson = responseData.replace('[TOOL_CALL] ', '');
+        const toolCall = JSON.parse(toolJson);
+        
+        let successMessage = "I've handled that for you!";
+        if (toolCall.name === 'add_task') {
+          await addTask({
+            title: toolCall.input.title,
+            category: toolCall.input.category as any,
+            isCompleted: false,
+            isTemplate: false,
+            sortOrder: 0
+          });
+          successMessage = `I've successfully added "${toolCall.input.title}" to your checklist under ${toolCall.input.category}!`;
+        } else if (toolCall.name === 'add_vendor') {
+          await addVendor({
+            companyName: toolCall.input.companyName,
+            category: toolCall.input.category,
+            contractStatus: 'NOT_STARTED',
+            depositPaid: false,
+            balancePaid: false,
+            portalAccess: false
+          });
+          successMessage = `I've added "${toolCall.input.companyName}" to your vendors list under ${toolCall.input.category}!`;
+        }
+
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: successMessage
+        }]);
+      } else {
+        setMessages(prev => [...prev, {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: responseData || 'Sorry, I got an empty response.'
+        }]);
+      }
     } catch (error: any) {
       console.error("Ivy Error:", error);
       setMessages(prev => [...prev, {
