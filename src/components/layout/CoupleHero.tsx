@@ -94,10 +94,10 @@ export default function CoupleHero() {
   const daysToGo = differenceInDays(new Date(wedding.weddingDate), new Date());
 
   return (
-    <div className="relative h-64 w-full bg-dark-sage overflow-hidden group">
+    <div className="relative h-80 md:h-96 w-full bg-dark-sage overflow-hidden group">
       {heroImageUrl ? (
         <div 
-          className="absolute inset-0 bg-cover bg-center"
+          className="absolute inset-0 bg-cover bg-[center_25%]"
           style={{ backgroundImage: `url(${heroImageUrl})` }} 
         />
       ) : (
