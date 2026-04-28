@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { useChecklist } from '@/lib/hooks/useChecklist';
 import ChecklistCategory from '@/components/features/checklist/ChecklistCategory';
 import type { Schema } from '../../../amplify/data/resource';
+import { useWedding } from '@/lib/hooks/useWedding';
+import { generateDefaultChecklist } from '@/lib/utils/defaultChecklist';
+import { Sparkles } from 'lucide-react';
 
 const CATEGORY_LABELS: Record<string, string> = {
   TWELVE_MONTHS: '12+ Months Before',
@@ -22,8 +25,26 @@ const CATEGORY_ORDER = [
 ];
 
 export default function ChecklistPage() {
+  const { wedding } = useWedding();
   const { tasks, loading, addTask, updateTask, deleteTask } = useChecklist();
   const [hideCompleted, setHideCompleted] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerateIvyPlan = async () => {
+    if (!wedding) return;
+    setIsGenerating(true);
+    try {
+      const defaultTasks = generateDefaultChecklist(wedding.id, wedding.weddingDate);
+      await Promise.all(defaultTasks.map(task => {
+        const { weddingId, ...taskData } = task;
+        return addTask(taskData as any);
+      }));
+    } catch (err) {
+      console.error('Failed to generate plan:', err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   if (loading) {
     return <div className="p-8 animate-pulse text-sage font-medium text-lg">Loading checklist...</div>;
@@ -73,26 +94,43 @@ export default function ChecklistPage() {
         <div className="text-4xl font-display text-gold">{progressPct}%</div>
       </div>
 
-      <div className="space-y-6">
-        {CATEGORY_ORDER.map(catKey => {
-          const categoryTasks = filteredTasks.filter(t => t.category === catKey);
-          // Always show category even if empty unless hiding completed and no incomplete tasks remain
-          if (hideCompleted && categoryTasks.length === 0) return null;
-          
-          return (
-            <ChecklistCategory 
-              key={catKey}
-              category={catKey as Schema['ChecklistItem']['type']['category']}
-              title={CATEGORY_LABELS[catKey]}
-              tasks={categoryTasks}
-              onToggleTask={(id, isCompleted) => updateTask(id, { isCompleted, completedAt: isCompleted ? new Date().toISOString() : null })}
-              onDeleteTask={deleteTask}
-              onAddTask={addTask}
-              onReorderTasks={handleReorder}
-            />
-          );
-        })}
-      </div>
+      {totalTasks === 0 ? (
+        <div className="text-center py-16 bg-white rounded-xl border border-light-gray shadow-sm">
+          <div className="w-16 h-16 bg-sage/10 text-sage rounded-full flex items-center justify-center mx-auto mb-4">
+            <Sparkles className="w-8 h-8" />
+          </div>
+          <h2 className="text-2xl font-display text-charcoal mb-2">Your Checklist is Empty</h2>
+          <p className="text-mid-gray mb-8 max-w-md mx-auto">Let Ivy instantly build a personalized, chronological timeline tailored perfectly to your wedding date.</p>
+          <button 
+            onClick={handleGenerateIvyPlan}
+            disabled={isGenerating || !wedding}
+            className="bg-sage text-white px-8 py-3 rounded-full font-medium hover:bg-dark-sage transition-all shadow-md hover:shadow-lg disabled:opacity-50 flex items-center justify-center mx-auto"
+          >
+            {isGenerating ? 'Generating Timeline...' : 'Auto-Generate Ivy Plan'}
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {CATEGORY_ORDER.map(catKey => {
+            const categoryTasks = filteredTasks.filter(t => t.category === catKey);
+            // Always show category even if empty unless hiding completed and no incomplete tasks remain
+            if (hideCompleted && categoryTasks.length === 0) return null;
+            
+            return (
+              <ChecklistCategory 
+                key={catKey}
+                category={catKey as Schema['ChecklistItem']['type']['category']}
+                title={CATEGORY_LABELS[catKey]}
+                tasks={categoryTasks}
+                onToggleTask={(id, isCompleted) => updateTask(id, { isCompleted, completedAt: isCompleted ? new Date().toISOString() : null })}
+                onDeleteTask={deleteTask}
+                onAddTask={addTask}
+                onReorderTasks={handleReorder}
+              />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
