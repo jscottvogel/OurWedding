@@ -26,3 +26,15 @@ backend.askIvy.resources.lambda.addToRolePolicy(
     resources: ['arn:aws:bedrock:*::foundation-model/anthropic.claude-3-haiku-20240307-v1:0'],
   })
 );
+
+backend.sendEmail.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    actions: [
+      'cognito-idp:AdminCreateUser',
+      'cognito-idp:AdminAddUserToGroup'
+    ],
+    resources: [backend.auth.resources.userPool.userPoolArn],
+  })
+);
+
+backend.sendEmail.addEnvironment('USER_POOL_ID', backend.auth.resources.userPool.userPoolId);
