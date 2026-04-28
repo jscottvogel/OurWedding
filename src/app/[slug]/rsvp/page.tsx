@@ -17,7 +17,8 @@ export default function GuestRSVPPage({ params }: { params: { slug: string } }) 
     const fetchWedding = async () => {
       try {
         const result = await client.models.Wedding.list({
-          filter: { slug: { eq: params.slug } }
+          filter: { slug: { eq: params.slug } },
+          authMode: 'apiKey'
         });
         setWedding(result.data[0] || null);
       } catch (err) {
