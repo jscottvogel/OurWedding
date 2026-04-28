@@ -20,7 +20,11 @@ export function useAuth() {
         if (payload) {
           const groups = payload['cognito:groups'] as string[];
           setRole(groups?.[0] || 'admin');
-          setWeddingId((payload['custom:wedding_id'] as string) || null);
+          
+          const cognitoWeddingId = payload['custom:wedding_id'] as string;
+          const localWeddingId = typeof window !== 'undefined' ? localStorage.getItem('weddingId') : null;
+          setWeddingId(cognitoWeddingId || localWeddingId || null);
+          
           setVendorId((payload['custom:vendor_id'] as string) || null);
         }
       } catch (err) {

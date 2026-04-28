@@ -55,12 +55,17 @@ export default function OnboardingPage() {
         },
       });
 
-      // Force a token refresh so the new custom attribute is available immediately on dashboard
+      // Save a local backup in case Cognito tokens are slow to update the attributes
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('weddingId', newWedding.id);
+      }
+
+      // Force a token refresh so the new custom attribute is available
       const { fetchAuthSession } = await import('aws-amplify/auth');
       await fetchAuthSession({ forceRefresh: true });
 
-      // Redirect to dashboard
-      router.push('/dashboard');
+      // Use a hard redirect to bypass Next.js client-side cache and force all hooks to remount
+      window.location.href = '/dashboard';
     } catch (err) {
       console.error(err);
       alert('Failed to save wedding. Please try again.');
