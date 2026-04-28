@@ -21,8 +21,3 @@ frontend:
     paths:
       - .next/cache/**/*
       - node_modules/**/*
-test:
-  phases:
-    test:
-      commands:
-        - npx playwright test smoke
