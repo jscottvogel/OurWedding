@@ -178,6 +178,53 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
           },
           required: ["id"]
         }
+      },
+      {
+        name: "add_runsheet_item",
+        description: "Add a new item to the wedding day run sheet (schedule).",
+        input_schema: {
+          type: "object",
+          properties: {
+            title: { type: "string", description: "Title or name of the event." },
+            eventTime: { type: "string", description: "Time of the event in HH:MM format (e.g. '14:00')." },
+            description: { type: "string", description: "Details about what happens." },
+            location: { type: "string", description: "Where the event takes place." },
+            durationMinutes: { type: "integer", description: "Expected duration in minutes." }
+          },
+          required: ["title", "eventTime"]
+        }
+      },
+      {
+        name: "update_runsheet_item",
+        description: "Update an existing run sheet item.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "The ID of the run sheet item to update." },
+            updates: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                eventTime: { type: "string" },
+                description: { type: "string" },
+                location: { type: "string" },
+                durationMinutes: { type: "integer" }
+              }
+            }
+          },
+          required: ["id", "updates"]
+        }
+      },
+      {
+        name: "delete_runsheet_item",
+        description: "Delete an existing run sheet item.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "The ID of the run sheet item to delete." }
+          },
+          required: ["id"]
+        }
       }
     ];
   }

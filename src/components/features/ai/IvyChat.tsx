@@ -29,7 +29,7 @@ export default function IvyChat() {
   const { wedding } = useWedding();
   const { tasks, addTask, updateTask, deleteTask } = useChecklist();
   const { vendors, addVendor, updateVendor, deleteVendor } = useVendors();
-  const { items: runsheet } = useRunSheet();
+  const { items: runsheet, addItem: addRunsheetItem, updateItem: updateRunsheetItem, deleteItem: deleteRunsheetItem } = useRunSheet();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -110,6 +110,22 @@ export default function IvyChat() {
         } else if (toolCall.name === 'delete_vendor') {
           await deleteVendor(toolCall.input.id);
           successMessage = "I've removed that vendor from your list!";
+        } else if (toolCall.name === 'add_runsheet_item') {
+          await addRunsheetItem({
+            title: toolCall.input.title,
+            eventTime: toolCall.input.eventTime,
+            description: toolCall.input.description,
+            location: toolCall.input.location,
+            durationMinutes: toolCall.input.durationMinutes,
+            sortOrder: 0
+          });
+          successMessage = `I've added "${toolCall.input.title}" to your run sheet at ${toolCall.input.eventTime}!`;
+        } else if (toolCall.name === 'update_runsheet_item') {
+          await updateRunsheetItem(toolCall.input.id, toolCall.input.updates);
+          successMessage = "I've updated that run sheet item!";
+        } else if (toolCall.name === 'delete_runsheet_item') {
+          await deleteRunsheetItem(toolCall.input.id);
+          successMessage = "I've removed that item from your run sheet!";
         }
 
         setMessages(prev => [...prev, {

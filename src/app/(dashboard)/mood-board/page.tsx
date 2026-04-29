@@ -26,7 +26,7 @@ export default function MoodBoardPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-3xl font-display text-sage mb-2">Mood Board</h1>
+        <h1 className="text-3xl font-display text-sage mb-2">Inspiration</h1>
         <p className="text-mid-gray">Gather inspiration and define the aesthetic for your wedding.</p>
       </div>
 

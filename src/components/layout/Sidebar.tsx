@@ -17,7 +17,7 @@ const navItems = [
   { href: '/budget', label: 'Budget', icon: DollarSign },
   { href: '/guests', label: 'Guests', icon: Users },
   { href: '/seating', label: 'Seating Chart', icon: Map },
-  { href: '/mood-board', label: 'Mood Board', icon: ImageIcon },
+  { href: '/mood-board', label: 'Inspiration', icon: ImageIcon },
   { href: '/gallery', label: 'Gallery', icon: ImageIcon },
   { href: '/qr-code', label: 'QR Code', icon: QrCode },
   { href: '/settings', label: 'Settings', icon: Settings },
