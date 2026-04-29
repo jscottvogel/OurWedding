@@ -162,9 +162,14 @@ export default function BudgetTable({ items, onAdd, onUpdate, onDelete }: Budget
               ) : (
                 <tr key={item.id} className="hover:bg-ivory/30 transition-colors group">
                   <td className="p-4">
-                    <span className="px-2 py-1 bg-light-gray rounded text-xs font-medium text-charcoal">
-                      {item.category}
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      <span className="px-2 py-1 bg-light-gray rounded text-xs font-medium text-charcoal">
+                        {item.category}
+                      </span>
+                      {(item as any).isVendorItem && (
+                        <span className="px-1.5 py-0.5 bg-sage/10 text-sage border border-sage/20 rounded text-[10px] uppercase tracking-wider">Vendor</span>
+                      )}
+                    </div>
                   </td>
                   <td className="p-4 text-charcoal">{item.description}</td>
                   <td className="p-4 text-right font-medium text-mid-gray">
@@ -174,10 +179,12 @@ export default function BudgetTable({ items, onAdd, onUpdate, onDelete }: Budget
                     ${(item.actualCost || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
                   <td className="p-4">
-                    <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => startEdit(item)} className="p-1.5 text-mid-gray hover:text-sage transition-colors"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => onDelete(item.id)} className="p-1.5 text-mid-gray hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                    </div>
+                    {!(item as any).isVendorItem && (
+                      <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => startEdit(item)} className="p-1.5 text-mid-gray hover:text-sage transition-colors"><Edit2 className="w-4 h-4" /></button>
+                        <button onClick={() => onDelete(item.id)} className="p-1.5 text-mid-gray hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               )

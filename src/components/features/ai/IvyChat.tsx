@@ -66,8 +66,6 @@ export default function IvyChat() {
         conversationHistory: JSON.stringify(messages)
       });
       
-      console.log("IVY RAW RESPONSE:", response);
-
       if (response.errors) {
         throw new Error(response.errors[0].message);
       }
@@ -111,9 +109,11 @@ export default function IvyChat() {
           await deleteVendor(toolCall.input.id);
           successMessage = "I've removed that vendor from your list!";
         } else if (toolCall.name === 'add_runsheet_item') {
+          let timeStr = toolCall.input.eventTime;
+          if (timeStr && timeStr.length === 5) timeStr += ':00';
           await addRunsheetItem({
             title: toolCall.input.title,
-            eventTime: toolCall.input.eventTime,
+            eventTime: timeStr,
             description: toolCall.input.description,
             location: toolCall.input.location,
             durationMinutes: toolCall.input.durationMinutes,
@@ -121,7 +121,9 @@ export default function IvyChat() {
           });
           successMessage = `I've added "${toolCall.input.title}" to your run sheet at ${toolCall.input.eventTime}!`;
         } else if (toolCall.name === 'update_runsheet_item') {
-          await updateRunsheetItem(toolCall.input.id, toolCall.input.updates);
+          const updates = { ...toolCall.input.updates };
+          if (updates.eventTime && updates.eventTime.length === 5) updates.eventTime += ':00';
+          await updateRunsheetItem(toolCall.input.id, updates);
           successMessage = "I've updated that run sheet item!";
         } else if (toolCall.name === 'delete_runsheet_item') {
           await deleteRunsheetItem(toolCall.input.id);

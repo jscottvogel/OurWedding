@@ -1,6 +1,7 @@
 'use client';
 
 import { useBudget } from '@/lib/hooks/useBudget';
+import { useVendors } from '@/lib/hooks/useVendors';
 import BudgetSummary from '@/components/features/budget/BudgetSummary';
 import BudgetTable from '@/components/features/budget/BudgetTable';
 import CategoryChart from '@/components/features/budget/CategoryChart';
@@ -10,7 +11,25 @@ import { useAuth } from '@/lib/hooks/useAuth';
 
 export default function BudgetPage() {
   const { items, loading, addItem, updateItem, deleteItem } = useBudget();
+  const { vendors, loading: vendorsLoading } = useVendors();
   const { weddingId } = useAuth();
+
+  const combinedItems = [
+    ...items,
+    ...vendors.filter(v => v.quotedAmount || v.depositAmount).map(v => {
+       const actual = (v.depositPaid ? (v.depositAmount || 0) : 0) + 
+                      (v.balancePaid ? ((v.quotedAmount || 0) - (v.depositAmount || 0)) : 0);
+       return {
+         ...v,
+         id: v.id,
+         category: v.category || 'Vendor',
+         description: v.companyName || 'Unknown Vendor',
+         estimatedCost: v.quotedAmount || 0,
+         actualCost: actual,
+         isVendorItem: true
+       } as any;
+    })
+  ];
 
   const handleExport = async () => {
     if (!weddingId) return;
@@ -27,7 +46,7 @@ export default function BudgetPage() {
     document.body.removeChild(link);
   };
 
-  if (loading) {
+  if (loading || vendorsLoading) {
     return <div className="p-8 animate-pulse text-sage font-medium text-lg">Loading budget...</div>;
   }
 
@@ -46,19 +65,19 @@ export default function BudgetPage() {
         </button>
       </div>
 
-      <BudgetSummary items={items} />
+      <BudgetSummary items={combinedItems} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <BudgetTable 
-            items={items}
+            items={combinedItems}
             onAdd={addItem}
             onUpdate={updateItem}
             onDelete={deleteItem}
           />
         </div>
         <div className="lg:col-span-1">
-          <CategoryChart items={items} />
+          <CategoryChart items={combinedItems} />
         </div>
       </div>
     </div>
