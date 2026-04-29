@@ -24,10 +24,6 @@ export function useRunSheet() {
     }).subscribe({
       next: ({ items }) => {
         setItems([...items].sort((a, b) => {
-          const sortA = a.sortOrder || 0;
-          const sortB = b.sortOrder || 0;
-          if (sortA !== sortB) return sortA - sortB;
-          
           if (!a.eventTime || !b.eventTime) return 0;
           const timeA = a.eventTime || '00:00';
           const timeB = b.eventTime || '00:00';
@@ -69,18 +65,44 @@ export function useRunSheet() {
 
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     
-    const updates = items.map((item, idx) => {
-      let newOrder = idx;
-      if (idx === currentIndex) newOrder = targetIndex;
-      else if (idx === targetIndex) newOrder = currentIndex;
-      
-      return { id: item.id, sortOrder: newOrder, currentOrder: item.sortOrder };
-    });
+    // Create a mutable copy of items to simulate the swap
+    const newItems = [...items].map(item => ({ ...item }));
+    
+    // Swap the elements
+    const temp = newItems[currentIndex];
+    newItems[currentIndex] = newItems[targetIndex];
+    newItems[targetIndex] = temp;
 
-    const promises = updates
-      .filter(u => u.sortOrder !== u.currentOrder)
-      .map(u => client.models.RunSheetItem.update({ id: u.id, sortOrder: u.sortOrder }));
+    // Helper to add minutes to an HH:mm string
+    const addMinutes = (timeStr: string, mins: number): string => {
+      if (!timeStr) return '00:00';
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      const date = new Date(2000, 0, 1, hours, minutes);
+      date.setMinutes(date.getMinutes() + mins);
+      return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    };
+
+    // Recalculate eventTimes top-down
+    let currentTime = newItems[0].eventTime || '00:00';
+    
+    const updates: { id: string, eventTime: string }[] = [];
+
+    for (let i = 0; i < newItems.length; i++) {
+      const item = newItems[i];
+      // Keep track of what we changed
+      if (item.eventTime !== currentTime) {
+        updates.push({ id: item.id, eventTime: currentTime });
+      }
       
+      // Update local copy so the cascade continues correctly
+      item.eventTime = currentTime;
+      
+      // Advance the time for the NEXT item
+      currentTime = addMinutes(currentTime, item.durationMinutes || 0);
+    }
+
+    // Push all updates to database
+    const promises = updates.map(u => client.models.RunSheetItem.update({ id: u.id, eventTime: u.eventTime }));
     await Promise.all(promises);
   };
 
