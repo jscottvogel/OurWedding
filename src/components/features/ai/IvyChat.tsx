@@ -29,7 +29,12 @@ export default function IvyChat() {
   const { wedding } = useWedding();
   const { tasks, addTask, updateTask, deleteTask } = useChecklist();
   const { vendors, addVendor, updateVendor, deleteVendor } = useVendors();
-  const { items: runsheet, addItem: addRunsheetItem, updateItem: updateRunsheetItem, deleteItem: deleteRunsheetItem } = useRunSheet();
+  const { blocks, insertNewBlock, updateItem: updateRunsheetItem, deleteItem: deleteRunsheetItem } = useRunSheet();
+  
+  const runsheet = blocks.flatMap(b => b.items);
+  const addRunsheetItem = async (item: any) => {
+    await insertNewBlock(blocks.length, item);
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -56,7 +61,7 @@ export default function IvyChat() {
         ...wedding,
         checklist: tasks.map(t => ({ id: t.id, title: t.title, status: t.isCompleted ? 'done' : 'pending', category: t.category })),
         vendors: vendors.map(v => ({ id: v.id, name: v.companyName, category: v.category, status: v.contractStatus })),
-        runsheet: runsheet.map(r => ({ id: r.id, title: r.title, time: r.eventTime }))
+        runsheet: runsheet.map((r: any) => ({ id: r.id, title: r.title, time: r.eventTime }))
       };
 
       // Pass the full conversation history and wedding context

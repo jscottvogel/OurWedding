@@ -7,9 +7,20 @@ import { useAuth } from './useAuth';
 
 const client = generateClient<Schema>();
 
+export interface RunSheetBlock {
+  blockIndex: number;
+  startTime: string;
+  maxDuration: number;
+  items: Schema['RunSheetItem']['type'][];
+}
+
 export function useRunSheet() {
   const { weddingId, loading: authLoading } = useAuth();
-  const [items, setItems] = useState<Schema['RunSheetItem']['type'][]>([]);
+  
+  const [startItem, setStartItem] = useState<Schema['RunSheetItem']['type'] | null>(null);
+  const [endItem, setEndItem] = useState<Schema['RunSheetItem']['type'] | null>(null);
+  const [blocks, setBlocks] = useState<RunSheetBlock[]>([]);
+  
   const [loading, setLoading] = useState(true);
   const [isOverSchedule, setIsOverSchedule] = useState(false);
   const [overScheduleByMins, setOverScheduleByMins] = useState(0);
@@ -25,42 +36,35 @@ export function useRunSheet() {
       filter: { weddingId: { eq: weddingId } }
     }).subscribe({
       next: async ({ items: dbItems }) => {
-        let startItem = dbItems.find(i => i.itemType === 'START');
-        let endItem = dbItems.find(i => i.itemType === 'END');
+        let currentStart = dbItems.find(i => i.itemType === 'START');
+        let currentEnd = dbItems.find(i => i.itemType === 'END');
         
-        if (!startItem && dbItems.length >= 0) {
+        if (!currentStart && dbItems.length >= 0) {
           const res = await client.models.RunSheetItem.create({
             weddingId, title: 'Day Starts', eventTime: '08:00', itemType: 'START', sortOrder: -1
           });
-          if (res.data) startItem = res.data;
+          if (res.data) currentStart = res.data;
         }
-        if (!endItem && dbItems.length >= 0) {
+        if (!currentEnd && dbItems.length >= 0) {
           const res = await client.models.RunSheetItem.create({
             weddingId, title: 'Day Ends (Hard Stop)', eventTime: '23:00', itemType: 'END', sortOrder: 9999
           });
-          if (res.data) endItem = res.data;
+          if (res.data) currentEnd = res.data;
         }
 
         const events = dbItems.filter(i => i.itemType === 'EVENT' || !i.itemType);
         
-        events.sort((a, b) => {
-          const sortA = a.sortOrder || 0;
-          const sortB = b.sortOrder || 0;
-          if (sortA !== sortB) return sortA - sortB;
-          const timeA = a.eventTime || '00:00';
-          const timeB = b.eventTime || '00:00';
-          return timeA.localeCompare(timeB);
+        // Group by sortOrder
+        const blocksMap = new Map<number, typeof events>();
+        events.forEach(ev => {
+           const order = ev.sortOrder ?? 0;
+           if (!blocksMap.has(order)) blocksMap.set(order, []);
+           blocksMap.get(order)!.push(ev);
         });
 
-        const sortUpdates: any[] = [];
-        events.forEach((ev, idx) => {
-          if (ev.sortOrder !== idx) {
-            ev.sortOrder = idx; // mutate locally for immediate math
-            sortUpdates.push(client.models.RunSheetItem.update({ id: ev.id, sortOrder: idx }));
-          }
-        });
-        if (sortUpdates.length > 0) Promise.all(sortUpdates).catch(console.error);
-
+        // Get sorted block indices
+        const sortedBlockIndices = Array.from(blocksMap.keys()).sort((a, b) => a - b);
+        
         const addMinutes = (timeStr: string, mins: number): string => {
           if (!timeStr) return '00:00';
           const [hours, minutes] = timeStr.split(':').map(Number);
@@ -76,44 +80,50 @@ export function useRunSheet() {
           return (eH * 60 + eM) - (sH * 60 + sM);
         };
 
-        let currentTime = startItem?.eventTime || '08:00';
-        let parallelBlockMaxEndTime = currentTime;
+        let currentTime = currentStart?.eventTime || '08:00';
         const timeUpdates: any[] = [];
+        const builtBlocks: RunSheetBlock[] = [];
         
-        const computedEvents = events.map((event, idx) => {
-          const isParallel = event.isParallelWithPrevious && idx > 0;
-          
-          if (!isParallel) {
-             // Starting a new sequential block, advance currentTime to the max end time of the previous block
-             currentTime = parallelBlockMaxEndTime;
-          }
-          
-          // The event starts at currentTime
-          const computed = { ...event, eventTime: currentTime };
-          
-          // Calculate when this specific event ends
-          const eventEndTime = addMinutes(currentTime, event.durationMinutes || 0);
-          
-          // Update the max end time of the current parallel block
-          if (!isParallel) {
-             parallelBlockMaxEndTime = eventEndTime;
-          } else {
-             if (eventEndTime > parallelBlockMaxEndTime) {
-                parallelBlockMaxEndTime = eventEndTime;
-             }
-          }
-          
-          if (event.eventTime !== computed.eventTime) {
-             timeUpdates.push(client.models.RunSheetItem.update({ id: event.id, eventTime: computed.eventTime }));
-          }
-          
-          return computed;
+        sortedBlockIndices.forEach((oldOrder, newBlockIndex) => {
+           const blockEvents = blocksMap.get(oldOrder)!;
+           let maxDurationInBlock = 0;
+           
+           // Sort events inside the block just alphabetically for stable rendering
+           blockEvents.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+           
+           const computedItems: typeof events = [];
+           
+           blockEvents.forEach(event => {
+              const computed = { ...event, eventTime: currentTime, sortOrder: newBlockIndex };
+              computedItems.push(computed);
+              
+              if (event.durationMinutes && event.durationMinutes > maxDurationInBlock) {
+                 maxDurationInBlock = event.durationMinutes;
+              }
+              
+              if (event.eventTime !== currentTime || event.sortOrder !== newBlockIndex) {
+                 timeUpdates.push(client.models.RunSheetItem.update({ 
+                   id: event.id, 
+                   eventTime: currentTime,
+                   sortOrder: newBlockIndex
+                 }));
+              }
+           });
+           
+           builtBlocks.push({
+             blockIndex: newBlockIndex,
+             startTime: currentTime,
+             maxDuration: maxDurationInBlock,
+             items: computedItems
+           });
+           
+           currentTime = addMinutes(currentTime, maxDurationInBlock);
         });
         
         if (timeUpdates.length > 0) Promise.all(timeUpdates).catch(console.error);
 
-        const endTime = endItem?.eventTime || '23:00';
-        const diff = diffMinutes(parallelBlockMaxEndTime, endTime);
+        const endTime = currentEnd?.eventTime || '23:00';
+        const diff = diffMinutes(currentTime, endTime);
         if (diff > 0) {
           setIsOverSchedule(true);
           setOverScheduleByMins(diff);
@@ -122,9 +132,9 @@ export function useRunSheet() {
           setOverScheduleByMins(0);
         }
 
-        if (startItem && endItem) {
-          setItems([startItem as any, ...computedEvents, endItem as any]);
-        }
+        setStartItem(currentStart || null);
+        setEndItem(currentEnd || null);
+        setBlocks(builtBlocks);
         setLoading(false);
       },
       error: (err) => {
@@ -136,51 +146,60 @@ export function useRunSheet() {
     return () => sub.unsubscribe();
   }, [weddingId, authLoading]);
 
-  const addItem = async (item: Omit<Schema['RunSheetItem']['type'], 'id' | 'createdAt' | 'updatedAt' | 'weddingId'>) => {
+  // Add item to an existing block
+  const addItemToBlock = async (blockIndex: number, item: any) => {
     if (!weddingId) return;
-    const targetSortOrder = Math.max(0, items.length - 2);
-    
     await client.models.RunSheetItem.create({
       ...item,
       weddingId,
-      itemType: item.itemType || 'EVENT',
-      sortOrder: targetSortOrder,
-      isParallelWithPrevious: false
+      itemType: 'EVENT',
+      sortOrder: blockIndex
+    });
+  };
+
+  // Insert a completely new block at the target index, pushing everything else down
+  const insertNewBlock = async (targetIndex: number, item: any) => {
+    if (!weddingId) return;
+    
+    // Push all blocks >= targetIndex down by 1
+    const shiftPromises: any[] = [];
+    blocks.forEach(block => {
+      if (block.blockIndex >= targetIndex) {
+        block.items.forEach(ev => {
+          shiftPromises.push(client.models.RunSheetItem.update({ id: ev.id, sortOrder: block.blockIndex + 1 }));
+        });
+      }
+    });
+    
+    await Promise.all(shiftPromises);
+    
+    // Create the new item
+    await client.models.RunSheetItem.create({
+      ...item,
+      weddingId,
+      itemType: 'EVENT',
+      sortOrder: targetIndex
     });
   };
 
   const updateItem = async (id: string, updates: Partial<Schema['RunSheetItem']['type']>) => {
-    await client.models.RunSheetItem.update({
-      id,
-      ...updates
-    });
+    await client.models.RunSheetItem.update({ id, ...updates });
   };
 
   const deleteItem = async (id: string) => {
     await client.models.RunSheetItem.delete({ id });
   };
 
-  const moveItem = async (sourceIndex: number, targetIndex: number) => {
-    if (sourceIndex === targetIndex) return;
-    if (sourceIndex <= 0 || sourceIndex >= items.length - 1) return;
-    if (targetIndex <= 0 || targetIndex >= items.length - 1) return;
-
-    const events = items.slice(1, items.length - 1);
-    const eventSourceIndex = sourceIndex - 1;
-    const eventTargetIndex = targetIndex - 1;
-
-    // Remove from source
-    const [movedItem] = events.splice(eventSourceIndex, 1);
-    // Insert at target
-    events.splice(eventTargetIndex, 0, movedItem);
-
-    // Update all sortOrders sequentially
-    const promises = events.map((ev, idx) => {
-       return client.models.RunSheetItem.update({ id: ev.id, sortOrder: idx });
-    });
-
-    await Promise.all(promises);
+  return { 
+    startItem, 
+    endItem, 
+    blocks, 
+    loading, 
+    isOverSchedule, 
+    overScheduleByMins, 
+    addItemToBlock, 
+    insertNewBlock, 
+    updateItem, 
+    deleteItem 
   };
-
-  return { items, loading, isOverSchedule, overScheduleByMins, addItem, updateItem, deleteItem, moveItem };
 }

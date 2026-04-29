@@ -5,7 +5,7 @@ import TimelineView from '@/components/features/run-sheet/TimelineView';
 import PDFExportButton from '@/components/features/run-sheet/PDFExportButton';
 
 export default function RunSheetPage() {
-  const { items, loading, isOverSchedule, overScheduleByMins, addItem, updateItem, deleteItem, moveItem } = useRunSheet();
+  const { startItem, endItem, blocks, loading, isOverSchedule, overScheduleByMins, addItemToBlock, insertNewBlock, updateItem, deleteItem } = useRunSheet();
 
   if (loading) {
     return <div className="p-8 animate-pulse text-sage font-medium text-lg">Loading timeline...</div>;
@@ -23,13 +23,15 @@ export default function RunSheetPage() {
 
       <div className="bg-white p-6 md:p-8 rounded-xl border border-light-gray shadow-sm">
         <TimelineView 
-          items={items}
+          startItem={startItem}
+          endItem={endItem}
+          blocks={blocks}
           isOverSchedule={isOverSchedule}
           overScheduleByMins={overScheduleByMins}
-          onAdd={addItem}
+          onAddItemToBlock={addItemToBlock}
+          onInsertNewBlock={insertNewBlock}
           onUpdate={updateItem}
           onDelete={deleteItem}
-          onMove={moveItem}
         />
       </div>
     </div>
