@@ -1,16 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { Clock, MapPin, User, FileText, MoreVertical, Edit2, Trash2, Check, X, GripVertical } from 'lucide-react';
+import { Clock, MapPin, User, FileText, Edit2, Trash2, Check, X, GripVertical, Link } from 'lucide-react';
 import type { Schema } from '../../../../amplify/data/resource';
 
 interface RunSheetItemProps {
   item: Schema['RunSheetItem']['type'];
+  index?: number;
   onUpdate: (id: string, updates: Partial<Schema['RunSheetItem']['type']>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }
 
-export default function RunSheetItem({ item, onUpdate, onDelete }: RunSheetItemProps) {
+export default function RunSheetItem({ item, index = 0, onUpdate, onDelete }: RunSheetItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(item.title);
   const [eventTime, setEventTime] = useState(item.eventTime || '');
@@ -22,6 +23,8 @@ export default function RunSheetItem({ item, onUpdate, onDelete }: RunSheetItemP
   const isStart = item.itemType === 'START';
   const isEnd = item.itemType === 'END';
   const isEvent = !isStart && !isEnd;
+  const isParallel = item.isParallelWithPrevious;
+  const canBeParallel = isEvent && index > 1;
 
   const handleSave = async () => {
     if (!title.trim() || (!eventTime && isStart) || (!eventTime && isEnd)) return;
@@ -48,9 +51,14 @@ export default function RunSheetItem({ item, onUpdate, onDelete }: RunSheetItemP
     setIsEditing(false);
   };
 
+  const toggleParallel = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    await onUpdate(item.id, { isParallelWithPrevious: !isParallel });
+  };
+
   if (isEditing) {
     return (
-      <div className="bg-white p-5 rounded-xl border border-sage shadow-md mb-6 relative z-20">
+      <div className={`bg-white p-5 rounded-xl border border-sage shadow-md mb-6 relative z-20 ${isParallel ? 'ml-6' : ''}`}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label className="block text-xs font-medium text-mid-gray mb-1">Title *</label>
@@ -132,9 +140,13 @@ export default function RunSheetItem({ item, onUpdate, onDelete }: RunSheetItemP
     <div className="relative pl-8 mb-6 group">
       {/* Timeline dots and connecting line are handled by the parent TimelineView, 
           but we render our own specific dot here */}
-      <div className={`absolute left-[-5px] top-1.5 w-3 h-3 rounded-full ${isStart || isEnd ? 'bg-charcoal' : 'bg-sage'} border-2 border-white z-10 shadow-sm transition-transform group-hover:scale-125`}></div>
+      <div className={`absolute left-[-5px] top-1.5 w-3 h-3 rounded-full ${isStart || isEnd ? 'bg-charcoal' : (isParallel ? 'bg-sage border-sage opacity-40' : 'bg-sage border-white')} border-2 z-10 shadow-sm transition-transform group-hover:scale-125`}></div>
       
-      <div className={`bg-white p-5 rounded-xl border ${isStart || isEnd ? 'border-charcoal border-l-4' : 'border-light-gray'} shadow-sm hover:border-sage/50 transition-colors ${isEvent ? 'cursor-grab active:cursor-grabbing' : ''}`}>
+      {isParallel && (
+        <div className="absolute left-[-4px] top-[-24px] w-0.5 h-6 bg-sage/30 z-0"></div>
+      )}
+      
+      <div className={`bg-white p-5 rounded-xl border ${isStart || isEnd ? 'border-charcoal border-l-4' : 'border-light-gray'} shadow-sm hover:border-sage/50 transition-colors ${isEvent ? 'cursor-grab active:cursor-grabbing' : ''} ${isParallel ? 'ml-6 border-l-2 border-l-sage' : ''}`}>
         
         {isEvent && (
           <div className="absolute left-10 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-mid-gray/50 cursor-grab active:cursor-grabbing">
@@ -149,7 +161,10 @@ export default function RunSheetItem({ item, onUpdate, onDelete }: RunSheetItemP
             </div>
             
             <div>
-              <h4 className="font-semibold text-charcoal text-lg">{item.title}</h4>
+              <h4 className="font-semibold text-charcoal text-lg flex items-center">
+                {item.title}
+                {isParallel && <span className="ml-2 text-xs font-normal text-sage bg-sage/10 px-2 py-0.5 rounded-full">Simultaneous</span>}
+              </h4>
               
               <div className="flex flex-wrap items-center mt-2 text-sm text-mid-gray gap-y-2">
                 {item.durationMinutes && (
@@ -184,6 +199,15 @@ export default function RunSheetItem({ item, onUpdate, onDelete }: RunSheetItemP
           </div>
           
           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1 ml-4 flex-shrink-0">
+            {canBeParallel && (
+              <button 
+                onClick={toggleParallel} 
+                className={`p-1.5 rounded transition-colors ${isParallel ? 'text-sage bg-sage/10' : 'text-mid-gray hover:text-sage bg-light-gray/50'}`}
+                title={isParallel ? "Unlink from previous" : "Run simultaneously with previous"}
+              >
+                {isParallel ? <Link className="w-4 h-4" /> : <Link className="w-4 h-4 opacity-50" />}
+              </button>
+            )}
             <button onClick={() => setIsEditing(true)} className="p-1.5 text-mid-gray hover:text-sage bg-light-gray/50 rounded transition-colors"><Edit2 className="w-4 h-4" /></button>
             {isEvent && (
               <button onClick={() => onDelete(item.id)} className="p-1.5 text-mid-gray hover:text-red-500 bg-light-gray/50 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>

@@ -77,22 +77,43 @@ export function useRunSheet() {
         };
 
         let currentTime = startItem?.eventTime || '08:00';
+        let parallelBlockMaxEndTime = currentTime;
         const timeUpdates: any[] = [];
         
-        const computedEvents = events.map(event => {
+        const computedEvents = events.map((event, idx) => {
+          const isParallel = event.isParallelWithPrevious && idx > 0;
+          
+          if (!isParallel) {
+             // Starting a new sequential block, advance currentTime to the max end time of the previous block
+             currentTime = parallelBlockMaxEndTime;
+          }
+          
+          // The event starts at currentTime
           const computed = { ...event, eventTime: currentTime };
-          currentTime = addMinutes(currentTime, event.durationMinutes || 0);
+          
+          // Calculate when this specific event ends
+          const eventEndTime = addMinutes(currentTime, event.durationMinutes || 0);
+          
+          // Update the max end time of the current parallel block
+          if (!isParallel) {
+             parallelBlockMaxEndTime = eventEndTime;
+          } else {
+             if (eventEndTime > parallelBlockMaxEndTime) {
+                parallelBlockMaxEndTime = eventEndTime;
+             }
+          }
           
           if (event.eventTime !== computed.eventTime) {
              timeUpdates.push(client.models.RunSheetItem.update({ id: event.id, eventTime: computed.eventTime }));
           }
+          
           return computed;
         });
         
         if (timeUpdates.length > 0) Promise.all(timeUpdates).catch(console.error);
 
         const endTime = endItem?.eventTime || '23:00';
-        const diff = diffMinutes(currentTime, endTime);
+        const diff = diffMinutes(parallelBlockMaxEndTime, endTime);
         if (diff > 0) {
           setIsOverSchedule(true);
           setOverScheduleByMins(diff);
@@ -123,7 +144,8 @@ export function useRunSheet() {
       ...item,
       weddingId,
       itemType: item.itemType || 'EVENT',
-      sortOrder: targetSortOrder
+      sortOrder: targetSortOrder,
+      isParallelWithPrevious: false
     });
   };
 

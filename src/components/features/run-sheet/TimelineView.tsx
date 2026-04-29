@@ -107,6 +107,7 @@ export default function TimelineView({ items, isOverSchedule, overScheduleByMins
           >
             <RunSheetItem 
               item={item} 
+              index={index}
               onUpdate={onUpdate} 
               onDelete={onDelete} 
             />
