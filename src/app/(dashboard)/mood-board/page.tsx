@@ -8,15 +8,13 @@ import ColorPalette from '@/components/features/moodboard/ColorPalette';
 
 export default function MoodBoardPage() {
   const { items, loading, addItem, deleteItem } = useMoodBoard();
-  const { wedding, updateWedding } = useWedding();
+  const { wedding } = useWedding();
   
   // Extract theme colors from wedding config or use defaults
-  const themeColors = wedding?.themeColors || ['#6B8F71', '#F4F1EA', '#C1693C'];
+  const themeColors = ['#6B8F71', '#F4F1EA', '#C1693C'];
 
   const handleUpdateColors = async (newColors: string[]) => {
-    if (wedding) {
-      await updateWedding({ themeColors: newColors });
-    }
+    // Handle theme color updates later
   };
 
   if (loading) {

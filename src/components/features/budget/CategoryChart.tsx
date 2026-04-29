@@ -53,7 +53,7 @@ export default function CategoryChart({ items }: CategoryChartProps) {
               ))}
             </Pie>
             <Tooltip 
-              formatter={(value: number) => [`$${value.toLocaleString()}`, 'Spent']}
+              formatter={(value: any) => [`$${value.toLocaleString()}`, 'Spent']}
               contentStyle={{ borderRadius: '8px', border: '1px solid #EEEEEE' }}
             />
             <Legend 

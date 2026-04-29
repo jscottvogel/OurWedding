@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { generateClient } from 'aws-amplify/data';
 import { updateUserAttributes } from 'aws-amplify/auth';
-import type { Schema } from '../../../../../amplify/data/resource';
+import type { Schema } from '../../../../amplify/data/resource';
 import { generateDefaultChecklist } from '@/lib/utils/defaultChecklist';
 
 const client = generateClient<Schema>();
@@ -64,7 +64,8 @@ export default function OnboardingPage() {
       }
 
       // Generate default checklist tasks based on wedding date
-      const defaultTasks = generateDefaultChecklist(newWedding.id, newWedding.weddingDate);
+      const weddingItem = newWedding as any;
+      const defaultTasks = generateDefaultChecklist(weddingItem.id, weddingItem.weddingDate);
       await Promise.all(
         defaultTasks.map(task => client.models.ChecklistItem.create(task))
       );
@@ -72,13 +73,13 @@ export default function OnboardingPage() {
       // Link it to the user's Cognito attributes
       await updateUserAttributes({
         userAttributes: {
-          'custom:wedding_id': newWedding.id,
+          'custom:wedding_id': weddingItem.id,
         },
       });
 
       // Save a local backup in case Cognito tokens are slow to update the attributes
       if (typeof window !== 'undefined') {
-        localStorage.setItem('weddingId', newWedding.id);
+        localStorage.setItem('weddingId', weddingItem.id);
       }
 
       // Force a token refresh so the new custom attribute is available

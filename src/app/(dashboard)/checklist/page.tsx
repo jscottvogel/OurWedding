@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useChecklist } from '@/lib/hooks/useChecklist';
 import ChecklistCategory from '@/components/features/checklist/ChecklistCategory';
-import type { Schema } from '../../../amplify/data/resource';
+import type { Schema } from '../../../../amplify/data/resource';
 import { useWedding } from '@/lib/hooks/useWedding';
 import { generateDefaultChecklist } from '@/lib/utils/defaultChecklist';
 import { Sparkles, AlertCircle } from 'lucide-react';

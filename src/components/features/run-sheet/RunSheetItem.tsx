@@ -19,6 +19,7 @@ export default function RunSheetItem({ item, index = 0, onUpdate, onDelete }: Ru
   const [location, setLocation] = useState(item.location || '');
   const [assigned, setAssigned] = useState(item.assignedPerson || '');
   const [notes, setNotes] = useState(item.notes || '');
+  const [isParallelState, setIsParallelState] = useState(item.isParallelWithPrevious || false);
 
   const isStart = item.itemType === 'START';
   const isEnd = item.itemType === 'END';
@@ -35,7 +36,8 @@ export default function RunSheetItem({ item, index = 0, onUpdate, onDelete }: Ru
       durationMinutes: duration === '' ? 0 : parseInt(duration.toString(), 10),
       location,
       assignedPerson: assigned,
-      notes
+      notes,
+      isParallelWithPrevious: isParallelState
     });
     
     setIsEditing(false);
@@ -48,6 +50,7 @@ export default function RunSheetItem({ item, index = 0, onUpdate, onDelete }: Ru
     setLocation(item.location || '');
     setAssigned(item.assignedPerson || '');
     setNotes(item.notes || '');
+    setIsParallelState(item.isParallelWithPrevious || false);
     setIsEditing(false);
   };
 
@@ -112,6 +115,22 @@ export default function RunSheetItem({ item, index = 0, onUpdate, onDelete }: Ru
               rows={2}
             ></textarea>
           </div>
+          
+          {canBeParallel && (
+            <div className="md:col-span-2 flex items-start space-x-3 mt-2 bg-sage/5 p-3 rounded-lg border border-sage/20">
+              <input 
+                type="checkbox" 
+                id={`parallel-${item.id}`}
+                checked={isParallelState} 
+                onChange={(e) => setIsParallelState(e.target.checked)}
+                className="mt-1 accent-sage cursor-pointer"
+              />
+              <label htmlFor={`parallel-${item.id}`} className="block cursor-pointer">
+                <span className="text-sm font-medium text-charcoal block">Run simultaneously with previous event</span>
+                <span className="text-xs text-mid-gray block mt-0.5">This event will share the exact same start time as the event directly above it.</span>
+              </label>
+            </div>
+          )}
         </div>
         
         <div className="flex justify-end space-x-2 mt-4 pt-4 border-t border-light-gray">
@@ -187,6 +206,17 @@ export default function RunSheetItem({ item, index = 0, onUpdate, onDelete }: Ru
                     {item.assignedPerson}
                   </span>
                 )}
+                
+                {canBeParallel && (
+                  <button 
+                    onClick={toggleParallel}
+                    className={`flex items-center mt-1 sm:mt-0 text-xs font-medium px-2.5 py-1 rounded-full transition-colors border ${isParallel ? 'bg-sage/10 text-sage border-sage/20 hover:bg-red-50 hover:text-red-600 hover:border-red-200' : 'bg-light-gray/30 text-mid-gray border-transparent hover:bg-light-gray/80 hover:text-charcoal'}`}
+                    title={isParallel ? "Click to unlink and run sequentially" : "Click to run simultaneously with the event above"}
+                  >
+                    <Link className="w-3 h-3 mr-1.5" />
+                    {isParallel ? 'Simultaneous (Click to unlink)' : 'Link to previous'}
+                  </button>
+                )}
               </div>
               
               {item.notes && (
@@ -199,15 +229,6 @@ export default function RunSheetItem({ item, index = 0, onUpdate, onDelete }: Ru
           </div>
           
           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1 ml-4 flex-shrink-0">
-            {canBeParallel && (
-              <button 
-                onClick={toggleParallel} 
-                className={`p-1.5 rounded transition-colors ${isParallel ? 'text-sage bg-sage/10' : 'text-mid-gray hover:text-sage bg-light-gray/50'}`}
-                title={isParallel ? "Unlink from previous" : "Run simultaneously with previous"}
-              >
-                {isParallel ? <Link className="w-4 h-4" /> : <Link className="w-4 h-4 opacity-50" />}
-              </button>
-            )}
             <button onClick={() => setIsEditing(true)} className="p-1.5 text-mid-gray hover:text-sage bg-light-gray/50 rounded transition-colors"><Edit2 className="w-4 h-4" /></button>
             {isEvent && (
               <button onClick={() => onDelete(item.id)} className="p-1.5 text-mid-gray hover:text-red-500 bg-light-gray/50 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>

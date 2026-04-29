@@ -30,7 +30,7 @@ export default function SignupPage() {
                 </div>
               );
             }
-            return null;
+            return <></>;
           }}
         </Authenticator>
       </div>

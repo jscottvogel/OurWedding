@@ -28,7 +28,7 @@ export default function LoginPage() {
                 </div>
               );
             }
-            return null;
+            return <></>;
           }}
         </Authenticator>
       </div>
