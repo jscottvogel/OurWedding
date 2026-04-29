@@ -2,6 +2,7 @@ import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
 import { sendEmail } from '../functions/send-email/resource';
 import { pdfExport } from '../functions/pdf-export/resource';
 import { askIvy } from '../functions/ask-ivy/resource';
+import { removeUser } from '../functions/remove-user/resource';
 
 const schema = a.schema({
   Wedding: a
@@ -229,6 +230,13 @@ const schema = a.schema({
     .returns(a.boolean())
     .authorization((allow) => [allow.authenticated()])
     .handler(a.handler.function(sendEmail)),
+
+  removeUser: a
+    .mutation()
+    .arguments({ email: a.string() })
+    .returns(a.boolean())
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(removeUser)),
 
   getMoodBoardByShareToken: a
     .query()

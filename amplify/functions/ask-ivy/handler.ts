@@ -46,6 +46,7 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
     You assist the couple in planning their wedding. Be concise and keep answers short (under 3 paragraphs).
     Here is the context about their wedding:
     ${contextStr}
+    You have tools to add tasks, vendors, and runsheet items. If the user asks you to create a "typical" schedule, checklist, or list, you CAN and SHOULD use your tools multiple times in a row to generate the full list of items in a single response!
   `;
 
   if (isChecklistGeneration) {
@@ -241,13 +242,13 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
     const resultString = new TextDecoder().decode(response.body);
     const result = JSON.parse(resultString);
 
-    if (result.stop_reason === 'tool_use') {
-      const toolUseBlock = result.content.find((block: any) => block.type === 'tool_use');
-      if (toolUseBlock) {
-        return `[TOOL_CALL] ${JSON.stringify({
-          name: toolUseBlock.name,
-          input: toolUseBlock.input
-        })}`;
+    if (result.stop_reason === 'tool_use' || result.content.some((block: any) => block.type === 'tool_use')) {
+      const toolUseBlocks = result.content.filter((block: any) => block.type === 'tool_use');
+      if (toolUseBlocks.length > 0) {
+        return `[TOOL_CALLS] ${JSON.stringify(toolUseBlocks.map((b: any) => ({
+          name: b.name,
+          input: b.input
+        })))}`;
       }
     }
 

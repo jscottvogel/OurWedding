@@ -72,68 +72,82 @@ export default function IvyChat() {
       
       const responseData = response.data || '';
 
-      if (responseData.startsWith('[TOOL_CALL]')) {
-        const toolJson = responseData.replace('[TOOL_CALL] ', '');
-        const toolCall = JSON.parse(toolJson);
+      if (responseData.startsWith('[TOOL_CALL]') || responseData.startsWith('[TOOL_CALLS]')) {
+        const isMultiple = responseData.startsWith('[TOOL_CALLS]');
+        const toolJson = responseData.replace(isMultiple ? '[TOOL_CALLS] ' : '[TOOL_CALL] ', '');
+        const parsedData = JSON.parse(toolJson);
+        const toolCalls = isMultiple ? parsedData : [parsedData];
         
-        let successMessage = "I've handled that for you!";
-        if (toolCall.name === 'add_task') {
-          await addTask({
-            title: toolCall.input.title,
-            category: toolCall.input.category as any,
-            isCompleted: false,
-            isTemplate: false,
-            sortOrder: 0
-          });
-          successMessage = `I've successfully added "${toolCall.input.title}" to your checklist under ${toolCall.input.category}!`;
-        } else if (toolCall.name === 'update_task') {
-          await updateTask(toolCall.input.id, toolCall.input.updates);
-          successMessage = "I've updated that task for you!";
-        } else if (toolCall.name === 'delete_task') {
-          await deleteTask(toolCall.input.id);
-          successMessage = "I've removed that task from your checklist!";
-        } else if (toolCall.name === 'add_vendor') {
-          await addVendor({
-            companyName: toolCall.input.companyName,
-            category: toolCall.input.category,
-            contractStatus: 'NOT_STARTED',
-            depositPaid: false,
-            balancePaid: false,
-            portalAccess: false
-          });
-          successMessage = `I've added "${toolCall.input.companyName}" to your vendors list under ${toolCall.input.category}!`;
-        } else if (toolCall.name === 'update_vendor') {
-          await updateVendor(toolCall.input.id, toolCall.input.updates);
-          successMessage = "I've updated that vendor's details!";
-        } else if (toolCall.name === 'delete_vendor') {
-          await deleteVendor(toolCall.input.id);
-          successMessage = "I've removed that vendor from your list!";
-        } else if (toolCall.name === 'add_runsheet_item') {
-          let timeStr = toolCall.input.eventTime;
-          if (timeStr && timeStr.length === 5) timeStr += ':00';
-          await addRunsheetItem({
-            title: toolCall.input.title,
-            eventTime: timeStr,
-            description: toolCall.input.description,
-            location: toolCall.input.location,
-            durationMinutes: toolCall.input.durationMinutes,
-            sortOrder: 0
-          });
-          successMessage = `I've added "${toolCall.input.title}" to your run sheet at ${toolCall.input.eventTime}!`;
-        } else if (toolCall.name === 'update_runsheet_item') {
-          const updates = { ...toolCall.input.updates };
-          if (updates.eventTime && updates.eventTime.length === 5) updates.eventTime += ':00';
-          await updateRunsheetItem(toolCall.input.id, updates);
-          successMessage = "I've updated that run sheet item!";
-        } else if (toolCall.name === 'delete_runsheet_item') {
-          await deleteRunsheetItem(toolCall.input.id);
-          successMessage = "I've removed that item from your run sheet!";
+        let addedCount = 0;
+        let lastActionMessage = "I've handled that for you!";
+
+        for (const toolCall of toolCalls) {
+          if (toolCall.name === 'add_task') {
+            await addTask({
+              title: toolCall.input.title,
+              category: toolCall.input.category as any,
+              isCompleted: false,
+              isTemplate: false,
+              sortOrder: 0
+            });
+            lastActionMessage = `I've successfully added "${toolCall.input.title}" to your checklist!`;
+            addedCount++;
+          } else if (toolCall.name === 'update_task') {
+            await updateTask(toolCall.input.id, toolCall.input.updates);
+            lastActionMessage = "I've updated that task for you!";
+          } else if (toolCall.name === 'delete_task') {
+            await deleteTask(toolCall.input.id);
+            lastActionMessage = "I've removed that task from your checklist!";
+          } else if (toolCall.name === 'add_vendor') {
+            await addVendor({
+              companyName: toolCall.input.companyName,
+              category: toolCall.input.category,
+              contractStatus: 'NOT_STARTED',
+              depositPaid: false,
+              balancePaid: false,
+              portalAccess: false
+            });
+            lastActionMessage = `I've added "${toolCall.input.companyName}" to your vendors list!`;
+            addedCount++;
+          } else if (toolCall.name === 'update_vendor') {
+            await updateVendor(toolCall.input.id, toolCall.input.updates);
+            lastActionMessage = "I've updated that vendor's details!";
+          } else if (toolCall.name === 'delete_vendor') {
+            await deleteVendor(toolCall.input.id);
+            lastActionMessage = "I've removed that vendor from your list!";
+          } else if (toolCall.name === 'add_runsheet_item') {
+            let timeStr = toolCall.input.eventTime;
+            if (timeStr && timeStr.length === 5) timeStr += ':00';
+            await addRunsheetItem({
+              title: toolCall.input.title,
+              eventTime: timeStr,
+              description: toolCall.input.description,
+              location: toolCall.input.location,
+              durationMinutes: toolCall.input.durationMinutes,
+              sortOrder: 0
+            });
+            lastActionMessage = `I've added "${toolCall.input.title}" to your run sheet at ${toolCall.input.eventTime}!`;
+            addedCount++;
+          } else if (toolCall.name === 'update_runsheet_item') {
+            const updates = { ...toolCall.input.updates };
+            if (updates.eventTime && updates.eventTime.length === 5) updates.eventTime += ':00';
+            await updateRunsheetItem(toolCall.input.id, updates);
+            lastActionMessage = "I've updated that run sheet item!";
+          } else if (toolCall.name === 'delete_runsheet_item') {
+            await deleteRunsheetItem(toolCall.input.id);
+            lastActionMessage = "I've removed that item from your run sheet!";
+          }
+        }
+        
+        let finalMessage = lastActionMessage;
+        if (addedCount > 1) {
+          finalMessage = `I've successfully generated and added ${addedCount} items for you!`;
         }
 
         setMessages(prev => [...prev, {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: successMessage
+          content: finalMessage
         }]);
       } else {
         setMessages(prev => [...prev, {

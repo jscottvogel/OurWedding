@@ -7,6 +7,7 @@ import { pdfExport } from './functions/pdf-export/resource';
 import { sendEmail } from './functions/send-email/resource';
 import { postConfirmation } from './functions/post-confirmation/resource';
 import { askIvy } from './functions/ask-ivy/resource';
+import { removeUser } from './functions/remove-user/resource';
 import * as iam from 'aws-cdk-lib/aws-iam';
 
 const backend = defineBackend({
@@ -18,6 +19,7 @@ const backend = defineBackend({
   sendEmail,
   postConfirmation,
   askIvy,
+  removeUser,
 });
 
 backend.askIvy.resources.lambda.addToRolePolicy(
@@ -41,3 +43,12 @@ backend.sendEmail.resources.lambda.addToRolePolicy(
 );
 
 backend.sendEmail.addEnvironment('USER_POOL_ID', backend.auth.resources.userPool.userPoolId);
+
+backend.removeUser.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    actions: ['cognito-idp:AdminDeleteUser'],
+    resources: [backend.auth.resources.userPool.userPoolArn],
+  })
+);
+
+backend.removeUser.addEnvironment('USER_POOL_ID', backend.auth.resources.userPool.userPoolId);

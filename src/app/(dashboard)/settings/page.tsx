@@ -100,6 +100,25 @@ export default function SettingsPage() {
     }
   };
 
+  const handleRemoveUser = async (member: Schema['Profile']['type']) => {
+    if (!member.email) return;
+    if (!confirm(`Are you sure you want to completely remove ${member.email} and revoke their access?`)) return;
+    
+    try {
+      // Remove from Cognito
+      const { errors } = await client.mutations.removeUser({
+        email: member.email
+      });
+      if (errors) throw new Error(errors[0].message);
+      
+      // Remove from UI table
+      await client.models.Profile.delete({ id: member.id });
+    } catch (err: any) {
+      console.error("Failed to remove user:", err);
+      alert(`Failed to remove user: ${err.message}`);
+    }
+  };
+
   if (loading) {
     return <div className="p-8 animate-pulse text-sage">Loading settings...</div>;
   }
@@ -220,6 +239,7 @@ export default function SettingsPage() {
                       <th className="px-4 py-3 font-medium">Email</th>
                       <th className="px-4 py-3 font-medium">Role</th>
                       <th className="px-4 py-3 font-medium">Status</th>
+                      <th className="px-4 py-3 font-medium text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-light-gray bg-white">
@@ -236,6 +256,16 @@ export default function SettingsPage() {
                             <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-100 text-green-800 border border-green-200">
                               Active
                             </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {member.cognitoSub !== user?.userId && (
+                            <button
+                              onClick={() => handleRemoveUser(member)}
+                              className="text-red-500 hover:text-red-700 text-xs font-medium px-2 py-1 border border-transparent hover:border-red-200 hover:bg-red-50 rounded transition-colors"
+                            >
+                              Remove
+                            </button>
                           )}
                         </td>
                       </tr>
