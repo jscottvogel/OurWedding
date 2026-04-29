@@ -10,9 +10,10 @@ interface TimelineViewProps {
   onAdd: (item: any) => Promise<void>;
   onUpdate: (id: string, updates: any) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onMove: (index: number, direction: 'up' | 'down') => Promise<void>;
 }
 
-export default function TimelineView({ items, onAdd, onUpdate, onDelete }: TimelineViewProps) {
+export default function TimelineView({ items, onAdd, onUpdate, onDelete, onMove }: TimelineViewProps) {
   const [isAdding, setIsAdding] = useState(false);
   
   // Add form state
@@ -38,12 +39,16 @@ export default function TimelineView({ items, onAdd, onUpdate, onDelete }: Timel
       <div className="absolute left-1 top-4 bottom-0 w-0.5 bg-light-gray z-0 hidden md:block"></div>
       
       <div className="relative z-10 md:pl-2">
-        {items.map((item) => (
+        {items.map((item, index) => (
           <RunSheetItem 
             key={item.id} 
             item={item} 
             onUpdate={onUpdate} 
             onDelete={onDelete} 
+            onMoveUp={() => onMove(index, 'up')}
+            onMoveDown={() => onMove(index, 'down')}
+            isFirst={index === 0}
+            isLast={index === items.length - 1}
           />
         ))}
 

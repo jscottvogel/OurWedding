@@ -5,7 +5,7 @@ import TimelineView from '@/components/features/run-sheet/TimelineView';
 import PDFExportButton from '@/components/features/run-sheet/PDFExportButton';
 
 export default function RunSheetPage() {
-  const { items, loading, addItem, updateItem, deleteItem } = useRunSheet();
+  const { items, loading, addItem, updateItem, deleteItem, moveItem } = useRunSheet();
 
   if (loading) {
     return <div className="p-8 animate-pulse text-sage font-medium text-lg">Loading timeline...</div>;
@@ -27,6 +27,7 @@ export default function RunSheetPage() {
           onAdd={addItem}
           onUpdate={updateItem}
           onDelete={deleteItem}
+          onMove={moveItem}
         />
       </div>
     </div>

@@ -24,6 +24,10 @@ export function useRunSheet() {
     }).subscribe({
       next: ({ items }) => {
         setItems([...items].sort((a, b) => {
+          const sortA = a.sortOrder || 0;
+          const sortB = b.sortOrder || 0;
+          if (sortA !== sortB) return sortA - sortB;
+          
           if (!a.eventTime || !b.eventTime) return 0;
           const timeA = a.eventTime || '00:00';
           const timeB = b.eventTime || '00:00';
@@ -59,5 +63,26 @@ export function useRunSheet() {
     await client.models.RunSheetItem.delete({ id });
   };
 
-  return { items, loading, addItem, updateItem, deleteItem };
+  const moveItem = async (currentIndex: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && currentIndex === 0) return;
+    if (direction === 'down' && currentIndex === items.length - 1) return;
+
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    
+    const updates = items.map((item, idx) => {
+      let newOrder = idx;
+      if (idx === currentIndex) newOrder = targetIndex;
+      else if (idx === targetIndex) newOrder = currentIndex;
+      
+      return { id: item.id, sortOrder: newOrder, currentOrder: item.sortOrder };
+    });
+
+    const promises = updates
+      .filter(u => u.sortOrder !== u.currentOrder)
+      .map(u => client.models.RunSheetItem.update({ id: u.id, sortOrder: u.sortOrder }));
+      
+    await Promise.all(promises);
+  };
+
+  return { items, loading, addItem, updateItem, deleteItem, moveItem };
 }

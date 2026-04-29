@@ -47,6 +47,7 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
     Here is the context about their wedding:
     ${contextStr}
     You have tools to add tasks, vendors, and runsheet items. If the user asks you to create a "typical" schedule, checklist, or list, you CAN and SHOULD use your tools multiple times in a row to generate the full list of items in a single response!
+    For a typical runsheet, you MUST generate a granular breakdown containing at least 10 to 15 distinct events (e.g. hair/makeup, arrivals, first look, photos, ceremony, cocktail hour, reception, speeches, dancing, send-off).
   `;
 
   if (isChecklistGeneration) {

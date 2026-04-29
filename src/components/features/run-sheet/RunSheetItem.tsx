@@ -1,16 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { Clock, MapPin, User, FileText, MoreVertical, Edit2, Trash2, Check, X } from 'lucide-react';
+import { Clock, MapPin, User, FileText, MoreVertical, Edit2, Trash2, Check, X, ArrowUp, ArrowDown } from 'lucide-react';
 import type { Schema } from '../../../../amplify/data/resource';
 
 interface RunSheetItemProps {
   item: Schema['RunSheetItem']['type'];
   onUpdate: (id: string, updates: Partial<Schema['RunSheetItem']['type']>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onMoveUp: () => Promise<void>;
+  onMoveDown: () => Promise<void>;
+  isFirst: boolean;
+  isLast: boolean;
 }
 
-export default function RunSheetItem({ item, onUpdate, onDelete }: RunSheetItemProps) {
+export default function RunSheetItem({ item, onUpdate, onDelete, onMoveUp, onMoveDown, isFirst, isLast }: RunSheetItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(item.title);
   const [eventTime, setEventTime] = useState(item.eventTime || '');
@@ -149,6 +153,12 @@ export default function RunSheetItem({ item, onUpdate, onDelete }: RunSheetItemP
           </div>
           
           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
+            {!isFirst && (
+              <button onClick={onMoveUp} className="p-1.5 text-mid-gray hover:text-sage bg-light-gray/50 rounded transition-colors"><ArrowUp className="w-4 h-4" /></button>
+            )}
+            {!isLast && (
+              <button onClick={onMoveDown} className="p-1.5 text-mid-gray hover:text-sage bg-light-gray/50 rounded transition-colors"><ArrowDown className="w-4 h-4" /></button>
+            )}
             <button onClick={() => setIsEditing(true)} className="p-1.5 text-mid-gray hover:text-sage bg-light-gray/50 rounded transition-colors"><Edit2 className="w-4 h-4" /></button>
             <button onClick={() => onDelete(item.id)} className="p-1.5 text-mid-gray hover:text-red-500 bg-light-gray/50 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>
           </div>
