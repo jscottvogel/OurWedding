@@ -23,6 +23,10 @@ export default function RunSheetItem({ item, onUpdate, onDelete, onMoveUp, onMov
   const [assigned, setAssigned] = useState(item.assignedPerson || '');
   const [notes, setNotes] = useState(item.notes || '');
 
+  const isStart = item.itemType === 'START';
+  const isEnd = item.itemType === 'END';
+  const isEvent = !isStart && !isEnd;
+
   const handleSave = async () => {
     if (!title.trim() || !eventTime) return;
     
@@ -57,20 +61,24 @@ export default function RunSheetItem({ item, onUpdate, onDelete, onMoveUp, onMov
           </div>
           
           <div>
-            <label className="block text-xs font-medium text-mid-gray mb-1">Time *</label>
+            <label className="block text-xs font-medium text-mid-gray mb-1">Time {isEvent ? '' : '*'}</label>
             <input 
               type="time" value={eventTime} onChange={e => setEventTime(e.target.value)}
-              className="w-full p-2 border border-light-gray rounded focus:border-sage focus:outline-none"
+              disabled={isEvent}
+              className={`w-full p-2 border border-light-gray rounded focus:border-sage focus:outline-none ${isEvent ? 'bg-light-gray/30 opacity-70 cursor-not-allowed' : ''}`}
             />
+            {isEvent && <p className="text-[10px] text-mid-gray mt-1">Computed from previous</p>}
           </div>
           
-          <div>
-            <label className="block text-xs font-medium text-mid-gray mb-1">Duration (mins)</label>
-            <input 
-              type="number" value={duration} onChange={e => setDuration(e.target.value)}
-              className="w-full p-2 border border-light-gray rounded focus:border-sage focus:outline-none"
-            />
-          </div>
+          {!isEnd && (
+            <div>
+              <label className="block text-xs font-medium text-mid-gray mb-1">Duration (mins)</label>
+              <input 
+                type="number" value={duration} onChange={e => setDuration(e.target.value)}
+                className="w-full p-2 border border-light-gray rounded focus:border-sage focus:outline-none"
+              />
+            </div>
+          )}
           
           <div>
             <label className="block text-xs font-medium text-mid-gray mb-1">Location</label>
@@ -120,9 +128,9 @@ export default function RunSheetItem({ item, onUpdate, onDelete, onMoveUp, onMov
     <div className="relative pl-8 mb-6 group">
       {/* Timeline dots and connecting line are handled by the parent TimelineView, 
           but we render our own specific dot here */}
-      <div className="absolute left-[-5px] top-1.5 w-3 h-3 rounded-full bg-sage border-2 border-white z-10 shadow-sm transition-transform group-hover:scale-125"></div>
+      <div className={`absolute left-[-5px] top-1.5 w-3 h-3 rounded-full ${isStart || isEnd ? 'bg-charcoal' : 'bg-sage'} border-2 border-white z-10 shadow-sm transition-transform group-hover:scale-125`}></div>
       
-      <div className="bg-white p-5 rounded-xl border border-light-gray shadow-sm group-hover:border-sage/30 transition-colors">
+      <div className={`bg-white p-5 rounded-xl border ${isStart || isEnd ? 'border-charcoal border-l-4' : 'border-light-gray'} shadow-sm group-hover:border-sage/30 transition-colors`}>
         <div className="flex justify-between items-start">
           <div className="flex items-start">
             <div className="bg-sage/10 text-dark-sage px-3 py-1 rounded-md font-medium text-sm mr-4 mt-0.5 whitespace-nowrap">
@@ -153,14 +161,16 @@ export default function RunSheetItem({ item, onUpdate, onDelete, onMoveUp, onMov
           </div>
           
           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
-            {!isFirst && (
+            {isEvent && !isFirst && (
               <button onClick={onMoveUp} className="p-1.5 text-mid-gray hover:text-sage bg-light-gray/50 rounded transition-colors"><ArrowUp className="w-4 h-4" /></button>
             )}
-            {!isLast && (
+            {isEvent && !isLast && (
               <button onClick={onMoveDown} className="p-1.5 text-mid-gray hover:text-sage bg-light-gray/50 rounded transition-colors"><ArrowDown className="w-4 h-4" /></button>
             )}
             <button onClick={() => setIsEditing(true)} className="p-1.5 text-mid-gray hover:text-sage bg-light-gray/50 rounded transition-colors"><Edit2 className="w-4 h-4" /></button>
-            <button onClick={() => onDelete(item.id)} className="p-1.5 text-mid-gray hover:text-red-500 bg-light-gray/50 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>
+            {isEvent && (
+              <button onClick={() => onDelete(item.id)} className="p-1.5 text-mid-gray hover:text-red-500 bg-light-gray/50 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>
+            )}
           </div>
         </div>
       </div>
