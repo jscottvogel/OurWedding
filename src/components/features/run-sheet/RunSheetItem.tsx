@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Clock, MapPin, User, FileText, Edit2, Trash2, Check, X } from 'lucide-react';
+import { Clock, MapPin, User, FileText, Edit2, Trash2, Check, X, GripVertical } from 'lucide-react';
 import type { Schema } from '../../../../amplify/data/resource';
 
 interface RunSheetItemProps {
@@ -129,7 +129,13 @@ export default function RunSheetItem({ item, onUpdate, onDelete }: RunSheetItemP
   };
 
   return (
-    <div className={`bg-white p-4 rounded-xl border ${isStart || isEnd ? 'border-charcoal border-l-4' : 'border-light-gray'} shadow-sm hover:border-sage/50 transition-colors group relative h-full flex flex-col`}>
+    <div className={`bg-white p-4 rounded-xl border ${isStart || isEnd ? 'border-charcoal border-l-4' : 'border-light-gray'} shadow-sm hover:border-sage/50 transition-colors group relative h-full flex flex-col ${isEvent ? 'cursor-grab active:cursor-grabbing' : ''}`}>
+      
+      {isEvent && (
+        <div className="absolute left-[-12px] top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-mid-gray bg-white rounded-full shadow-sm border border-light-gray p-0.5 z-10 cursor-grab active:cursor-grabbing">
+          <GripVertical className="w-4 h-4" />
+        </div>
+      )}
       
       <div className="flex justify-between items-start mb-2">
         <div className={`px-2.5 py-0.5 rounded text-xs font-medium whitespace-nowrap ${isStart || isEnd ? 'bg-charcoal/10 text-charcoal' : 'bg-sage/10 text-dark-sage'}`}>

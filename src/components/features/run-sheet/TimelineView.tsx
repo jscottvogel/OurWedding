@@ -14,22 +14,90 @@ interface TimelineViewProps {
   overScheduleByMins: number;
   onAddItemToBlock: (blockIndex: number, item: any) => Promise<void>;
   onInsertNewBlock: (targetIndex: number, item: any) => Promise<void>;
+  onMoveItemToNewBlock?: (itemId: string, targetIndex: number) => Promise<void>;
   onUpdate: (id: string, updates: any) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }
 
 export default function TimelineView({ 
   startItem, endItem, blocks, isOverSchedule, overScheduleByMins, 
-  onAddItemToBlock, onInsertNewBlock, onUpdate, onDelete 
+  onAddItemToBlock, onInsertNewBlock, onMoveItemToNewBlock, onUpdate, onDelete 
 }: TimelineViewProps) {
   
   const [activeAddBlock, setActiveAddBlock] = useState<number | null>(null);
+  
+  // Drag and drop states
+  const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
+  const [dragOverBlockIndex, setDragOverBlockIndex] = useState<number | null>(null);
+  const [dragOverNewBlockIndex, setDragOverNewBlockIndex] = useState<number | null>(null);
   
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState('');
   const [location, setLocation] = useState('');
   const [assigned, setAssigned] = useState('');
   const [notes, setNotes] = useState('');
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedItemId(id);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', id);
+    // Use setTimeout to ensure the visual element stays visible during drag
+    setTimeout(() => {
+      if (e.target instanceof HTMLElement) {
+        e.target.style.opacity = '0.5';
+      }
+    }, 0);
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    setDraggedItemId(null);
+    setDragOverBlockIndex(null);
+    setDragOverNewBlockIndex(null);
+    if (e.target instanceof HTMLElement) {
+      e.target.style.opacity = '1';
+    }
+  };
+
+  const handleDragOverBlock = (e: React.DragEvent, blockIndex: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverBlockIndex !== blockIndex) {
+      setDragOverBlockIndex(blockIndex);
+      setDragOverNewBlockIndex(null);
+    }
+  };
+
+  const handleDragOverNewBlock = (e: React.DragEvent, newBlockIndex: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverNewBlockIndex !== newBlockIndex) {
+      setDragOverNewBlockIndex(newBlockIndex);
+      setDragOverBlockIndex(null);
+    }
+  };
+
+  const handleDropToBlock = async (e: React.DragEvent, targetBlockIndex: number) => {
+    e.preventDefault();
+    setDragOverBlockIndex(null);
+    setDragOverNewBlockIndex(null);
+    
+    if (!draggedItemId) return;
+    
+    // We update the item to have sortOrder = targetBlockIndex
+    await onUpdate(draggedItemId, { sortOrder: targetBlockIndex });
+    setDraggedItemId(null);
+  };
+
+  const handleDropToNewBlock = async (e: React.DragEvent, targetNewIndex: number) => {
+    e.preventDefault();
+    setDragOverBlockIndex(null);
+    setDragOverNewBlockIndex(null);
+    
+    if (!draggedItemId || !onMoveItemToNewBlock) return;
+    
+    await onMoveItemToNewBlock(draggedItemId, targetNewIndex);
+    setDraggedItemId(null);
+  };
 
   const handleAdd = async (blockIndex: number, isNewBlock: boolean) => {
     if (!title.trim()) return;
@@ -127,8 +195,8 @@ export default function TimelineView({
         {blocks.map((block) => (
           <div key={`block-${block.blockIndex}`} className="relative pl-5 md:pl-9">
             <div className="absolute left-0 top-0 bottom-[-3rem] w-0.5 bg-light-gray"></div>
-            
             <div className="absolute left-[-7px] top-1 w-4 h-4 rounded-full bg-sage border-2 border-white shadow-sm z-10"></div>
+            
             <div className="flex items-center mb-4">
               <h3 className="font-display text-lg text-sage">{block.startTime}</h3>
               <div className="ml-4 px-2 py-0.5 bg-sage/10 text-dark-sage text-xs font-medium rounded-full flex items-center">
@@ -137,9 +205,21 @@ export default function TimelineView({
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-4 items-start">
+            {/* Block Drop Zone */}
+            <div 
+              className={`flex flex-wrap gap-4 items-start p-2 rounded-xl transition-colors border-2 ${dragOverBlockIndex === block.blockIndex ? 'bg-sage/5 border-sage/30' : 'border-transparent'}`}
+              onDragOver={(e) => handleDragOverBlock(e, block.blockIndex)}
+              onDrop={(e) => handleDropToBlock(e, block.blockIndex)}
+              onDragLeave={() => setDragOverBlockIndex(null)}
+            >
               {block.items.map(item => (
-                <div key={item.id} className="w-full md:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.666rem)]">
+                <div 
+                  key={item.id} 
+                  className="w-full md:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.666rem)] cursor-grab active:cursor-grabbing transition-transform"
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, item.id)}
+                  onDragEnd={handleDragEnd}
+                >
                   <RunSheetItem 
                     item={item} 
                     onUpdate={onUpdate} 
@@ -162,10 +242,16 @@ export default function TimelineView({
               </div>
             </div>
 
-            <div className="mt-8 flex justify-center relative z-10">
-              <div className="bg-white px-2">
+            {/* Sequential Drop Zone (Between blocks) */}
+            <div className="mt-6 flex justify-center relative z-10 w-full px-2">
+              <div 
+                className={`w-full max-w-md p-4 rounded-xl border-2 transition-all flex justify-center ${dragOverNewBlockIndex === block.blockIndex + 1 ? 'bg-sage/10 border-sage/50 scale-105' : 'border-transparent'}`}
+                onDragOver={(e) => handleDragOverNewBlock(e, block.blockIndex + 1)}
+                onDrop={(e) => handleDropToNewBlock(e, block.blockIndex + 1)}
+                onDragLeave={() => setDragOverNewBlockIndex(null)}
+              >
                 {activeAddBlock === block.blockIndex + 0.5 ? (
-                  <div className="w-full min-w-[300px]">
+                  <div className="w-full">
                     {renderAddForm(block.blockIndex + 1, true)}
                   </div>
                 ) : (
@@ -200,7 +286,7 @@ export default function TimelineView({
       )}
 
       {endItem && (
-        <div className="mt-12 pl-6 md:pl-10 relative">
+        <div className="mt-8 pl-6 md:pl-10 relative">
           <div className="absolute left-[-5px] top-4 w-4 h-4 rounded-full bg-charcoal border-2 border-white shadow-sm z-10"></div>
           <RunSheetItem item={endItem} onUpdate={onUpdate} onDelete={onDelete} />
         </div>

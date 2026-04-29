@@ -178,6 +178,27 @@ export function useRunSheet() {
       ...item,
       weddingId,
       itemType: 'EVENT',
+    });
+  };
+
+  const moveItemToNewBlock = async (itemId: string, targetIndex: number) => {
+    if (!weddingId) return;
+    
+    const shiftPromises: any[] = [];
+    blocks.forEach(block => {
+      if (block.blockIndex >= targetIndex) {
+        block.items.forEach(ev => {
+          if (ev.id !== itemId) {
+            shiftPromises.push(client.models.RunSheetItem.update({ id: ev.id, sortOrder: block.blockIndex + 1 }));
+          }
+        });
+      }
+    });
+    
+    await Promise.all(shiftPromises);
+    
+    await client.models.RunSheetItem.update({
+      id: itemId,
       sortOrder: targetIndex
     });
   };
@@ -199,6 +220,7 @@ export function useRunSheet() {
     overScheduleByMins, 
     addItemToBlock, 
     insertNewBlock, 
+    moveItemToNewBlock,
     updateItem, 
     deleteItem 
   };
