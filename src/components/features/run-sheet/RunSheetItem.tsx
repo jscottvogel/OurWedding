@@ -1,25 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { Clock, MapPin, User, FileText, MoreVertical, Edit2, Trash2, Check, X, ArrowUp, ArrowDown } from 'lucide-react';
+import { Clock, MapPin, User, FileText, MoreVertical, Edit2, Trash2, Check, X, GripVertical } from 'lucide-react';
 import type { Schema } from '../../../../amplify/data/resource';
 
 interface RunSheetItemProps {
   item: Schema['RunSheetItem']['type'];
-  allItems: Schema['RunSheetItem']['type'][];
   onUpdate: (id: string, updates: Partial<Schema['RunSheetItem']['type']>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }
 
-export default function RunSheetItem({ item, allItems, onUpdate, onDelete }: RunSheetItemProps) {
+export default function RunSheetItem({ item, onUpdate, onDelete }: RunSheetItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(item.title);
   const [eventTime, setEventTime] = useState(item.eventTime || '');
-  const [duration, setDuration] = useState(item.durationMinutes?.toString() || '');
+  const [duration, setDuration] = useState(item.durationMinutes ? item.durationMinutes.toString() : '');
   const [location, setLocation] = useState(item.location || '');
   const [assigned, setAssigned] = useState(item.assignedPerson || '');
   const [notes, setNotes] = useState(item.notes || '');
-  const [dependsOnId, setDependsOnId] = useState(item.dependsOnId || '');
 
   const isStart = item.itemType === 'START';
   const isEnd = item.itemType === 'END';
@@ -34,25 +32,28 @@ export default function RunSheetItem({ item, allItems, onUpdate, onDelete }: Run
       durationMinutes: duration === '' ? 0 : parseInt(duration.toString(), 10),
       location,
       assignedPerson: assigned,
-      notes,
-      dependsOnId
+      notes
     });
     
     setIsEditing(false);
   };
 
-  // Format time for display (assuming HH:mm format)
-  const formattedTime = item.eventTime ? new Date(`2000-01-01T${item.eventTime}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+  const handleCancel = () => {
+    setTitle(item.title);
+    setEventTime(item.eventTime || '');
+    setDuration(item.durationMinutes ? item.durationMinutes.toString() : '');
+    setLocation(item.location || '');
+    setAssigned(item.assignedPerson || '');
+    setNotes(item.notes || '');
+    setIsEditing(false);
+  };
 
   if (isEditing) {
     return (
-      <div className="bg-ivory p-4 rounded-xl border border-sage relative ml-4 mb-4">
-        <div className="absolute -left-6 top-6 w-4 h-0.5 bg-sage"></div>
-        <div className="absolute -left-[29px] top-4 w-4 h-4 rounded-full bg-sage border-4 border-white"></div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-2">
-            <label className="block text-xs font-medium text-mid-gray mb-1">Event Title *</label>
+      <div className="bg-white p-5 rounded-xl border border-sage shadow-md mb-6 relative z-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="block text-xs font-medium text-mid-gray mb-1">Title *</label>
             <input 
               type="text" value={title} onChange={e => setTitle(e.target.value)}
               className="w-full p-2 border border-light-gray rounded focus:border-sage focus:outline-none"
@@ -66,7 +67,7 @@ export default function RunSheetItem({ item, allItems, onUpdate, onDelete }: Run
               disabled={isEvent}
               className={`w-full p-2 border border-light-gray rounded focus:border-sage focus:outline-none ${isEvent ? 'bg-light-gray/30 opacity-70 cursor-not-allowed' : ''}`}
             />
-            {isEvent && <p className="text-[10px] text-mid-gray mt-1">Computed from previous</p>}
+            {isEvent && <p className="text-[10px] text-mid-gray mt-1">Computed automatically</p>}
           </div>
           
           {!isEnd && (
@@ -76,22 +77,6 @@ export default function RunSheetItem({ item, allItems, onUpdate, onDelete }: Run
                 type="number" value={duration} onChange={e => setDuration(e.target.value)}
                 className="w-full p-2 border border-light-gray rounded focus:border-sage focus:outline-none"
               />
-            </div>
-          )}
-          
-          {isEvent && (
-            <div>
-              <label className="block text-xs font-medium text-mid-gray mb-1">Starts After</label>
-              <select
-                value={dependsOnId}
-                onChange={(e) => setDependsOnId(e.target.value)}
-                className="w-full p-2 border border-light-gray rounded focus:border-sage focus:outline-none bg-white"
-              >
-                <option value="">-- Day Starts --</option>
-                {allItems.filter(i => i.id !== item.id && i.itemType !== 'END' && i.itemType !== 'START').map(i => (
-                  <option key={i.id} value={i.id}>{i.title} ({i.eventTime})</option>
-                ))}
-              </select>
             </div>
           )}
           
@@ -115,29 +100,33 @@ export default function RunSheetItem({ item, allItems, onUpdate, onDelete }: Run
             <label className="block text-xs font-medium text-mid-gray mb-1">Notes</label>
             <textarea 
               value={notes} onChange={e => setNotes(e.target.value)}
-              className="w-full p-2 border border-light-gray rounded focus:border-sage focus:outline-none h-20"
-            />
+              className="w-full p-2 border border-light-gray rounded focus:border-sage focus:outline-none"
+              rows={2}
+            ></textarea>
           </div>
         </div>
         
-        <div className="flex justify-end mt-4 space-x-2">
-          <button 
-            onClick={() => setIsEditing(false)}
-            className="flex items-center px-3 py-1.5 text-sm text-mid-gray border border-light-gray rounded hover:bg-light-gray"
-          >
-            <X className="w-4 h-4 mr-1" /> Cancel
-          </button>
-          <button 
-            onClick={handleSave}
-            disabled={!title.trim() || !eventTime}
-            className="flex items-center px-3 py-1.5 text-sm bg-sage text-white rounded hover:bg-dark-sage disabled:opacity-50"
-          >
-            <Check className="w-4 h-4 mr-1" /> Save
-          </button>
+        <div className="flex justify-end space-x-2 mt-4 pt-4 border-t border-light-gray">
+          <button onClick={handleCancel} className="p-2 text-mid-gray hover:text-charcoal bg-light-gray/50 rounded transition-colors"><X className="w-5 h-5" /></button>
+          <button onClick={handleSave} disabled={!title.trim()} className="p-2 bg-sage text-white rounded hover:bg-dark-sage disabled:opacity-50 transition-colors"><Check className="w-5 h-5" /></button>
         </div>
       </div>
     );
   }
+
+  // Format time for display
+  const formatTime = (timeStr: string) => {
+    if (!timeStr) return '';
+    try {
+      const [hours, minutes] = timeStr.split(':');
+      const date = new Date();
+      date.setHours(parseInt(hours, 10));
+      date.setMinutes(parseInt(minutes, 10));
+      return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    } catch (e) {
+      return timeStr;
+    }
+  };
 
   return (
     <div className="relative pl-8 mb-6 group">
@@ -145,29 +134,48 @@ export default function RunSheetItem({ item, allItems, onUpdate, onDelete }: Run
           but we render our own specific dot here */}
       <div className={`absolute left-[-5px] top-1.5 w-3 h-3 rounded-full ${isStart || isEnd ? 'bg-charcoal' : 'bg-sage'} border-2 border-white z-10 shadow-sm transition-transform group-hover:scale-125`}></div>
       
-      <div className={`bg-white p-5 rounded-xl border ${isStart || isEnd ? 'border-charcoal border-l-4' : 'border-light-gray'} shadow-sm group-hover:border-sage/30 transition-colors`}>
-        <div className="flex justify-between items-start">
+      <div className={`bg-white p-5 rounded-xl border ${isStart || isEnd ? 'border-charcoal border-l-4' : 'border-light-gray'} shadow-sm hover:border-sage/50 transition-colors ${isEvent ? 'cursor-grab active:cursor-grabbing' : ''}`}>
+        
+        {isEvent && (
+          <div className="absolute left-10 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-mid-gray/50 cursor-grab active:cursor-grabbing">
+            <GripVertical className="w-5 h-5" />
+          </div>
+        )}
+
+        <div className={`flex justify-between items-start ${isEvent ? 'pl-6' : ''}`}>
           <div className="flex items-start">
-            <div className="bg-sage/10 text-dark-sage px-3 py-1 rounded-md font-medium text-sm mr-4 mt-0.5 whitespace-nowrap">
-              {formattedTime}
+            <div className={`px-3 py-1 rounded-md font-medium text-sm mr-4 mt-0.5 whitespace-nowrap ${isStart || isEnd ? 'bg-charcoal/10 text-charcoal' : 'bg-sage/10 text-dark-sage'}`}>
+              {formatTime(item.eventTime || '')}
             </div>
+            
             <div>
-              <h3 className="font-display text-lg text-charcoal mb-1">{item.title}</h3>
+              <h4 className="font-semibold text-charcoal text-lg">{item.title}</h4>
               
-              <div className="flex flex-wrap gap-x-4 gap-y-2 mt-2 text-sm text-mid-gray">
+              <div className="flex flex-wrap items-center mt-2 text-sm text-mid-gray gap-y-2">
                 {item.durationMinutes && (
-                  <span className="flex items-center"><Clock className="w-4 h-4 mr-1.5" /> {item.durationMinutes} mins</span>
+                  <span className="flex items-center mr-4">
+                    <Clock className="w-3.5 h-3.5 mr-1.5" />
+                    {item.durationMinutes} mins
+                  </span>
                 )}
+                
                 {item.location && (
-                  <span className="flex items-center"><MapPin className="w-4 h-4 mr-1.5" /> {item.location}</span>
+                  <span className="flex items-center mr-4">
+                    <MapPin className="w-3.5 h-3.5 mr-1.5" />
+                    {item.location}
+                  </span>
                 )}
+                
                 {item.assignedPerson && (
-                  <span className="flex items-center"><User className="w-4 h-4 mr-1.5" /> {item.assignedPerson}</span>
+                  <span className="flex items-center mr-4">
+                    <User className="w-3.5 h-3.5 mr-1.5" />
+                    {item.assignedPerson}
+                  </span>
                 )}
               </div>
               
               {item.notes && (
-                <div className="mt-3 bg-ivory p-3 rounded-lg text-sm text-charcoal border border-light-gray flex items-start">
+                <div className="mt-3 text-sm text-charcoal/70 flex items-start bg-light-gray/30 p-3 rounded-lg border border-light-gray/50">
                   <FileText className="w-4 h-4 mr-2 text-sage flex-shrink-0 mt-0.5" />
                   <p>{item.notes}</p>
                 </div>
@@ -175,7 +183,7 @@ export default function RunSheetItem({ item, allItems, onUpdate, onDelete }: Run
             </div>
           </div>
           
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1 ml-4 flex-shrink-0">
             <button onClick={() => setIsEditing(true)} className="p-1.5 text-mid-gray hover:text-sage bg-light-gray/50 rounded transition-colors"><Edit2 className="w-4 h-4" /></button>
             {isEvent && (
               <button onClick={() => onDelete(item.id)} className="p-1.5 text-mid-gray hover:text-red-500 bg-light-gray/50 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>
