@@ -6,15 +6,12 @@ import type { Schema } from '../../../../amplify/data/resource';
 
 interface RunSheetItemProps {
   item: Schema['RunSheetItem']['type'];
+  allItems: Schema['RunSheetItem']['type'][];
   onUpdate: (id: string, updates: Partial<Schema['RunSheetItem']['type']>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
-  onMoveUp: () => Promise<void>;
-  onMoveDown: () => Promise<void>;
-  isFirst: boolean;
-  isLast: boolean;
 }
 
-export default function RunSheetItem({ item, onUpdate, onDelete, onMoveUp, onMoveDown, isFirst, isLast }: RunSheetItemProps) {
+export default function RunSheetItem({ item, allItems, onUpdate, onDelete }: RunSheetItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(item.title);
   const [eventTime, setEventTime] = useState(item.eventTime || '');
@@ -22,21 +19,23 @@ export default function RunSheetItem({ item, onUpdate, onDelete, onMoveUp, onMov
   const [location, setLocation] = useState(item.location || '');
   const [assigned, setAssigned] = useState(item.assignedPerson || '');
   const [notes, setNotes] = useState(item.notes || '');
+  const [dependsOnId, setDependsOnId] = useState(item.dependsOnId || '');
 
   const isStart = item.itemType === 'START';
   const isEnd = item.itemType === 'END';
   const isEvent = !isStart && !isEnd;
 
   const handleSave = async () => {
-    if (!title.trim() || !eventTime) return;
+    if (!title.trim() || (!eventTime && isStart) || (!eventTime && isEnd)) return;
     
     await onUpdate(item.id, {
       title,
       eventTime,
-      durationMinutes: duration ? parseInt(duration) : undefined,
+      durationMinutes: duration === '' ? 0 : parseInt(duration.toString(), 10),
       location,
       assignedPerson: assigned,
-      notes
+      notes,
+      dependsOnId
     });
     
     setIsEditing(false);
@@ -77,6 +76,22 @@ export default function RunSheetItem({ item, onUpdate, onDelete, onMoveUp, onMov
                 type="number" value={duration} onChange={e => setDuration(e.target.value)}
                 className="w-full p-2 border border-light-gray rounded focus:border-sage focus:outline-none"
               />
+            </div>
+          )}
+          
+          {isEvent && (
+            <div>
+              <label className="block text-xs font-medium text-mid-gray mb-1">Starts After</label>
+              <select
+                value={dependsOnId}
+                onChange={(e) => setDependsOnId(e.target.value)}
+                className="w-full p-2 border border-light-gray rounded focus:border-sage focus:outline-none bg-white"
+              >
+                <option value="">-- Day Starts --</option>
+                {allItems.filter(i => i.id !== item.id && i.itemType !== 'END' && i.itemType !== 'START').map(i => (
+                  <option key={i.id} value={i.id}>{i.title} ({i.eventTime})</option>
+                ))}
+              </select>
             </div>
           )}
           
@@ -161,12 +176,6 @@ export default function RunSheetItem({ item, onUpdate, onDelete, onMoveUp, onMov
           </div>
           
           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
-            {isEvent && !isFirst && (
-              <button onClick={onMoveUp} className="p-1.5 text-mid-gray hover:text-sage bg-light-gray/50 rounded transition-colors"><ArrowUp className="w-4 h-4" /></button>
-            )}
-            {isEvent && !isLast && (
-              <button onClick={onMoveDown} className="p-1.5 text-mid-gray hover:text-sage bg-light-gray/50 rounded transition-colors"><ArrowDown className="w-4 h-4" /></button>
-            )}
             <button onClick={() => setIsEditing(true)} className="p-1.5 text-mid-gray hover:text-sage bg-light-gray/50 rounded transition-colors"><Edit2 className="w-4 h-4" /></button>
             {isEvent && (
               <button onClick={() => onDelete(item.id)} className="p-1.5 text-mid-gray hover:text-red-500 bg-light-gray/50 rounded transition-colors"><Trash2 className="w-4 h-4" /></button>

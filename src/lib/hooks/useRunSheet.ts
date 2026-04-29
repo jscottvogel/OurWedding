@@ -28,43 +28,22 @@ export function useRunSheet() {
         let startItem = dbItems.find(i => i.itemType === 'START');
         let endItem = dbItems.find(i => i.itemType === 'END');
         
-        // Auto-initialize anchors if they don't exist
+        // Auto-initialize anchors
         if (!startItem && dbItems.length >= 0) {
           const res = await client.models.RunSheetItem.create({
-            weddingId, title: 'Day Starts', eventTime: '08:00', itemType: 'START', sortOrder: -1
+            weddingId, title: 'Day Starts', eventTime: '08:00', itemType: 'START'
           });
           if (res.data) startItem = res.data;
         }
         if (!endItem && dbItems.length >= 0) {
           const res = await client.models.RunSheetItem.create({
-            weddingId, title: 'Day Ends (Hard Stop)', eventTime: '23:00', itemType: 'END', sortOrder: 9999
+            weddingId, title: 'Day Ends (Hard Stop)', eventTime: '23:00', itemType: 'END'
           });
           if (res.data) endItem = res.data;
         }
 
-        // Get standard events
         const events = dbItems.filter(i => i.itemType === 'EVENT' || !i.itemType);
         
-        // Sort strictly by sortOrder
-        events.sort((a, b) => {
-          const sortA = a.sortOrder || 0;
-          const sortB = b.sortOrder || 0;
-          if (sortA !== sortB) return sortA - sortB;
-          const timeA = a.eventTime || '00:00';
-          const timeB = b.eventTime || '00:00';
-          return timeA.localeCompare(timeB);
-        });
-
-        // Auto-heal sortOrders sequentially to guarantee robust swapping
-        const sortUpdates: any[] = [];
-        events.forEach((ev, idx) => {
-          if (ev.sortOrder !== idx) {
-            ev.sortOrder = idx; // mutate locally for immediate math
-            sortUpdates.push(client.models.RunSheetItem.update({ id: ev.id, sortOrder: idx }));
-          }
-        });
-        if (sortUpdates.length > 0) Promise.all(sortUpdates).catch(console.error);
-
         // Helper to add minutes
         const addMinutes = (timeStr: string, mins: number): string => {
           if (!timeStr) return '00:00';
@@ -74,7 +53,64 @@ export function useRunSheet() {
           return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
         };
 
-        // Helper to diff minutes
+        // Graph calculation
+        const itemMap = new Map<string, any>();
+        if (startItem) itemMap.set(startItem.id, startItem);
+        events.forEach(ev => itemMap.set(ev.id, ev));
+
+        const computedEvents: any[] = [];
+        
+        const resolveTime = (eventId: string, visited: Set<string>): string => {
+          if (visited.has(eventId)) {
+             return startItem?.eventTime || '08:00'; // Cycle detected
+          }
+          visited.add(eventId);
+
+          const event = itemMap.get(eventId);
+          if (!event) return startItem?.eventTime || '08:00';
+          
+          if (event.itemType === 'START') {
+             return event.eventTime || '08:00';
+          }
+
+          const parentId = event.dependsOnId || startItem?.id;
+          if (!parentId) return startItem?.eventTime || '08:00';
+
+          const parentStartTime = resolveTime(parentId, visited);
+          const parentEvent = itemMap.get(parentId);
+          const parentDuration = parentEvent?.durationMinutes || 0;
+          
+          return addMinutes(parentStartTime, parentDuration);
+        };
+
+        const timeUpdates: any[] = [];
+
+        events.forEach(event => {
+           const computedTime = resolveTime(event.id, new Set<string>());
+           const computed = { ...event, eventTime: computedTime };
+           computedEvents.push(computed);
+
+           if (event.eventTime !== computedTime) {
+             timeUpdates.push(client.models.RunSheetItem.update({ id: event.id, eventTime: computedTime }));
+           }
+        });
+
+        if (timeUpdates.length > 0) Promise.all(timeUpdates).catch(console.error);
+
+        // Sort events chronologically
+        computedEvents.sort((a, b) => {
+          const tA = a.eventTime || '00:00';
+          const tB = b.eventTime || '00:00';
+          if (tA !== tB) return tA.localeCompare(tB);
+          return (a.title || '').localeCompare(b.title || '');
+        });
+
+        let maxEndTime = startItem?.eventTime || '08:00';
+        computedEvents.forEach(ev => {
+           const endTime = addMinutes(ev.eventTime, ev.durationMinutes || 0);
+           if (endTime > maxEndTime) maxEndTime = endTime;
+        });
+
         const diffMinutes = (endStr: string, startStr: string): number => {
           if (!endStr || !startStr) return 0;
           const [eH, eM] = endStr.split(':').map(Number);
@@ -82,25 +118,9 @@ export function useRunSheet() {
           return (eH * 60 + eM) - (sH * 60 + sM);
         };
 
-        // Cascade compute times
-        let currentTime = startItem?.eventTime || '08:00';
-        const timeUpdates: any[] = [];
+        const hardStopTime = endItem?.eventTime || '23:00';
+        const diff = diffMinutes(maxEndTime, hardStopTime);
         
-        const computedEvents = events.map(event => {
-          const computed = { ...event, eventTime: currentTime };
-          currentTime = addMinutes(currentTime, event.durationMinutes || 0);
-          
-          if (event.eventTime !== computed.eventTime) {
-             timeUpdates.push(client.models.RunSheetItem.update({ id: event.id, eventTime: computed.eventTime }));
-          }
-          return computed;
-        });
-        
-        if (timeUpdates.length > 0) Promise.all(timeUpdates).catch(console.error);
-
-        // Calculate overflow
-        const endTime = endItem?.eventTime || '23:00';
-        const diff = diffMinutes(currentTime, endTime);
         if (diff > 0) {
           setIsOverSchedule(true);
           setOverScheduleByMins(diff);
@@ -126,14 +146,19 @@ export function useRunSheet() {
   const addItem = async (item: Omit<Schema['RunSheetItem']['type'], 'id' | 'createdAt' | 'updatedAt' | 'weddingId'>) => {
     if (!weddingId) return;
     
-    // Default to EVENT and place it at the end of the events (which is items.length - 2 because of START and END)
-    const targetSortOrder = Math.max(0, items.length - 2);
-    
+    let targetParentId = item.dependsOnId;
+    if (!targetParentId && items.length > 0) {
+       const prevEvent = items[items.length - 2];
+       if (prevEvent && prevEvent.itemType !== 'END') {
+          targetParentId = prevEvent.id;
+       }
+    }
+
     await client.models.RunSheetItem.create({
       ...item,
       weddingId,
       itemType: item.itemType || 'EVENT',
-      sortOrder: targetSortOrder
+      dependsOnId: targetParentId
     });
   };
 
@@ -148,25 +173,5 @@ export function useRunSheet() {
     await client.models.RunSheetItem.delete({ id });
   };
 
-  const moveItem = async (currentIndex: number, direction: 'up' | 'down') => {
-    // Indexes 0 and items.length-1 are START and END. We cannot move them, or move items past them.
-    if (currentIndex <= 1 && direction === 'up') return;
-    if (currentIndex >= items.length - 2 && direction === 'down') return;
-
-    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-    
-    // Swap sortOrder of the two events
-    const currentItem = items[currentIndex];
-    const targetItem = items[targetIndex];
-
-    const tempSort = currentItem.sortOrder;
-    const targetSort = targetItem.sortOrder;
-
-    await Promise.all([
-      client.models.RunSheetItem.update({ id: currentItem.id, sortOrder: targetSort }),
-      client.models.RunSheetItem.update({ id: targetItem.id, sortOrder: tempSort })
-    ]);
-  };
-
-  return { items, loading, isOverSchedule, overScheduleByMins, addItem, updateItem, deleteItem, moveItem };
+  return { items, loading, isOverSchedule, overScheduleByMins, addItem, updateItem, deleteItem };
 }
