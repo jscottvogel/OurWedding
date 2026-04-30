@@ -80,7 +80,7 @@ export default function RunSheetItemRow({
       {/* Main Content */}
       <div className={`flex-1 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 ${isConcurrent ? 'ml-6' : ''}`}>
         
-        {/* Title & Mode Toggle */}
+        {/* Title & Lock */}
         <div className="flex-1 flex items-center gap-2">
           {item.isFixed && <Lock className="w-3.5 h-3.5 text-charcoal/40 flex-shrink-0" title="Fixed item" />}
           <input
@@ -92,8 +92,8 @@ export default function RunSheetItemRow({
           />
         </div>
 
-        {/* Start Time & Duration */}
-        <div className="flex items-center gap-3 text-sm shrink-0">
+        {/* Timing Controls */}
+        <div className="flex items-center gap-2 text-sm shrink-0 flex-wrap sm:flex-nowrap">
           <div className="text-charcoal/50 w-12 text-right font-mono text-xs">
             {item.scheduledStartTime}
           </div>
@@ -107,20 +107,27 @@ export default function RunSheetItemRow({
               onChange={(e) => onUpdate(item.id, { durationMinutes: parseInt(e.target.value) || 0 })}
               className="w-10 text-center bg-transparent border-none p-0 text-charcoal focus:ring-0 text-sm"
             />
-            <span className="text-charcoal/50 ml-1 text-xs">min</span>
+            <span className="text-charcoal/50 ml-1 text-xs mr-2">min</span>
           </div>
+
+          {/* Explicit Parallel Toggle */}
+          <button
+            onClick={() => onUpdate(item.id, { mode: isConcurrent ? 'sequential' : 'concurrent' })}
+            className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider rounded-md border transition-all ${
+              isConcurrent 
+                ? 'bg-indigo-100 border-indigo-200 text-indigo-700 hover:bg-indigo-200' 
+                : 'bg-white border-light-gray text-charcoal/40 hover:bg-light-gray hover:text-charcoal/70'
+            }`}
+            title={isConcurrent ? 'Running at the same time as the item above. Click to make sequential.' : 'Running sequentially. Click to run at the same time as the item above.'}
+          >
+            <LinkIcon className="w-3 h-3" />
+            {isConcurrent ? 'Parallel' : 'Sequential'}
+          </button>
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity ml-2 space-x-1 shrink-0">
-        <button
-          onClick={() => onUpdate(item.id, { mode: isConcurrent ? 'sequential' : 'concurrent' })}
-          className={`p-1.5 rounded-md transition-colors ${isConcurrent ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-light-gray text-charcoal/40 hover:text-charcoal'}`}
-          title={isConcurrent ? 'Make sequential' : 'Make parallel with above'}
-        >
-          <LinkIcon className="w-4 h-4" />
-        </button>
+      {/* Delete Action (Hover only) */}
+      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0">
         <button
           onClick={() => onDelete(item.id)}
           className="p-1.5 rounded-md hover:bg-rose-50 text-charcoal/40 hover:text-rose-500 transition-colors"

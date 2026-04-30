@@ -25,6 +25,77 @@ export function useRunSheet() {
   const [loading, setLoading] = useState(true);
   const [isOverSchedule, setIsOverSchedule] = useState(false);
   const [overScheduleByMins, setOverScheduleByMins] = useState(0);
+  
+  const isReordering = React.useRef(false);
+
+  const addMinutes = (timeStr: string, mins: number): string => {
+    if (!timeStr) return '00:00';
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const date = new Date(2000, 0, 1, hours, minutes);
+    date.setMinutes(date.getMinutes() + mins);
+    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+  };
+
+  const diffMinutes = (endStr: string, startStr: string): number => {
+    if (!endStr || !startStr) return 0;
+    const [eH, eM] = endStr.split(':').map(Number);
+    const [sH, sM] = startStr.split(':').map(Number);
+    return (eH * 60 + eM) - (sH * 60 + sM);
+  };
+
+  const calculateSchedule = (events: any[], currentStart: any, currentEnd: any) => {
+    const calculatedItems: CalculatedRunSheetItem[] = [];
+    let currentWallClock = currentStart?.eventTime || '14:00';
+    const timeUpdates: any[] = [];
+    
+    for (let i = 0; i < events.length; i++) {
+      const event = events[i];
+      const mode = (event.mode as RunSheetItemMode) || 'sequential';
+      
+      let scheduledStartTime = currentWallClock;
+      let scheduledEndTime = currentWallClock;
+
+      if (mode === 'concurrent' && i > 0) {
+        scheduledStartTime = calculatedItems[i - 1].scheduledStartTime;
+      }
+
+      scheduledEndTime = addMinutes(scheduledStartTime, event.durationMinutes || 0);
+
+      calculatedItems.push({
+        ...event,
+        mode,
+        scheduledStartTime,
+        scheduledEndTime
+      });
+
+      const isNextConcurrent = i < events.length - 1 && events[i + 1].mode === 'concurrent';
+      
+      if (!isNextConcurrent) {
+        let groupStartIndex = i;
+        while (groupStartIndex > 0 && calculatedItems[groupStartIndex].mode === 'concurrent') {
+          groupStartIndex--;
+        }
+        let maxDuration = 0;
+        for (let j = groupStartIndex; j <= i; j++) {
+          maxDuration = Math.max(maxDuration, calculatedItems[j].durationMinutes || 0);
+        }
+        currentWallClock = addMinutes(calculatedItems[groupStartIndex].scheduledStartTime, maxDuration);
+      }
+
+      if (event.eventTime !== scheduledStartTime || event.sortOrder !== i) {
+        timeUpdates.push(client.models.RunSheetItem.update({
+          id: event.id,
+          eventTime: scheduledStartTime,
+          sortOrder: i
+        }));
+      }
+    }
+
+    const endTime = currentEnd?.eventTime || '23:00';
+    const diff = diffMinutes(currentWallClock, endTime);
+    
+    return { calculatedItems, timeUpdates, isOver: diff > 0, overMins: Math.max(0, diff) };
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -37,6 +108,8 @@ export function useRunSheet() {
       filter: { weddingId: { eq: weddingId } }
     }).subscribe({
       next: async ({ items: dbItems }) => {
+        if (isReordering.current) return; // Prevent snap-back during drag-and-drop
+        
         let currentStart = dbItems.find(i => i.itemType === 'START');
         let currentEnd = dbItems.find(i => i.itemType === 'END');
         
@@ -56,92 +129,12 @@ export function useRunSheet() {
         const events = dbItems.filter(i => i.itemType === 'EVENT' || !i.itemType);
         events.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
-        const addMinutes = (timeStr: string, mins: number): string => {
-          if (!timeStr) return '00:00';
-          const [hours, minutes] = timeStr.split(':').map(Number);
-          const date = new Date(2000, 0, 1, hours, minutes);
-          date.setMinutes(date.getMinutes() + mins);
-          return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-        };
-
-        const diffMinutes = (endStr: string, startStr: string): number => {
-          if (!endStr || !startStr) return 0;
-          const [eH, eM] = endStr.split(':').map(Number);
-          const [sH, sM] = startStr.split(':').map(Number);
-          return (eH * 60 + eM) - (sH * 60 + sM);
-        };
-
-        // Time Calculation Logic
-        const calculatedItems: CalculatedRunSheetItem[] = [];
-        let currentWallClock = currentStart?.eventTime || '14:00';
-        const timeUpdates: any[] = [];
-        
-        for (let i = 0; i < events.length; i++) {
-          const event = events[i];
-          const mode = (event.mode as RunSheetItemMode) || 'sequential';
-          
-          let scheduledStartTime = currentWallClock;
-          let scheduledEndTime = currentWallClock;
-
-          if (mode === 'concurrent' && i > 0) {
-            // Start at the same time as the item directly above it
-            scheduledStartTime = calculatedItems[i - 1].scheduledStartTime;
-          }
-
-          scheduledEndTime = addMinutes(scheduledStartTime, event.durationMinutes || 0);
-
-          calculatedItems.push({
-            ...event,
-            mode,
-            scheduledStartTime,
-            scheduledEndTime
-          });
-
-          // If mode is sequential, or we're at the end of a concurrent group,
-          // we need to advance the currentWallClock.
-          // Wait, the rule is: "When one or more concurrent items run alongside a sequential item, 
-          // the block's total duration = max(durations of all items in the concurrent group)."
-          
-          // Let's look ahead to see if the NEXT item is concurrent.
-          // If the next item is NOT concurrent, we advance currentWallClock by the MAX duration of the CURRENT group.
-          const isNextConcurrent = i < events.length - 1 && events[i + 1].mode === 'concurrent';
-          
-          if (!isNextConcurrent) {
-            // Find the start of the current concurrent group
-            let groupStartIndex = i;
-            while (groupStartIndex > 0 && calculatedItems[groupStartIndex].mode === 'concurrent') {
-              groupStartIndex--;
-            }
-            // Max duration of items from groupStartIndex to i
-            let maxDuration = 0;
-            for (let j = groupStartIndex; j <= i; j++) {
-              maxDuration = Math.max(maxDuration, calculatedItems[j].durationMinutes || 0);
-            }
-            // The wall clock for the next sequential item advances from the group's START time + maxDuration
-            currentWallClock = addMinutes(calculatedItems[groupStartIndex].scheduledStartTime, maxDuration);
-          }
-
-          if (event.eventTime !== scheduledStartTime || event.sortOrder !== i) {
-            timeUpdates.push(client.models.RunSheetItem.update({
-              id: event.id,
-              eventTime: scheduledStartTime,
-              sortOrder: i
-            }));
-          }
-        }
+        const { calculatedItems, timeUpdates, isOver, overMins } = calculateSchedule(events, currentStart, currentEnd);
 
         if (timeUpdates.length > 0) Promise.all(timeUpdates).catch(console.error);
 
-        const endTime = currentEnd?.eventTime || '23:00';
-        const diff = diffMinutes(currentWallClock, endTime);
-        if (diff > 0) {
-          setIsOverSchedule(true);
-          setOverScheduleByMins(diff);
-        } else {
-          setIsOverSchedule(false);
-          setOverScheduleByMins(0);
-        }
-
+        setIsOverSchedule(isOver);
+        setOverScheduleByMins(overMins);
         setStartItem(currentStart || null);
         setEndItem(currentEnd || null);
         setItems(calculatedItems);
@@ -173,21 +166,53 @@ export function useRunSheet() {
   };
 
   const updateItem = async (id: string, updates: Partial<Schema['RunSheetItem']['type']>) => {
-    setItems(prev => prev.map(item => item.id === id ? { ...item, ...updates } as CalculatedRunSheetItem : item));
+    // Optimistic update
+    isReordering.current = true;
+    const newEvents = items.map(item => item.id === id ? { ...item, ...updates } as CalculatedRunSheetItem : item);
+    const { calculatedItems, isOver, overMins } = calculateSchedule(newEvents, startItem, endItem);
+    setItems(calculatedItems);
+    setIsOverSchedule(isOver);
+    setOverScheduleByMins(overMins);
+    
     await client.models.RunSheetItem.update({ id, ...updates });
+    isReordering.current = false;
   };
 
   const deleteItem = async (id: string) => {
-    setItems(prev => prev.filter(item => item.id !== id));
+    isReordering.current = true;
+    const newEvents = items.filter(item => item.id !== id);
+    const { calculatedItems, isOver, overMins } = calculateSchedule(newEvents, startItem, endItem);
+    setItems(calculatedItems);
+    setIsOverSchedule(isOver);
+    setOverScheduleByMins(overMins);
+
     await client.models.RunSheetItem.delete({ id });
+    isReordering.current = false;
   };
 
   const reorderItems = async (newItems: CalculatedRunSheetItem[]) => {
-    setItems(newItems);
+    isReordering.current = true;
+    
+    // Calculate new times immediately for perfect UI snap
+    const { calculatedItems, timeUpdates, isOver, overMins } = calculateSchedule(newItems, startItem, endItem);
+    setItems(calculatedItems);
+    setIsOverSchedule(isOver);
+    setOverScheduleByMins(overMins);
+
+    // Fire all updates
     const shiftPromises = newItems.map((item, index) => {
-      return client.models.RunSheetItem.update({ id: item.id, sortOrder: index });
+      // Only fire sortOrder updates if it actually changed to save bandwidth
+      if (item.sortOrder !== index) {
+         return client.models.RunSheetItem.update({ id: item.id, sortOrder: index });
+      }
     });
-    await Promise.all(shiftPromises);
+    
+    await Promise.all([
+      ...shiftPromises.filter(Boolean),
+      ...timeUpdates
+    ]);
+
+    isReordering.current = false;
   };
 
   return { 
