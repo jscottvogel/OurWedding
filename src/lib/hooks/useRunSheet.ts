@@ -45,21 +45,14 @@ export function useRunSheet() {
 
   const calculateSchedule = (events: any[], currentStart: any, currentEnd: any) => {
     const calculatedItems: CalculatedRunSheetItem[] = [];
-    let currentWallClock = currentStart?.eventTime || '14:00';
     const timeUpdates: any[] = [];
     
     for (let i = 0; i < events.length; i++) {
       const event = events[i];
       const mode = (event.mode as RunSheetItemMode) || 'sequential';
       
-      let scheduledStartTime = currentWallClock;
-      let scheduledEndTime = currentWallClock;
-
-      if (mode === 'concurrent' && i > 0) {
-        scheduledStartTime = calculatedItems[i - 1].scheduledStartTime;
-      }
-
-      scheduledEndTime = addMinutes(scheduledStartTime, event.durationMinutes || 0);
+      let scheduledStartTime = event.eventTime || '12:00';
+      let scheduledEndTime = addMinutes(scheduledStartTime, event.durationMinutes || 0);
 
       calculatedItems.push({
         ...event,
@@ -68,29 +61,15 @@ export function useRunSheet() {
         scheduledEndTime
       });
 
-      const isNextConcurrent = i < events.length - 1 && events[i + 1].mode === 'concurrent';
-      
-      if (!isNextConcurrent) {
-        let groupStartIndex = i;
-        while (groupStartIndex > 0 && calculatedItems[groupStartIndex].mode === 'concurrent') {
-          groupStartIndex--;
-        }
-        let maxDuration = 0;
-        for (let j = groupStartIndex; j <= i; j++) {
-          maxDuration = Math.max(maxDuration, calculatedItems[j].durationMinutes || 0);
-        }
-        currentWallClock = addMinutes(calculatedItems[groupStartIndex].scheduledStartTime, maxDuration);
-      }
-
-      if (event.eventTime !== scheduledStartTime || event.sortOrder !== i) {
+      if (event.sortOrder !== i) {
         timeUpdates.push({
           id: event.id,
-          eventTime: scheduledStartTime,
           sortOrder: i
         });
       }
     }
 
+    const currentWallClock = calculatedItems.length > 0 ? calculatedItems[calculatedItems.length - 1].scheduledEndTime : currentStart?.eventTime || '14:00';
     const endTime = currentEnd?.eventTime || '23:00';
     const diff = diffMinutes(currentWallClock, endTime);
     
@@ -183,7 +162,7 @@ export function useRunSheet() {
     if (timeUpdates.length > 0) {
       await Promise.all(timeUpdates.map((u: any) => client.models.RunSheetItem.update(u)));
     }
-    isReordering.current = false;
+    setTimeout(() => { isReordering.current = false; }, 500);
   };
 
   const deleteItem = async (id: string) => {
@@ -198,7 +177,7 @@ export function useRunSheet() {
     if (timeUpdates.length > 0) {
       await Promise.all(timeUpdates.map((u: any) => client.models.RunSheetItem.update(u)));
     }
-    isReordering.current = false;
+    setTimeout(() => { isReordering.current = false; }, 500);
   };
 
   const clearRunsheet = async () => {
@@ -211,7 +190,7 @@ export function useRunSheet() {
 
     const deletePromises = eventsToDelete.map(item => client.models.RunSheetItem.delete({ id: item.id }));
     await Promise.all(deletePromises);
-    isReordering.current = false;
+    setTimeout(() => { isReordering.current = false; }, 500);
   };
 
   const reorderItems = async (newItems: CalculatedRunSheetItem[]) => {
@@ -227,7 +206,7 @@ export function useRunSheet() {
       await Promise.all(timeUpdates.map((u: any) => client.models.RunSheetItem.update(u)));
     }
 
-    isReordering.current = false;
+    setTimeout(() => { isReordering.current = false; }, 500);
   };
 
   return { 

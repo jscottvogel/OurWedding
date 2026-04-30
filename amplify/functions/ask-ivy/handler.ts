@@ -87,7 +87,7 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
 
   const requestBody: any = {
     anthropic_version: 'bedrock-2023-05-31',
-    max_tokens: isChecklistGeneration ? 4000 : 500,
+    max_tokens: 4000,
     system: systemPrompt,
     messages: formattedMessages,
   };
