@@ -29,7 +29,7 @@ export default function IvyChat() {
   const { wedding } = useWedding();
   const { tasks, addTask, updateTask, deleteTask } = useChecklist();
   const { vendors, addVendor, updateVendor, deleteVendor } = useVendors();
-  const { blocks, insertNewBlock, updateItem: updateRunsheetItem, deleteItem: deleteRunsheetItem } = useRunSheet();
+  const { blocks, insertNewBlock, updateItem: updateRunsheetItem, deleteItem: deleteRunsheetItem, clearRunsheet } = useRunSheet();
   
   const runsheet = blocks.flatMap(b => b.items);
   const addRunsheetItem = async (item: any) => {
@@ -141,6 +141,9 @@ export default function IvyChat() {
           } else if (toolCall.name === 'delete_runsheet_item') {
             await deleteRunsheetItem(toolCall.input.id);
             lastActionMessage = "I've removed that item from your run sheet!";
+          } else if (toolCall.name === 'clear_runsheet') {
+            await clearRunsheet();
+            lastActionMessage = "I've cleared out your entire run sheet. You're ready to start fresh!";
           }
         }
         

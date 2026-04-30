@@ -227,6 +227,14 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
           },
           required: ["id"]
         }
+      },
+      {
+        name: "clear_runsheet",
+        description: "Deletes all events from the user's wedding day run sheet. Use this when the user asks to 'clear' or 'start over' with the run sheet.",
+        input_schema: {
+          type: "object",
+          properties: {}
+        }
       }
     ];
   }

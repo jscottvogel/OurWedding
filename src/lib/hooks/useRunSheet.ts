@@ -83,11 +83,11 @@ export function useRunSheet() {
       }
 
       if (event.eventTime !== scheduledStartTime || event.sortOrder !== i) {
-        timeUpdates.push(client.models.RunSheetItem.update({
+        timeUpdates.push({
           id: event.id,
           eventTime: scheduledStartTime,
           sortOrder: i
-        }));
+        });
       }
     }
 
@@ -131,7 +131,10 @@ export function useRunSheet() {
 
         const { calculatedItems, timeUpdates, isOver, overMins } = calculateSchedule(events, currentStart, currentEnd);
 
-        if (timeUpdates.length > 0) Promise.all(timeUpdates).catch(console.error);
+        if (timeUpdates.length > 0) {
+          const promises = timeUpdates.map((u: any) => client.models.RunSheetItem.update(u));
+          Promise.all(promises).catch(console.error);
+        }
 
         setIsOverSchedule(isOver);
         setOverScheduleByMins(overMins);
@@ -169,24 +172,43 @@ export function useRunSheet() {
     // Optimistic update
     isReordering.current = true;
     const newEvents = items.map(item => item.id === id ? { ...item, ...updates } as CalculatedRunSheetItem : item);
-    const { calculatedItems, isOver, overMins } = calculateSchedule(newEvents, startItem, endItem);
+    const { calculatedItems, timeUpdates, isOver, overMins } = calculateSchedule(newEvents, startItem, endItem);
     setItems(calculatedItems);
     setIsOverSchedule(isOver);
     setOverScheduleByMins(overMins);
     
     await client.models.RunSheetItem.update({ id, ...updates });
+    if (timeUpdates.length > 0) {
+      await Promise.all(timeUpdates.map((u: any) => client.models.RunSheetItem.update(u)));
+    }
     isReordering.current = false;
   };
 
   const deleteItem = async (id: string) => {
     isReordering.current = true;
     const newEvents = items.filter(item => item.id !== id);
-    const { calculatedItems, isOver, overMins } = calculateSchedule(newEvents, startItem, endItem);
+    const { calculatedItems, timeUpdates, isOver, overMins } = calculateSchedule(newEvents, startItem, endItem);
     setItems(calculatedItems);
     setIsOverSchedule(isOver);
     setOverScheduleByMins(overMins);
 
     await client.models.RunSheetItem.delete({ id });
+    if (timeUpdates.length > 0) {
+      await Promise.all(timeUpdates.map((u: any) => client.models.RunSheetItem.update(u)));
+    }
+    isReordering.current = false;
+  };
+
+  const clearRunsheet = async () => {
+    isReordering.current = true;
+    const eventsToDelete = items; // all items returned by the hook are EVENTs
+    const { calculatedItems, isOver, overMins } = calculateSchedule([], startItem, endItem);
+    setItems(calculatedItems);
+    setIsOverSchedule(isOver);
+    setOverScheduleByMins(overMins);
+
+    const deletePromises = eventsToDelete.map(item => client.models.RunSheetItem.delete({ id: item.id }));
+    await Promise.all(deletePromises);
     isReordering.current = false;
   };
 
@@ -199,18 +221,9 @@ export function useRunSheet() {
     setIsOverSchedule(isOver);
     setOverScheduleByMins(overMins);
 
-    // Fire all updates
-    const shiftPromises = newItems.map((item, index) => {
-      // Only fire sortOrder updates if it actually changed to save bandwidth
-      if (item.sortOrder !== index) {
-         return client.models.RunSheetItem.update({ id: item.id, sortOrder: index });
-      }
-    });
-    
-    await Promise.all([
-      ...shiftPromises.filter(Boolean),
-      ...timeUpdates
-    ]);
+    if (timeUpdates.length > 0) {
+      await Promise.all(timeUpdates.map((u: any) => client.models.RunSheetItem.update(u)));
+    }
 
     isReordering.current = false;
   };
@@ -226,6 +239,7 @@ export function useRunSheet() {
     insertNewBlock, 
     updateItem, 
     deleteItem,
+    clearRunsheet,
     reorderItems,
     // Add blocks alias for Ivy backward compatibility if needed, though we will update IvyChat to use insertNewBlock alias.
     // Wait, IvyChat uses `blocks.length` and `blocks.flatMap()`.
