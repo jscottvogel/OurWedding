@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../amplify/data/resource';
 import { useAuth } from './useAuth';
@@ -26,7 +26,7 @@ export function useRunSheet() {
   const [isOverSchedule, setIsOverSchedule] = useState(false);
   const [overScheduleByMins, setOverScheduleByMins] = useState(0);
   
-  const isReordering = React.useRef(false);
+  const isReordering = useRef(false);
 
   const addMinutes = (timeStr: string, mins: number): string => {
     if (!timeStr) return '00:00';
