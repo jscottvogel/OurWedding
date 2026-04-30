@@ -82,7 +82,7 @@ export default function RunSheetItemRow({
         
         {/* Title & Lock */}
         <div className="flex-1 flex items-center gap-2">
-          {item.isFixed && <Lock className="w-3.5 h-3.5 text-charcoal/40 flex-shrink-0" title="Fixed item" />}
+          {item.isFixed && <span title="Fixed item" className="flex-shrink-0 flex items-center"><Lock className="w-3.5 h-3.5 text-charcoal/40" /></span>}
           <input
             type="text"
             value={item.title}

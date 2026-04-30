@@ -157,6 +157,8 @@ export function useRunSheet() {
     if (!weddingId) return;
     await client.models.RunSheetItem.create({
       ...item,
+      title: item.title || 'New Event',
+      eventTime: item.eventTime || '12:00',
       weddingId,
       itemType: 'EVENT',
       sortOrder: items.length
