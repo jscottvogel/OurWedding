@@ -104,6 +104,8 @@ const schema = a.schema({
       assignedVendorIds: a.string().array(),
       sortOrder: a.integer(),
       itemType: a.enum(['START', 'END', 'EVENT']),
+      mode: a.string(),
+      isFixed: a.boolean(),
     })
     .secondaryIndexes((index) => [index('weddingId')])
     .authorization((allow) => [

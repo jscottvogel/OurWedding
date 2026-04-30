@@ -7,19 +7,20 @@ import { useAuth } from './useAuth';
 
 const client = generateClient<Schema>();
 
-export interface RunSheetBlock {
-  blockIndex: number;
-  startTime: string;
-  maxDuration: number;
-  items: Schema['RunSheetItem']['type'][];
-}
+export type RunSheetItemMode = 'sequential' | 'concurrent';
+
+export type CalculatedRunSheetItem = Schema['RunSheetItem']['type'] & {
+  mode: RunSheetItemMode;
+  scheduledStartTime: string;
+  scheduledEndTime: string;
+};
 
 export function useRunSheet() {
   const { weddingId, loading: authLoading } = useAuth();
   
   const [startItem, setStartItem] = useState<Schema['RunSheetItem']['type'] | null>(null);
   const [endItem, setEndItem] = useState<Schema['RunSheetItem']['type'] | null>(null);
-  const [blocks, setBlocks] = useState<RunSheetBlock[]>([]);
+  const [items, setItems] = useState<CalculatedRunSheetItem[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [isOverSchedule, setIsOverSchedule] = useState(false);
@@ -39,13 +40,13 @@ export function useRunSheet() {
         let currentStart = dbItems.find(i => i.itemType === 'START');
         let currentEnd = dbItems.find(i => i.itemType === 'END');
         
-        if (!currentStart && dbItems.length >= 0) {
+        if (!currentStart) {
           const res = await client.models.RunSheetItem.create({
-            weddingId, title: 'Day Starts', eventTime: '08:00', itemType: 'START', sortOrder: -1
+            weddingId, title: 'Day Starts', eventTime: '14:00', itemType: 'START', sortOrder: -1
           });
           if (res.data) currentStart = res.data;
         }
-        if (!currentEnd && dbItems.length >= 0) {
+        if (!currentEnd) {
           const res = await client.models.RunSheetItem.create({
             weddingId, title: 'Day Ends (Hard Stop)', eventTime: '23:00', itemType: 'END', sortOrder: 9999
           });
@@ -53,18 +54,8 @@ export function useRunSheet() {
         }
 
         const events = dbItems.filter(i => i.itemType === 'EVENT' || !i.itemType);
-        
-        // Group by sortOrder
-        const blocksMap = new Map<number, typeof events>();
-        events.forEach(ev => {
-           const order = ev.sortOrder ?? 0;
-           if (!blocksMap.has(order)) blocksMap.set(order, []);
-           blocksMap.get(order)!.push(ev);
-        });
+        events.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
-        // Get sorted block indices
-        const sortedBlockIndices = Array.from(blocksMap.keys()).sort((a, b) => a - b);
-        
         const addMinutes = (timeStr: string, mins: number): string => {
           if (!timeStr) return '00:00';
           const [hours, minutes] = timeStr.split(':').map(Number);
@@ -80,50 +71,69 @@ export function useRunSheet() {
           return (eH * 60 + eM) - (sH * 60 + sM);
         };
 
-        let currentTime = currentStart?.eventTime || '08:00';
+        // Time Calculation Logic
+        const calculatedItems: CalculatedRunSheetItem[] = [];
+        let currentWallClock = currentStart?.eventTime || '14:00';
         const timeUpdates: any[] = [];
-        const builtBlocks: RunSheetBlock[] = [];
         
-        sortedBlockIndices.forEach((oldOrder, newBlockIndex) => {
-           const blockEvents = blocksMap.get(oldOrder)!;
-           let maxDurationInBlock = 0;
-           
-           // Sort events inside the block just alphabetically for stable rendering
-           blockEvents.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-           
-           const computedItems: typeof events = [];
-           
-           blockEvents.forEach(event => {
-              const computed = { ...event, eventTime: currentTime, sortOrder: newBlockIndex };
-              computedItems.push(computed);
-              
-              if (event.durationMinutes && event.durationMinutes > maxDurationInBlock) {
-                 maxDurationInBlock = event.durationMinutes;
-              }
-              
-              if (event.eventTime !== currentTime || event.sortOrder !== newBlockIndex) {
-                 timeUpdates.push(client.models.RunSheetItem.update({ 
-                   id: event.id, 
-                   eventTime: currentTime,
-                   sortOrder: newBlockIndex
-                 }));
-              }
-           });
-           
-           builtBlocks.push({
-             blockIndex: newBlockIndex,
-             startTime: currentTime,
-             maxDuration: maxDurationInBlock,
-             items: computedItems
-           });
-           
-           currentTime = addMinutes(currentTime, maxDurationInBlock);
-        });
-        
+        for (let i = 0; i < events.length; i++) {
+          const event = events[i];
+          const mode = (event.mode as RunSheetItemMode) || 'sequential';
+          
+          let scheduledStartTime = currentWallClock;
+          let scheduledEndTime = currentWallClock;
+
+          if (mode === 'concurrent' && i > 0) {
+            // Start at the same time as the item directly above it
+            scheduledStartTime = calculatedItems[i - 1].scheduledStartTime;
+          }
+
+          scheduledEndTime = addMinutes(scheduledStartTime, event.durationMinutes || 0);
+
+          calculatedItems.push({
+            ...event,
+            mode,
+            scheduledStartTime,
+            scheduledEndTime
+          });
+
+          // If mode is sequential, or we're at the end of a concurrent group,
+          // we need to advance the currentWallClock.
+          // Wait, the rule is: "When one or more concurrent items run alongside a sequential item, 
+          // the block's total duration = max(durations of all items in the concurrent group)."
+          
+          // Let's look ahead to see if the NEXT item is concurrent.
+          // If the next item is NOT concurrent, we advance currentWallClock by the MAX duration of the CURRENT group.
+          const isNextConcurrent = i < events.length - 1 && events[i + 1].mode === 'concurrent';
+          
+          if (!isNextConcurrent) {
+            // Find the start of the current concurrent group
+            let groupStartIndex = i;
+            while (groupStartIndex > 0 && calculatedItems[groupStartIndex].mode === 'concurrent') {
+              groupStartIndex--;
+            }
+            // Max duration of items from groupStartIndex to i
+            let maxDuration = 0;
+            for (let j = groupStartIndex; j <= i; j++) {
+              maxDuration = Math.max(maxDuration, calculatedItems[j].durationMinutes || 0);
+            }
+            // The wall clock for the next sequential item advances from the group's START time + maxDuration
+            currentWallClock = addMinutes(calculatedItems[groupStartIndex].scheduledStartTime, maxDuration);
+          }
+
+          if (event.eventTime !== scheduledStartTime || event.sortOrder !== i) {
+            timeUpdates.push(client.models.RunSheetItem.update({
+              id: event.id,
+              eventTime: scheduledStartTime,
+              sortOrder: i
+            }));
+          }
+        }
+
         if (timeUpdates.length > 0) Promise.all(timeUpdates).catch(console.error);
 
         const endTime = currentEnd?.eventTime || '23:00';
-        const diff = diffMinutes(currentTime, endTime);
+        const diff = diffMinutes(currentWallClock, endTime);
         if (diff > 0) {
           setIsOverSchedule(true);
           setOverScheduleByMins(diff);
@@ -134,7 +144,7 @@ export function useRunSheet() {
 
         setStartItem(currentStart || null);
         setEndItem(currentEnd || null);
-        setBlocks(builtBlocks);
+        setItems(calculatedItems);
         setLoading(false);
       },
       error: (err) => {
@@ -146,61 +156,20 @@ export function useRunSheet() {
     return () => sub.unsubscribe();
   }, [weddingId, authLoading]);
 
-  // Add item to an existing block
-  const addItemToBlock = async (blockIndex: number, item: any) => {
+  // Expose addItem
+  const addItem = async (item: Partial<Schema['RunSheetItem']['type']>) => {
     if (!weddingId) return;
     await client.models.RunSheetItem.create({
       ...item,
       weddingId,
       itemType: 'EVENT',
-      sortOrder: blockIndex
+      sortOrder: items.length
     });
   };
 
-  // Insert a completely new block at the target index, pushing everything else down
-  const insertNewBlock = async (targetIndex: number, item: any) => {
-    if (!weddingId) return;
-    
-    // Push all blocks >= targetIndex down by 1
-    const shiftPromises: any[] = [];
-    blocks.forEach(block => {
-      if (block.blockIndex >= targetIndex) {
-        block.items.forEach(ev => {
-          shiftPromises.push(client.models.RunSheetItem.update({ id: ev.id, sortOrder: block.blockIndex + 1 }));
-        });
-      }
-    });
-    
-    await Promise.all(shiftPromises);
-    
-    // Create the new item
-    await client.models.RunSheetItem.create({
-      ...item,
-      weddingId,
-      itemType: 'EVENT',
-    });
-  };
-
-  const moveItemToNewBlock = async (itemId: string, targetIndex: number) => {
-    if (!weddingId) return;
-    
-    const shiftPromises: any[] = [];
-    blocks.forEach(block => {
-      if (block.blockIndex >= targetIndex) {
-        block.items.forEach(ev => {
-          if (ev.id !== itemId) {
-            shiftPromises.push(client.models.RunSheetItem.update({ id: ev.id, sortOrder: block.blockIndex + 1 }));
-          }
-        });
-      }
-    });
-    
-    await Promise.all(shiftPromises);
-    
-    await client.models.RunSheetItem.update({
-      id: itemId,
-      sortOrder: targetIndex
-    });
+  // Alias for Ivy
+  const insertNewBlock = async (_targetIndex: number, item: any) => {
+    await addItem(item);
   };
 
   const updateItem = async (id: string, updates: Partial<Schema['RunSheetItem']['type']>) => {
@@ -211,17 +180,27 @@ export function useRunSheet() {
     await client.models.RunSheetItem.delete({ id });
   };
 
+  const reorderItems = async (newItems: CalculatedRunSheetItem[]) => {
+    const shiftPromises = newItems.map((item, index) => {
+      return client.models.RunSheetItem.update({ id: item.id, sortOrder: index });
+    });
+    await Promise.all(shiftPromises);
+  };
+
   return { 
     startItem, 
     endItem, 
-    blocks, 
+    items, 
     loading, 
     isOverSchedule, 
     overScheduleByMins, 
-    addItemToBlock, 
+    addItem, 
     insertNewBlock, 
-    moveItemToNewBlock,
     updateItem, 
-    deleteItem 
+    deleteItem,
+    reorderItems,
+    // Add blocks alias for Ivy backward compatibility if needed, though we will update IvyChat to use insertNewBlock alias.
+    // Wait, IvyChat uses `blocks.length` and `blocks.flatMap()`.
+    blocks: [{ items }] // Hacky alias to keep `runsheet = blocks.flatMap(b => b.items)` working in IvyChat
   };
 }

@@ -1,39 +1,21 @@
 'use client';
 
-import { useRunSheet } from '@/lib/hooks/useRunSheet';
-import TimelineView from '@/components/features/run-sheet/TimelineView';
+import RunSheetSplitView from '@/components/features/run-sheet/RunSheetSplitView';
 import PDFExportButton from '@/components/features/run-sheet/PDFExportButton';
 
 export default function RunSheetPage() {
-  const { startItem, endItem, blocks, loading, isOverSchedule, overScheduleByMins, addItemToBlock, insertNewBlock, moveItemToNewBlock, updateItem, deleteItem } = useRunSheet();
-
-  if (loading) {
-    return <div className="p-8 animate-pulse text-sage font-medium text-lg">Loading timeline...</div>;
-  }
-
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="flex justify-between items-end mb-8">
+    <div className="flex flex-col h-full mx-auto max-w-7xl">
+      <div className="flex justify-between items-end mb-4 px-4 md:px-0">
         <div>
           <h1 className="text-3xl font-display text-sage mb-2">Run Sheet</h1>
-          <p className="text-mid-gray">The minute-by-minute timeline for the wedding day.</p>
+          <p className="text-mid-gray text-sm md:text-base">The minute-by-minute timeline for the wedding day.</p>
         </div>
         <PDFExportButton />
       </div>
 
-      <div className="bg-white p-6 md:p-8 rounded-xl border border-light-gray shadow-sm">
-        <TimelineView 
-          startItem={startItem}
-          endItem={endItem}
-          blocks={blocks}
-          isOverSchedule={isOverSchedule}
-          overScheduleByMins={overScheduleByMins}
-          onAddItemToBlock={addItemToBlock}
-          onInsertNewBlock={insertNewBlock}
-          onMoveItemToNewBlock={moveItemToNewBlock}
-          onUpdate={updateItem}
-          onDelete={deleteItem}
-        />
+      <div className="bg-white rounded-xl border border-light-gray shadow-sm overflow-hidden flex-1 relative">
+        <RunSheetSplitView />
       </div>
     </div>
   );
