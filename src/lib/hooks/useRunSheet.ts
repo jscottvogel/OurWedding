@@ -173,14 +173,17 @@ export function useRunSheet() {
   };
 
   const updateItem = async (id: string, updates: Partial<Schema['RunSheetItem']['type']>) => {
+    setItems(prev => prev.map(item => item.id === id ? { ...item, ...updates } as CalculatedRunSheetItem : item));
     await client.models.RunSheetItem.update({ id, ...updates });
   };
 
   const deleteItem = async (id: string) => {
+    setItems(prev => prev.filter(item => item.id !== id));
     await client.models.RunSheetItem.delete({ id });
   };
 
   const reorderItems = async (newItems: CalculatedRunSheetItem[]) => {
+    setItems(newItems);
     const shiftPromises = newItems.map((item, index) => {
       return client.models.RunSheetItem.update({ id: item.id, sortOrder: index });
     });
