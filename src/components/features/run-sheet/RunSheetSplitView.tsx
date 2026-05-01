@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRunSheet } from '@/lib/hooks/useRunSheet';
 import RunSheetList from './RunSheetList';
 import TimelinePreview from './TimelinePreview';
@@ -27,6 +27,37 @@ export default function RunSheetSplitView() {
 
   const [activeTab, setActiveTab] = useState<'list' | 'timeline'>('list');
   const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
+  const [leftWidth, setLeftWidth] = useState(55);
+  const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const newWidth = (e.clientX / window.innerWidth) * 100;
+      if (newWidth >= 20 && newWidth <= 80) {
+        setLeftWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    } else {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
 
   if (loading) {
     return (
@@ -80,9 +111,12 @@ export default function RunSheetSplitView() {
         </button>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div 
+        className="flex flex-1 overflow-hidden" 
+        style={{ '--left-width': `${leftWidth}%`, '--right-width': `${100 - leftWidth}%` } as React.CSSProperties}
+      >
         {/* Left Panel - List */}
-        <div className={`w-full md:w-[55%] flex flex-col border-r border-light-gray pr-0 md:pr-6 ${activeTab === 'list' ? 'block' : 'hidden md:flex'}`}>
+        <div className={`w-full md:w-[var(--left-width)] flex flex-col pr-0 md:pr-4 ${activeTab === 'list' ? 'block' : 'hidden md:flex'}`}>
           <div className="flex-1 min-h-0 pb-2">
             <RunSheetList
               startItem={startItem}
@@ -100,8 +134,16 @@ export default function RunSheetSplitView() {
           </div>
         </div>
 
+        {/* Resizer */}
+        <div 
+          className="hidden md:flex w-4 -ml-2 -mr-2 z-10 cursor-col-resize hover:bg-sage/10 active:bg-sage/20 transition-colors items-center justify-center group select-none"
+          onMouseDown={() => setIsDragging(true)}
+        >
+          <div className={`h-12 w-1 rounded-full transition-colors ${isDragging ? 'bg-sage' : 'bg-light-gray group-hover:bg-sage/50'}`} />
+        </div>
+
         {/* Right Panel - Timeline */}
-        <div className={`w-full md:w-[45%] flex flex-col pl-0 md:pl-6 ${activeTab === 'timeline' ? 'block' : 'hidden md:flex'}`}>
+        <div className={`w-full md:w-[var(--right-width)] flex flex-col pl-0 md:pl-4 ${activeTab === 'timeline' ? 'block' : 'hidden md:flex'}`}>
           <div className="flex-1 overflow-y-auto pb-24">
             <TimelinePreview
               startItem={startItem}
