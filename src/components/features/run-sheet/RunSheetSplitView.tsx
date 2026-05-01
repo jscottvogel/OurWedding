@@ -53,7 +53,7 @@ export default function RunSheetSplitView() {
       <div className="flex flex-1 overflow-hidden">
         {/* Left Panel - List */}
         <div className={`w-full md:w-[55%] flex flex-col border-r border-light-gray pr-0 md:pr-6 ${activeTab === 'list' ? 'block' : 'hidden md:flex'}`}>
-          <div className="flex-1 overflow-y-auto pr-2 pb-24">
+          <div className="flex-1 min-h-0 pb-2">
             <RunSheetList
               startItem={startItem}
               endItem={endItem}

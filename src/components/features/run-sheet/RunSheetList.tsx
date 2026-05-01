@@ -67,11 +67,6 @@ export default function RunSheetList({
       
       let newItems = arrayMove(items, oldIndex, newIndex);
       
-      // If we move a concurrent item so it's now first in the list, it MUST become sequential
-      if (newItems.length > 0 && newItems[0].mode === 'concurrent') {
-        newItems[0] = { ...newItems[0], mode: 'sequential' };
-      }
-      
       onReorderItems(newItems);
     }
   };
@@ -98,48 +93,50 @@ export default function RunSheetList({
         </div>
       )}
 
-      {/* Sortable List */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={items.map(i => i.id)}
-          strategy={verticalListSortingStrategy}
+      {/* Scrollable List and Add Button */}
+      <div className="flex-1 overflow-y-auto min-h-0 pr-2 pb-4">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
         >
-          <div className="space-y-0 relative min-h-[50px]">
-            {items.map((item) => (
-              <RunSheetItemRow
-                key={item.id}
-                item={item}
-                isOverSchedule={isOverSchedule}
-                endTargetTime={endTargetTime}
-                onUpdate={onUpdateItem}
-                onDelete={onDeleteItem}
-                onMouseEnter={() => setHoveredItemId(item.id)}
-                onMouseLeave={() => setHoveredItemId(null)}
-                isHovered={hoveredItemId === item.id}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+          <SortableContext
+            items={items.map(i => i.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-0 relative min-h-[50px]">
+              {items.map((item) => (
+                <RunSheetItemRow
+                  key={item.id}
+                  item={item}
+                  isOverSchedule={isOverSchedule}
+                  endTargetTime={endTargetTime}
+                  onUpdate={onUpdateItem}
+                  onDelete={onDeleteItem}
+                  onMouseEnter={() => setHoveredItemId(item.id)}
+                  onMouseLeave={() => setHoveredItemId(null)}
+                  isHovered={hoveredItemId === item.id}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
 
-      {/* Add Item Button */}
-      <div className="mt-2 mb-8">
-        <button
-          onClick={() => onAddItem({ title: 'New Event', durationMinutes: 15 })}
-          className="flex items-center gap-2 px-4 py-3 w-full border-2 border-dashed border-light-gray rounded-xl text-charcoal/50 hover:text-sage hover:border-sage hover:bg-sage/5 transition-all justify-center font-medium group"
-        >
-          <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
-          Add Item
-        </button>
+        {/* Add Item Button */}
+        <div className="mt-4 mb-4">
+          <button
+            onClick={() => onAddItem({ title: 'New Event', durationMinutes: 15 })}
+            className="flex items-center gap-2 px-4 py-3 w-full border-2 border-dashed border-light-gray rounded-xl text-charcoal/50 hover:text-sage hover:border-sage hover:bg-sage/5 transition-all justify-center font-medium group"
+          >
+            <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            Add Item
+          </button>
+        </div>
       </div>
 
       {/* End Block (Pinned) */}
       {endItem && (
-        <div className={`flex items-center p-4 rounded-xl border-2 shadow-sm transition-colors mt-auto ${isOverSchedule ? 'bg-rose-50 border-rose-200 text-rose-900' : 'bg-charcoal text-white border-charcoal'}`}>
+        <div className={`flex items-center p-4 rounded-xl border-2 shadow-sm transition-colors mt-4 ${isOverSchedule ? 'bg-rose-50 border-rose-200 text-rose-900' : 'bg-charcoal text-white border-charcoal'}`}>
           <div className="flex-1">
             <h3 className="font-display text-lg tracking-wide">{endItem.title}</h3>
             {isOverSchedule && (
