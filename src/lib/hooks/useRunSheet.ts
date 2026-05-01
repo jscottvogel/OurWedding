@@ -89,7 +89,10 @@ export function useRunSheet() {
         scheduledEndTime
       });
 
-      if (event.sortOrder !== i || (!event.isFixed && event.eventTime !== scheduledStartTime)) {
+      const dbPrefix = event.eventTime ? event.eventTime.substring(0, 5) : '';
+      const calcPrefix = scheduledStartTime.substring(0, 5);
+
+      if (event.sortOrder !== i || (!event.isFixed && dbPrefix !== calcPrefix)) {
         timeUpdates.push({
           id: event.id,
           sortOrder: i,
