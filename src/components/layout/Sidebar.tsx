@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { signOut } from 'aws-amplify/auth';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/hooks/useAuth';
+import { useWedding } from '@/lib/hooks/useWedding';
 
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: Home },
@@ -26,6 +28,8 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { memberships, weddingId, setActiveWeddingId } = useAuth();
+  const { wedding } = useWedding();
 
   const handleLogout = async () => {
     await signOut();
@@ -34,8 +38,26 @@ export default function Sidebar() {
 
   return (
     <div className="w-64 bg-white border-r border-light-gray h-full flex flex-col">
-      <div className="p-6">
-        <h1 className="text-2xl font-display text-sage font-bold">OurWedding</h1>
+      <div className="p-6 pb-2 border-b border-light-gray">
+        <h1 className="text-2xl font-display text-sage font-bold mb-2">OurWedding</h1>
+        {memberships.length > 0 && (
+          <div className="mb-2">
+            <select
+              value={weddingId || ''}
+              onChange={(e) => {
+                setActiveWeddingId(e.target.value);
+                window.location.reload(); // Quick refresh to clear any cached contextual state
+              }}
+              className="w-full text-sm border-none bg-ivory rounded px-2 py-1.5 text-charcoal font-medium cursor-pointer focus:ring-1 focus:ring-sage"
+            >
+              {memberships.map((m) => (
+                <option key={m.weddingId} value={m.weddingId}>
+                  {m.weddingId === weddingId && wedding?.coupleName1 ? `${wedding.coupleName1} & ${wedding.coupleName2}` : `Wedding ID: ${m.weddingId.substring(0, 6)}...`}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
       
       <nav className="flex-1 overflow-y-auto py-4">

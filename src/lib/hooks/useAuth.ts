@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
 import { fetchAuthSession, getCurrentUser, AuthUser } from 'aws-amplify/auth';
+import { generateClient } from 'aws-amplify/data';
+import type { Schema } from '../../../../amplify/data/resource';
+
+const client = generateClient<Schema>();
 
 export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [weddingId, setWeddingId] = useState<string | null>(null);
+  const [memberships, setMemberships] = useState<Schema['WeddingMember']['type'][]>([]);
   const [vendorId, setVendorId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -18,12 +23,38 @@ export function useAuth() {
         
         const payload = session.tokens?.accessToken?.payload;
         if (payload) {
-          const groups = payload['cognito:groups'] as string[];
-          setRole(groups?.[0] || 'admin');
+          // Fetch user's wedding memberships from DynamoDB
+          const { data: memberRecords } = await client.models.WeddingMember.list({
+            filter: { profileId: { eq: currentUser.userId } }
+          });
           
-          const cognitoWeddingId = payload['custom:wedding_id'] as string;
+          setMemberships(memberRecords);
+          
           const localWeddingId = typeof window !== 'undefined' ? localStorage.getItem('weddingId') : null;
-          setWeddingId(cognitoWeddingId || localWeddingId || null);
+          
+          // Determine active wedding: 
+          // 1. local storage if it matches a valid membership
+          // 2. first membership in the list
+          // 3. null
+          let activeId = null;
+          let activeRole = 'guest'; // default fallback
+          
+          if (memberRecords.length > 0) {
+            const validLocal = memberRecords.find(m => m.weddingId === localWeddingId);
+            if (validLocal) {
+              activeId = validLocal.weddingId;
+              activeRole = validLocal.role || 'guest';
+            } else {
+              activeId = memberRecords[0].weddingId;
+              activeRole = memberRecords[0].role || 'guest';
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('weddingId', activeId);
+              }
+            }
+          }
+          
+          setWeddingId(activeId);
+          setRole(activeRole);
           
           setVendorId((payload['custom:vendor_id'] as string) || null);
         }
@@ -32,6 +63,7 @@ export function useAuth() {
         setRole(null);
         setWeddingId(null);
         setVendorId(null);
+        setMemberships([]);
       } finally {
         setLoading(false);
       }
@@ -40,5 +72,16 @@ export function useAuth() {
     checkAuth();
   }, []);
 
-  return { user, role, weddingId, vendorId, loading };
+  const setActiveWeddingId = (newWeddingId: string) => {
+    const member = memberships.find(m => m.weddingId === newWeddingId);
+    if (member) {
+      setWeddingId(newWeddingId);
+      setRole(member.role || 'guest');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('weddingId', newWeddingId);
+      }
+    }
+  };
+
+  return { user, role, weddingId, vendorId, loading, memberships, setActiveWeddingId };
 }

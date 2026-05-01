@@ -21,8 +21,6 @@ export const handler: AppSyncResolverHandler<{ email: string; role: string; wedd
       UserAttributes: [
         { Name: "email", Value: email },
         { Name: "email_verified", Value: "true" },
-        { Name: "custom:wedding_id", Value: weddingId },
-        { Name: "custom:role", Value: role },
       ],
       DesiredDeliveryMediums: ["EMAIL"],
     });

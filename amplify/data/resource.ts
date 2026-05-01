@@ -26,16 +26,27 @@ const schema = a.schema({
       allow.publicApiKey().to(['read']),
     ]),
 
+  WeddingMember: a
+    .model({
+      profileId: a.string().required(),
+      weddingId: a.string().required(),
+      role: a.enum(['admin', 'planner', 'vendor', 'guest']),
+    })
+    .secondaryIndexes((index) => [index('profileId'), index('weddingId')])
+    .authorization((allow) => [
+      allow.owner().to(['create', 'read', 'update', 'delete']),
+      allow.groups(['admin']).to(['read', 'create', 'update', 'delete']),
+      allow.authenticated().to(['read']) // Needs fine-grained auth eventually
+    ]),
+
   Profile: a
     .model({
       cognitoSub: a.string().required(),
-      weddingId: a.string(),
-      role: a.enum(['admin', 'planner', 'vendor', 'guest']),
       fullName: a.string(),
       email: a.string(),
       vendorId: a.string(),
     })
-    .secondaryIndexes((index) => [index('cognitoSub'), index('weddingId')])
+    .secondaryIndexes((index) => [index('cognitoSub')])
     .authorization((allow) => [
       allow.owner().to(['create', 'read', 'update', 'delete']),
       allow.groups(['admin']).to(['read']),

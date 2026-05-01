@@ -19,15 +19,42 @@ export default function SettingsPage() {
   const [isInviting, setIsInviting] = useState(false);
   const [inviteSuccess, setInviteSuccess] = useState(false);
   const [inviteError, setInviteError] = useState('');
-  const [team, setTeam] = useState<Schema['Profile']['type'][]>([]);
+  const [team, setTeam] = useState<{ id: string; email: string; role: string; profileId: string }[]>([]);
 
   useEffect(() => {
     if (!weddingId) return;
-    const sub = client.models.Profile.observeQuery({
+    // Query WeddingMembers instead of Profile
+    const sub = client.models.WeddingMember.observeQuery({
       filter: { weddingId: { eq: weddingId } }
     }).subscribe({
-      next: ({ items }) => {
-        setTeam([...items].sort((a, b) => (a.email || '').localeCompare(b.email || '')));
+      next: async ({ items }) => {
+        // For now, we use profileId to represent the email of pending invites, 
+        // or we fetch the related Profile for real users if needed.
+        // Since we are mocking pending invites by setting profileId = 'INVITE_...' 
+        // we can extract the email from the WeddingMember or fetch it.
+        // Actually, we need to fetch the Profiles to get the emails for real users.
+        const teamWithEmails = await Promise.all(items.map(async (item) => {
+          if (item.profileId.startsWith('INVITE_')) {
+            // we stored the email in profileId for invites temporarily, wait, we can't do that easily.
+            // Let's assume we store the email in profileId for invites like 'INVITE_email@example.com'
+            return {
+              id: item.id,
+              email: item.profileId.replace('INVITE_', ''),
+              role: item.role || 'planner',
+              profileId: item.profileId
+            };
+          } else {
+            // Fetch real profile
+            const { data: profile } = await client.models.Profile.get({ cognitoSub: item.profileId });
+            return {
+              id: item.id,
+              email: profile?.email || 'Unknown',
+              role: item.role || 'planner',
+              profileId: item.profileId
+            };
+          }
+        }));
+        setTeam(teamWithEmails.sort((a, b) => a.email.localeCompare(b.email)));
       }
     });
     return () => sub.unsubscribe();
@@ -53,12 +80,10 @@ export default function SettingsPage() {
       }
       
       // Track invitation in the database so it appears in the UI list
-      await client.models.Profile.create({
-        cognitoSub: `INVITE_${Date.now()}`,
-        email: inviteEmail,
+      await client.models.WeddingMember.create({
+        profileId: `INVITE_${inviteEmail}`,
         role: inviteRole as any,
-        weddingId: weddingId,
-        fullName: 'Pending Registration'
+        weddingId: weddingId
       });
       
       setInviteSuccess(true);
@@ -70,12 +95,10 @@ export default function SettingsPage() {
       // We still want to add them to the Profile table so they show up in the UI!
       if (err.message === 'Failed to invite user' || err.message.includes('invite')) {
         try {
-          await client.models.Profile.create({
-            cognitoSub: `INVITE_${Date.now()}`,
-            email: inviteEmail,
+          await client.models.WeddingMember.create({
+            profileId: `INVITE_${inviteEmail}`,
             role: inviteRole as any,
-            weddingId: weddingId,
-            fullName: 'Pending Registration'
+            weddingId: weddingId
           });
           setInviteSuccess(true);
           setInviteEmail('');
@@ -100,7 +123,7 @@ export default function SettingsPage() {
     }
   };
 
-  const handleRemoveUser = async (member: Schema['Profile']['type']) => {
+  const handleRemoveUser = async (member: { id: string; email: string; profileId: string }) => {
     if (!member.email) return;
     if (!confirm(`Are you sure you want to completely remove ${member.email} and revoke their access?`)) return;
     
@@ -112,7 +135,7 @@ export default function SettingsPage() {
       if (errors) throw new Error(errors[0].message);
       
       // Remove from UI table
-      await client.models.Profile.delete({ id: member.id });
+      await client.models.WeddingMember.delete({ id: member.id });
     } catch (err: any) {
       console.error("Failed to remove user:", err);
       alert(`Failed to remove user: ${err.message}`);
@@ -248,7 +271,7 @@ export default function SettingsPage() {
                         <td className="px-4 py-3 text-charcoal font-medium">{member.email}</td>
                         <td className="px-4 py-3 text-mid-gray capitalize">{member.role}</td>
                         <td className="px-4 py-3">
-                          {member.cognitoSub.startsWith('INVITE_') ? (
+                          {member.profileId.startsWith('INVITE_') ? (
                             <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
                               Invitation Sent (Pending)
                             </span>
@@ -259,7 +282,7 @@ export default function SettingsPage() {
                           )}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          {member.cognitoSub !== user?.userId && (
+                          {member.profileId !== user?.userId && (
                             <button
                               onClick={() => handleRemoveUser(member)}
                               className="text-red-500 hover:text-red-700 text-xs font-medium px-2 py-1 border border-transparent hover:border-red-200 hover:bg-red-50 rounded transition-colors"
