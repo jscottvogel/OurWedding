@@ -15,6 +15,10 @@ export default function RunSheetSplitView() {
     loading,
     isOverSchedule,
     overScheduleByMins,
+    hasUnsavedChanges,
+    isSaving,
+    saveChanges,
+    discardChanges,
     addItem,
     updateItem,
     deleteItem,
@@ -34,6 +38,32 @@ export default function RunSheetSplitView() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
+      {hasUnsavedChanges && (
+        <div className="bg-sage/10 border border-sage/30 rounded-xl mb-4 p-3 px-4 flex justify-between items-center shadow-sm">
+          <span className="text-sm font-medium text-sage-dark flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-sage animate-pulse" />
+            You have unsaved changes
+          </span>
+          <div className="flex gap-4">
+            <button 
+              onClick={discardChanges} 
+              disabled={isSaving}
+              className="text-sm font-medium text-mid-gray hover:text-charcoal transition-colors disabled:opacity-50"
+            >
+              Discard
+            </button>
+            <button 
+              onClick={saveChanges} 
+              disabled={isSaving} 
+              className="text-sm font-medium bg-sage text-white px-4 py-1.5 rounded-full hover:bg-sage-dark transition-all flex items-center gap-2 disabled:opacity-70 shadow-sm"
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Tabs */}
       <div className="md:hidden flex border-b border-light-gray mb-4">
         <button
