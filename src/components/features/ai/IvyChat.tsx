@@ -29,7 +29,7 @@ export default function IvyChat() {
   const { wedding } = useWedding();
   const { tasks, addTask, updateTask, deleteTask } = useChecklist();
   const { vendors, addVendor, updateVendor, deleteVendor } = useVendors();
-  const { blocks, insertNewBlock, updateItem: updateRunsheetItem, deleteItem: deleteRunsheetItem, clearRunsheet } = useRunSheet();
+  const { blocks, insertNewBlock, updateItem: updateRunsheetItem, deleteItem: deleteRunsheetItem, clearRunsheet, processIvyActions } = useRunSheet();
   
   const runsheet = blocks.flatMap(b => b.items);
   const addRunsheetItem = async (item: any) => {
@@ -85,6 +85,8 @@ export default function IvyChat() {
         
         let addedCount = 0;
         let lastActionMessage = "I've handled that for you!";
+        
+        const runsheetActions = [];
 
         for (const toolCall of toolCalls) {
           if (toolCall.name === 'add_task') {
@@ -120,31 +122,23 @@ export default function IvyChat() {
           } else if (toolCall.name === 'delete_vendor') {
             await deleteVendor(toolCall.input.id);
             lastActionMessage = "I've removed that vendor from your list!";
-          } else if (toolCall.name === 'add_runsheet_item') {
-            let timeStr = toolCall.input.eventTime;
-            if (timeStr && timeStr.length === 5) timeStr += ':00';
-            await addRunsheetItem({
-              title: toolCall.input.title,
-              eventTime: timeStr,
-              description: toolCall.input.description,
-              location: toolCall.input.location,
-              durationMinutes: toolCall.input.durationMinutes,
-              sortOrder: 0
-            });
-            lastActionMessage = `I've added "${toolCall.input.title}" to your run sheet at ${toolCall.input.eventTime}!`;
-            addedCount++;
-          } else if (toolCall.name === 'update_runsheet_item') {
-            const updates = { ...toolCall.input.updates };
-            if (updates.eventTime && updates.eventTime.length === 5) updates.eventTime += ':00';
-            await updateRunsheetItem(toolCall.input.id, updates);
-            lastActionMessage = "I've updated that run sheet item!";
-          } else if (toolCall.name === 'delete_runsheet_item') {
-            await deleteRunsheetItem(toolCall.input.id);
-            lastActionMessage = "I've removed that item from your run sheet!";
-          } else if (toolCall.name === 'clear_runsheet') {
-            await clearRunsheet();
-            lastActionMessage = "I've cleared out your entire run sheet. You're ready to start fresh!";
+          } else if (['add_runsheet_item', 'update_runsheet_item', 'delete_runsheet_item', 'clear_runsheet'].includes(toolCall.name)) {
+            runsheetActions.push(toolCall);
+            if (toolCall.name === 'add_runsheet_item') {
+              lastActionMessage = `I've added "${toolCall.input.title}" to your run sheet at ${toolCall.input.eventTime}!`;
+              addedCount++;
+            } else if (toolCall.name === 'update_runsheet_item') {
+              lastActionMessage = "I've updated that run sheet item!";
+            } else if (toolCall.name === 'delete_runsheet_item') {
+              lastActionMessage = "I've removed that item from your run sheet!";
+            } else if (toolCall.name === 'clear_runsheet') {
+              lastActionMessage = "I've cleared out your entire run sheet. You're ready to start fresh!";
+            }
           }
+        }
+        
+        if (runsheetActions.length > 0) {
+          await processIvyActions(runsheetActions);
         }
         
         let finalMessage = lastActionMessage;

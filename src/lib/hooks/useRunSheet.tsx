@@ -166,12 +166,9 @@ export function useRunSheetProvider() {
     setOverScheduleByMins(overMins);
   }, [items, startItem, endItem]);
 
-  const applyLocalUpdate = (updater: (prev: CalculatedRunSheetItem[]) => CalculatedRunSheetItem[]) => {
-    setItems(prevItems => {
-      const newEvents = updater(prevItems);
-      const { calculatedItems } = calculateSchedule(newEvents, startItem, endItem);
-      return calculatedItems;
-    });
+  const applyLocalUpdate = (newEvents: CalculatedRunSheetItem[]) => {
+    const { calculatedItems } = calculateSchedule(newEvents, startItem, endItem);
+    setItems(calculatedItems);
     setHasUnsavedChanges(true);
   };
 
@@ -189,7 +186,7 @@ export function useRunSheetProvider() {
       updatedAt: new Date().toISOString()
     } as Schema['RunSheetItem']['type'];
     
-    applyLocalUpdate(prev => [...prev, newItem as CalculatedRunSheetItem]);
+    applyLocalUpdate([...items, newItem as CalculatedRunSheetItem]);
   };
 
   const insertNewBlock = async (_targetIndex: number, item: any) => {
@@ -197,19 +194,50 @@ export function useRunSheetProvider() {
   };
 
   const updateItem = async (id: string, updates: Partial<Schema['RunSheetItem']['type']>) => {
-    applyLocalUpdate(prev => prev.map(item => item.id === id ? { ...item, ...updates } as CalculatedRunSheetItem : item));
+    applyLocalUpdate(items.map(item => item.id === id ? { ...item, ...updates } as CalculatedRunSheetItem : item));
   };
 
   const deleteItem = async (id: string) => {
-    applyLocalUpdate(prev => prev.filter(item => item.id !== id));
+    applyLocalUpdate(items.filter(item => item.id !== id));
   };
 
   const clearRunsheet = async () => {
-    applyLocalUpdate(() => []);
+    applyLocalUpdate([]);
   };
 
   const reorderItems = async (newItems: CalculatedRunSheetItem[]) => {
-    applyLocalUpdate(() => newItems);
+    applyLocalUpdate(newItems);
+  };
+
+  const processIvyActions = async (actions: any[]) => {
+    if (!weddingId) return;
+    let currentItems = [...items];
+    
+    for (const action of actions) {
+      if (action.name === 'clear_runsheet') {
+        currentItems = [];
+      } else if (action.name === 'add_runsheet_item') {
+        const item = action.input;
+        const newItem = {
+          ...item,
+          id: `temp-${Date.now()}-${Math.random()}`,
+          title: item.title || 'New Event',
+          eventTime: item.eventTime ? (item.eventTime.length === 5 ? item.eventTime + ':00' : item.eventTime) : '12:00:00',
+          weddingId,
+          itemType: 'EVENT',
+          sortOrder: currentItems.length,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        } as CalculatedRunSheetItem;
+        currentItems.push(newItem);
+      } else if (action.name === 'delete_runsheet_item') {
+        currentItems = currentItems.filter(i => i.id !== action.input.id);
+      } else if (action.name === 'update_runsheet_item') {
+        currentItems = currentItems.map(i => i.id === action.input.id ? { ...i, ...action.input.updates } : i);
+      }
+    }
+    
+    applyLocalUpdate(currentItems);
   };
 
   const saveChanges = async () => {
@@ -283,6 +311,7 @@ export function useRunSheetProvider() {
     deleteItem,
     clearRunsheet,
     reorderItems,
+    processIvyActions,
     blocks: [{ items }]
   };
 }
