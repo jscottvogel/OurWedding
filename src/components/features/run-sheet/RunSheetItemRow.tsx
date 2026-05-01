@@ -2,7 +2,7 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Clock, Link as LinkIcon, Trash2, Lock } from 'lucide-react';
+import { GripVertical, Clock, Link as LinkIcon, Trash2, Lock, Unlock } from 'lucide-react';
 import type { CalculatedRunSheetItem } from '@/lib/hooks/useRunSheet';
 
 interface Props {
@@ -80,9 +80,8 @@ export default function RunSheetItemRow({
       {/* Main Content */}
       <div className={`flex-1 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 ${isConcurrent ? 'ml-6' : ''}`}>
         
-        {/* Title & Lock */}
+        {/* Title */}
         <div className="flex-1 flex items-center gap-2">
-          {item.isFixed && <span title="Fixed item" className="flex-shrink-0 flex items-center"><Lock className="w-3.5 h-3.5 text-charcoal/40" /></span>}
           <input
             type="text"
             value={item.title}
@@ -94,8 +93,24 @@ export default function RunSheetItemRow({
 
         {/* Timing Controls */}
         <div className="flex items-center gap-2 text-sm shrink-0 flex-wrap sm:flex-nowrap">
-          <div className="text-charcoal/50 w-12 text-right font-mono text-xs">
-            {item.scheduledStartTime}
+          <div className={`flex items-center gap-1 border rounded-md px-1.5 py-1 shadow-sm transition-colors ${item.isFixed ? 'bg-sage/10 border-sage/30' : 'bg-transparent border-transparent hover:border-light-gray hover:bg-white'}`}>
+            {item.isFixed && <Lock className="w-3 h-3 text-sage shrink-0" />}
+            <input
+              type="time"
+              value={item.scheduledStartTime}
+              onChange={(e) => onUpdate(item.id, { eventTime: e.target.value, isFixed: true })}
+              className={`w-[4.5rem] font-mono text-xs bg-transparent border-none p-0 focus:ring-0 [&::-webkit-calendar-picker-indicator]:hidden ${item.isFixed ? 'text-sage font-bold' : 'text-charcoal/50'}`}
+              title={item.isFixed ? 'Fixed start time' : 'Auto-calculated start time (edit to fix)'}
+            />
+            {item.isFixed && (
+              <button
+                onClick={() => onUpdate(item.id, { isFixed: false })}
+                className="text-sage/60 hover:text-rose-500 transition-colors ml-1"
+                title="Unlock time to resume auto-calculation"
+              >
+                <Unlock className="w-3 h-3" />
+              </button>
+            )}
           </div>
           
           <div className="flex items-center bg-white border border-light-gray rounded-md px-2 py-1 shadow-sm">
