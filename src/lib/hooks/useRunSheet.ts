@@ -160,11 +160,18 @@ export function useRunSheetProvider() {
     return () => sub.unsubscribe();
   }, [weddingId, authLoading, hasUnsavedChanges]);
 
-  const applyLocalUpdate = (newEvents: CalculatedRunSheetItem[]) => {
-    const { calculatedItems, isOver, overMins } = calculateSchedule(newEvents, startItem, endItem);
-    setItems(calculatedItems);
+  useEffect(() => {
+    const { isOver, overMins } = calculateSchedule(items, startItem, endItem);
     setIsOverSchedule(isOver);
     setOverScheduleByMins(overMins);
+  }, [items, startItem, endItem]);
+
+  const applyLocalUpdate = (updater: (prev: CalculatedRunSheetItem[]) => CalculatedRunSheetItem[]) => {
+    setItems(prevItems => {
+      const newEvents = updater(prevItems);
+      const { calculatedItems } = calculateSchedule(newEvents, startItem, endItem);
+      return calculatedItems;
+    });
     setHasUnsavedChanges(true);
   };
 
@@ -182,7 +189,7 @@ export function useRunSheetProvider() {
       updatedAt: new Date().toISOString()
     } as Schema['RunSheetItem']['type'];
     
-    applyLocalUpdate([...items, newItem as CalculatedRunSheetItem]);
+    applyLocalUpdate(prev => [...prev, newItem as CalculatedRunSheetItem]);
   };
 
   const insertNewBlock = async (_targetIndex: number, item: any) => {
@@ -190,21 +197,19 @@ export function useRunSheetProvider() {
   };
 
   const updateItem = async (id: string, updates: Partial<Schema['RunSheetItem']['type']>) => {
-    const newEvents = items.map(item => item.id === id ? { ...item, ...updates } as CalculatedRunSheetItem : item);
-    applyLocalUpdate(newEvents);
+    applyLocalUpdate(prev => prev.map(item => item.id === id ? { ...item, ...updates } as CalculatedRunSheetItem : item));
   };
 
   const deleteItem = async (id: string) => {
-    const newEvents = items.filter(item => item.id !== id);
-    applyLocalUpdate(newEvents);
+    applyLocalUpdate(prev => prev.filter(item => item.id !== id));
   };
 
   const clearRunsheet = async () => {
-    applyLocalUpdate([]);
+    applyLocalUpdate(() => []);
   };
 
   const reorderItems = async (newItems: CalculatedRunSheetItem[]) => {
-    applyLocalUpdate(newItems);
+    applyLocalUpdate(() => newItems);
   };
 
   const saveChanges = async () => {
