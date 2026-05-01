@@ -17,7 +17,7 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
               <div className="w-8 h-8 rounded-full bg-sage flex items-center justify-center text-white mr-3">
                 <CalendarHeart className="w-4 h-4" />
               </div>
-              <span className="font-display text-xl text-sage tracking-tight">OurWedding <span className="text-mid-gray text-base ml-2">Vendor Portal</span></span>
+              <span className="font-display text-xl text-sage tracking-tight">Wedding Steward <span className="text-mid-gray text-base ml-2">Vendor Portal</span></span>
             </div>
             
             <button 

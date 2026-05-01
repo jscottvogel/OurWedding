@@ -21,8 +21,10 @@ export function useAuth() {
         
         setUser(currentUser);
         
-        const payload = session.tokens?.accessToken?.payload;
-        if (payload) {
+        const accessTokenPayload = session.tokens?.accessToken?.payload;
+        const idTokenPayload = session.tokens?.idToken?.payload;
+        
+        if (accessTokenPayload) {
           // Fetch user's wedding memberships from DynamoDB
           const { data: memberRecords } = await client.models.WeddingMember.list({
             filter: { profileId: { eq: currentUser.userId } }
@@ -32,15 +34,17 @@ export function useAuth() {
           let fetchedMemberRecords = memberRecords;
           
           // Self-healing migration for users created before the multi-wedding update
-          if (fetchedMemberRecords.length === 0 && payload['custom:wedding_id']) {
+          // Custom attributes are stored in the ID token in Cognito
+          const legacyWeddingId = idTokenPayload?.['custom:wedding_id'] as string;
+          
+          if (fetchedMemberRecords.length === 0 && legacyWeddingId) {
             try {
-              const cognitoWeddingId = payload['custom:wedding_id'] as string;
-              const groups = payload['cognito:groups'] as string[];
-              const cognitoRole = (payload['custom:role'] || (groups && groups[0]) || 'planner') as any;
+              const groups = accessTokenPayload['cognito:groups'] as string[];
+              const cognitoRole = (idTokenPayload?.['custom:role'] || (groups && groups[0]) || 'planner') as any;
               
               const { data: newMember } = await client.models.WeddingMember.create({
                 profileId: currentUser.userId,
-                weddingId: cognitoWeddingId,
+                weddingId: legacyWeddingId,
                 role: cognitoRole
               });
               
@@ -79,7 +83,7 @@ export function useAuth() {
           setWeddingId(activeId);
           setRole(activeRole);
           
-          setVendorId((payload['custom:vendor_id'] as string) || null);
+          setVendorId((idTokenPayload?.['custom:vendor_id'] as string) || null);
         }
       } catch (err) {
         setUser(null);

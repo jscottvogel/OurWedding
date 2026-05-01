@@ -15,8 +15,8 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "OurWedding",
-  description: "Your perfect day, perfectly planned.",
+  title: "Wedding Steward",
+  description: "Modern wedding planning and coordination",
 };
 
 export default function RootLayout({

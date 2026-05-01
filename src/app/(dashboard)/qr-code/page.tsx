@@ -38,7 +38,7 @@ export default function QRCodePage() {
     if (displayQr) {
       const a = document.createElement('a');
       a.href = displayQr;
-      a.download = `OurWedding-QRCode-${wedding?.slug}.png`;
+      a.download = `WeddingSteward-QRCode-${wedding?.slug}.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

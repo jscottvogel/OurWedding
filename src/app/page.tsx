@@ -10,7 +10,7 @@ export default function Home() {
           <div className="w-8 h-8 rounded-full bg-sage flex items-center justify-center text-white mr-3">
             <CalendarHeart className="w-4 h-4" />
           </div>
-          <span className="font-display text-xl text-sage tracking-tight">OurWedding</span>
+          <span className="font-display text-xl text-sage tracking-tight">Wedding Steward</span>
         </div>
         <div className="flex items-center space-x-4">
           <Link href="/login" className="text-charcoal font-medium hover:text-sage transition-colors">
@@ -72,7 +72,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="bg-charcoal text-white/70 py-8 text-center border-t border-charcoal/20">
-        <p>© {new Date().getFullYear()} OurWedding Platform. Built for couples, by couples.</p>
+        <p>© {new Date().getFullYear()} Wedding Steward. Built for couples, by couples.</p>
       </footer>
     </div>
   );

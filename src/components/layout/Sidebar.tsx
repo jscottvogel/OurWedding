@@ -39,7 +39,7 @@ export default function Sidebar() {
   return (
     <div className="w-64 bg-white border-r border-light-gray h-full flex flex-col">
       <div className="p-6 pb-2 border-b border-light-gray">
-        <h1 className="text-2xl font-display text-sage font-bold mb-2">OurWedding</h1>
+        <h1 className="text-2xl font-display text-sage font-bold mb-2">Wedding Steward</h1>
         {memberships.length > 0 && (
           <div className="mb-2">
             <select

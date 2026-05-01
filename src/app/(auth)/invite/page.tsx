@@ -15,8 +15,8 @@ function InviteForm() {
 
   return (
     <div className="w-full max-w-md p-8 bg-white shadow-xl rounded-2xl border border-light-gray">
-      <h1 className="text-3xl font-display text-sage text-center mb-2">Accept Invitation</h1>
-      <p className="text-center text-mid-gray mb-6">Set your password to join OurWedding</p>
+      <h1 className="text-3xl font-display text-sage font-bold text-center mb-2">Welcome!</h1>
+      <p className="text-center text-mid-gray mb-6">Set your password to join Wedding Steward</p>
       
       {!token ? (
         <div className="bg-red-50 text-red-600 p-4 rounded text-sm">
