@@ -48,6 +48,7 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
     ${contextStr}
     You have tools to add tasks, vendors, and runsheet items. If the user asks you to create a "typical" schedule, checklist, or list, you CAN and SHOULD use your tools multiple times in a row to generate the full list of items in a single response!
     For a typical runsheet, you MUST generate a granular breakdown containing at least 10 to 15 distinct events (e.g. hair/makeup, arrivals, first look, photos, ceremony, cocktail hour, reception, speeches, dancing, send-off).
+    IMPORTANT: NEVER clear or delete existing items when asked to populate or add to a schedule unless the user EXPLICITLY says "clear" or "start over".
   `;
 
   if (isChecklistGeneration) {
@@ -230,7 +231,7 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
       },
       {
         name: "clear_runsheet",
-        description: "Deletes all events from the user's wedding day run sheet. Use this when the user asks to 'clear' or 'start over' with the run sheet.",
+        description: "Deletes all events from the user's wedding day run sheet. Use this ONLY when the user explicitly asks to 'clear', 'delete all', or 'start over'. DO NOT use this tool if the user is asking to generate or populate a schedule.",
         input_schema: {
           type: "object",
           properties: {}
