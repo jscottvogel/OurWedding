@@ -8,11 +8,33 @@ import { format } from 'date-fns';
 interface PhotoGridProps {
   photos: GalleryPhoto[];
   onDelete?: (photo: GalleryPhoto) => void;
+  onUpdateCaption?: (id: string, caption: string) => void;
+  onUpdateUploaderName?: (id: string, uploaderName: string) => void;
   isAdmin?: boolean;
 }
 
-export default function PhotoGrid({ photos, onDelete, isAdmin = false }: PhotoGridProps) {
+export default function PhotoGrid({ photos, onDelete, onUpdateCaption, onUpdateUploaderName, isAdmin = false }: PhotoGridProps) {
   const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null);
+  const [isEditingCaption, setIsEditingCaption] = useState(false);
+  const [isEditingUploader, setIsEditingUploader] = useState(false);
+  const [draftCaption, setDraftCaption] = useState('');
+  const [draftUploader, setDraftUploader] = useState('');
+
+  const handleSaveCaption = () => {
+    if (selectedPhoto && onUpdateCaption) {
+      onUpdateCaption(selectedPhoto.id, draftCaption);
+      setSelectedPhoto({ ...selectedPhoto, caption: draftCaption });
+    }
+    setIsEditingCaption(false);
+  };
+
+  const handleSaveUploader = () => {
+    if (selectedPhoto && onUpdateUploaderName) {
+      onUpdateUploaderName(selectedPhoto.id, draftUploader);
+      setSelectedPhoto({ ...selectedPhoto, uploaderName: draftUploader });
+    }
+    setIsEditingUploader(false);
+  };
 
   if (photos.length === 0) {
     return (
@@ -54,6 +76,7 @@ export default function PhotoGrid({ photos, onDelete, isAdmin = false }: PhotoGr
             
             <div className="absolute inset-0 bg-gradient-to-t from-charcoal/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
               <p className="text-white text-sm font-medium truncate">{photo.uploaderName}</p>
+              {photo.caption && <p className="text-white/90 text-xs mt-1 truncate">{photo.caption}</p>}
               {photo.uploadedAt && (
                 <p className="text-white/80 text-xs">{format(new Date(photo.uploadedAt), 'MMM d, h:mm a')}</p>
               )}
@@ -75,7 +98,7 @@ export default function PhotoGrid({ photos, onDelete, isAdmin = false }: PhotoGr
       {selectedPhoto && (
         <div className="fixed inset-0 bg-charcoal/95 z-50 flex items-center justify-center p-4 md:p-8">
           <button 
-            onClick={() => setSelectedPhoto(null)}
+            onClick={() => { setSelectedPhoto(null); setIsEditingCaption(false); setIsEditingUploader(false); }}
             className="absolute top-6 right-6 p-2 text-white/70 hover:text-white transition-colors"
           >
             <X className="w-8 h-8" />
@@ -98,10 +121,73 @@ export default function PhotoGrid({ photos, onDelete, isAdmin = false }: PhotoGr
             )}
             
             <div className="mt-4 flex items-center justify-between w-full max-w-lg bg-white/10 backdrop-blur-sm rounded-lg p-4">
-              <div>
-                <p className="text-white font-medium">Uploaded by {selectedPhoto.uploaderName}</p>
+              <div className="flex-1 mr-4">
+                {isEditingUploader ? (
+                  <div className="flex items-center mb-1">
+                    <p className="text-white font-medium text-sm text-white/70 mr-2">Uploaded by</p>
+                    <input 
+                      type="text" 
+                      value={draftUploader}
+                      onChange={(e) => setDraftUploader(e.target.value)}
+                      className="bg-white/20 border border-white/30 text-white placeholder-white/50 rounded-l px-2 py-0.5 text-sm focus:outline-none w-32"
+                      autoFocus
+                    />
+                    <button 
+                      onClick={handleSaveUploader}
+                      className="bg-sage text-white px-2 py-0.5 rounded-r text-sm font-medium hover:bg-dark-sage"
+                    >
+                      Save
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center group/uploader mb-1">
+                    <p className="text-white font-medium text-sm text-white/70">Uploaded by {selectedPhoto.uploaderName}</p>
+                    {isAdmin && onUpdateUploaderName && (
+                      <button 
+                        onClick={() => { setDraftUploader(selectedPhoto.uploaderName); setIsEditingUploader(true); }}
+                        className="ml-2 text-white/50 hover:text-white text-xs underline opacity-0 group-hover/uploader:opacity-100 transition-opacity"
+                      >
+                        Edit
+                      </button>
+                    )}
+                  </div>
+                )}
+                
                 {selectedPhoto.uploadedAt && (
-                  <p className="text-white/70 text-sm">{format(new Date(selectedPhoto.uploadedAt), 'MMMM d, yyyy - h:mm a')}</p>
+                  <p className="text-white/50 text-xs mb-2">{format(new Date(selectedPhoto.uploadedAt), 'MMMM d, yyyy - h:mm a')}</p>
+                )}
+                
+                {isEditingCaption ? (
+                  <div className="flex mt-2">
+                    <input 
+                      type="text" 
+                      value={draftCaption}
+                      onChange={(e) => setDraftCaption(e.target.value)}
+                      placeholder="Add a caption..."
+                      className="flex-1 bg-white/20 border border-white/30 text-white placeholder-white/50 rounded-l px-3 py-1.5 text-sm focus:outline-none"
+                      autoFocus
+                    />
+                    <button 
+                      onClick={handleSaveCaption}
+                      className="bg-sage text-white px-3 py-1.5 rounded-r text-sm font-medium hover:bg-dark-sage"
+                    >
+                      Save
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-1 flex items-start group/caption">
+                    <p className="text-white text-sm whitespace-pre-wrap flex-1">
+                      {selectedPhoto.caption || <span className="text-white/40 italic">No caption added</span>}
+                    </p>
+                    {isAdmin && onUpdateCaption && (
+                      <button 
+                        onClick={() => { setDraftCaption(selectedPhoto.caption || ''); setIsEditingCaption(true); }}
+                        className="ml-2 text-white/50 hover:text-white text-xs underline opacity-0 group-hover/caption:opacity-100 transition-opacity"
+                      >
+                        Edit
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
               <a 

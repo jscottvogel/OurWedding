@@ -132,6 +132,7 @@ const schema = a.schema({
       fileType: a.string(),
       fileSizeBytes: a.integer(),
       thumbnailKey: a.string(),
+      caption: a.string(),
       uploadedAt: a.datetime(),
       isDeleted: a.boolean().default(false),
     })

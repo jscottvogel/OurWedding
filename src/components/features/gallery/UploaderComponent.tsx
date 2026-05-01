@@ -7,11 +7,12 @@ import { toast } from 'sonner';
 
 interface UploaderComponentProps {
   weddingId: string;
-  onUploadComplete: (record: { uploaderName: string; fileKey: string; fileType: string; fileSizeBytes: number }) => Promise<void>;
+  onUploadComplete: (record: { uploaderName: string; caption?: string; fileKey: string; fileType: string; fileSizeBytes: number }) => Promise<void>;
 }
 
 export default function UploaderComponent({ weddingId, onUploadComplete }: UploaderComponentProps) {
   const [name, setName] = useState('');
+  const [caption, setCaption] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -62,6 +63,7 @@ export default function UploaderComponent({ weddingId, onUploadComplete }: Uploa
         // Create database record
         await onUploadComplete({
           uploaderName: name,
+          caption: caption.trim() || undefined,
           fileKey: fileKey,
           fileType: file.type,
           fileSizeBytes: file.size
@@ -95,6 +97,18 @@ export default function UploaderComponent({ weddingId, onUploadComplete }: Uploa
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="How the couple knows you"
+            className="w-full border border-light-gray rounded-lg p-3 focus:border-sage focus:outline-none"
+            disabled={isUploading}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-mid-gray mb-1">Caption (Optional)</label>
+          <input 
+            type="text" 
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            placeholder="Add a fun note or description!"
             className="w-full border border-light-gray rounded-lg p-3 focus:border-sage focus:outline-none"
             disabled={isUploading}
           />

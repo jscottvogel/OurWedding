@@ -6,6 +6,7 @@ import { useWedding } from '@/lib/hooks/useWedding';
 import { useChecklist } from '@/lib/hooks/useChecklist';
 import { useVendors } from '@/lib/hooks/useVendors';
 import { useRunSheet } from '@/lib/hooks/useRunSheet';
+import { useGallery } from '@/lib/hooks/useGallery';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../../amplify/data/resource';
 
@@ -30,6 +31,7 @@ export default function IvyChat() {
   const { tasks, addTask, updateTask, deleteTask } = useChecklist();
   const { vendors, addVendor, updateVendor, deleteVendor } = useVendors();
   const { blocks, insertNewBlock, updateItem: updateRunsheetItem, deleteItem: deleteRunsheetItem, clearRunsheet, processIvyActions } = useRunSheet();
+  const { photos } = useGallery();
   
   const runsheet = blocks.flatMap(b => b.items);
   const addRunsheetItem = async (item: any) => {
@@ -57,11 +59,13 @@ export default function IvyChat() {
 
     try {
       // Compress the full state to save AI tokens
+      // We inject a lightweight summary of gallery photos so Ivy knows the IDs and current captions.
       const fullContext = {
         ...wedding,
         checklist: tasks.map(t => ({ id: t.id, title: t.title, status: t.isCompleted ? 'done' : 'pending', category: t.category })),
         vendors: vendors.map(v => ({ id: v.id, name: v.companyName, category: v.category, status: v.contractStatus })),
-        runsheet: runsheet.map((r: any) => ({ id: r.id, title: r.title, time: r.eventTime }))
+        runsheet: runsheet.map((r: any) => ({ id: r.id, title: r.title, time: r.eventTime })),
+        gallery: photos.map(p => ({ id: p.id, uploader: p.uploaderName, caption: p.caption || '' }))
       };
 
       // Pass the full conversation history and wedding context
@@ -133,6 +137,12 @@ export default function IvyChat() {
               lastActionMessage = "I've removed that item from your run sheet!";
             } else if (toolCall.name === 'clear_runsheet') {
               lastActionMessage = "I've cleared out your entire run sheet. You're ready to start fresh!";
+            } else if (toolCall.name === 'update_gallery_caption') {
+              await client.models.GalleryUpload.update({
+                id: toolCall.input.id,
+                caption: toolCall.input.caption
+              });
+              lastActionMessage = "I've updated the caption on that photo!";
             }
           }
         }

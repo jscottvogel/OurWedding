@@ -27,12 +27,15 @@ export function useGallery(publicWeddingId?: string) {
     }
 
     const sub = client.models.GalleryUpload.observeQuery({
-      filter: { weddingId: { eq: weddingId }, isDeleted: { ne: true } }
+      filter: { weddingId: { eq: weddingId } }
     }).subscribe({
       next: async ({ items }) => {
+        // Filter out deleted items locally due to AppSync negated boolean limitations
+        const activeItems = items.filter(item => !item.isDeleted);
+        
         // Resolve S3 presigned URLs for each item
         const photosWithUrls = await Promise.all(
-          items.map(async (item) => {
+          activeItems.map(async (item) => {
             try {
               const urlResult = await getUrl({ path: item.fileKey });
               return { ...item, url: urlResult.url.toString() };
@@ -84,5 +87,21 @@ export function useGallery(publicWeddingId?: string) {
     }
   };
 
-  return { photos, loading, addPhotoRecord, deletePhoto, weddingId };
+  const updatePhotoCaption = async (id: string, caption: string) => {
+    try {
+      await client.models.GalleryUpload.update({ id, caption });
+    } catch (err) {
+      console.error('Failed to update caption', err);
+    }
+  };
+
+  const updatePhotoUploaderName = async (id: string, uploaderName: string) => {
+    try {
+      await client.models.GalleryUpload.update({ id, uploaderName });
+    } catch (err) {
+      console.error('Failed to update uploader name', err);
+    }
+  };
+
+  return { photos, loading, addPhotoRecord, deletePhoto, updatePhotoCaption, updatePhotoUploaderName, weddingId };
 }

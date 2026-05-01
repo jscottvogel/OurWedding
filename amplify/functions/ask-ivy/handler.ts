@@ -26,6 +26,9 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
       if (parsed.runsheet && parsed.runsheet.length > 0) {
         additionalInfo += `\n\nWedding Day Schedule:\n` + parsed.runsheet.map((r: any) => `- ${r.time}: ${r.title}`).join('\n');
       }
+      if (parsed.gallery && parsed.gallery.length > 0) {
+        additionalInfo += `\n\nGallery Photos:\n` + parsed.gallery.map((g: any) => `- [ID: ${g.id}] Uploaded by: ${g.uploader} | Current Caption: ${g.caption || 'None'}`).join('\n');
+      }
 
       contextStr = `
         Couple: ${parsed.coupleName1} and ${parsed.coupleName2}
@@ -46,7 +49,7 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
     You assist the couple in planning their wedding. Be concise and keep answers short (under 3 paragraphs).
     Here is the context about their wedding:
     ${contextStr}
-    You have tools to add tasks, vendors, and runsheet items. If the user asks you to create a "typical" schedule, checklist, or list, you CAN and SHOULD use your tools multiple times in a row to generate the full list of items in a single response!
+    You have tools to add tasks, vendors, runsheet items, and update gallery captions. If the user asks you to create a "typical" schedule, checklist, or list, you CAN and SHOULD use your tools multiple times in a row to generate the full list of items in a single response!
     For a typical runsheet, you MUST generate a granular breakdown containing at least 10 to 15 distinct events (e.g. hair/makeup, arrivals, first look, photos, ceremony, cocktail hour, reception, speeches, dancing, send-off).
     IMPORTANT: NEVER clear or delete existing items when asked to populate or add to a schedule unless the user EXPLICITLY says "clear" or "start over".
     CRITICAL: You DO NOT have a multi-turn tool execution loop. If the user asks you to perform multiple actions (e.g., "clear the run sheet AND populate it"), you MUST output ALL necessary tool blocks in the EXACT SAME response. Do NOT output a single tool and stop. Output the clear tool and all 15 add tools simultaneously!
@@ -236,6 +239,18 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
         input_schema: {
           type: "object",
           properties: {}
+        }
+      },
+      {
+        name: "update_gallery_caption",
+        description: "Update the caption of a photo or video in the gallery.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "The ID of the gallery item." },
+            caption: { type: "string", description: "The new caption text." }
+          },
+          required: ["id", "caption"]
         }
       }
     ];
