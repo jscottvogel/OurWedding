@@ -15,7 +15,7 @@ export type CalculatedRunSheetItem = Schema['RunSheetItem']['type'] & {
   scheduledEndTime: string;
 };
 
-export function useRunSheet() {
+export function useRunSheetProvider() {
   const { weddingId, loading: authLoading } = useAuth();
   
   const [dbItems, setDbItems] = useState<Schema['RunSheetItem']['type'][]>([]);
@@ -280,4 +280,21 @@ export function useRunSheet() {
     reorderItems,
     blocks: [{ items }]
   };
+}
+
+import { createContext, useContext, ReactNode } from 'react';
+
+const RunSheetContext = createContext<ReturnType<typeof useRunSheetProvider> | null>(null);
+
+export function RunSheetProvider({ children }: { children: ReactNode }) {
+  const value = useRunSheetProvider();
+  return <RunSheetContext.Provider value={value}>{children}</RunSheetContext.Provider>;
+}
+
+export function useRunSheet() {
+  const context = useContext(RunSheetContext);
+  if (!context) {
+    throw new Error('useRunSheet must be used within a RunSheetProvider');
+  }
+  return context;
 }
