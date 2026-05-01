@@ -29,6 +29,29 @@ export function useAuth() {
           });
           
           setMemberships(memberRecords);
+          let fetchedMemberRecords = memberRecords;
+          
+          // Self-healing migration for users created before the multi-wedding update
+          if (fetchedMemberRecords.length === 0 && payload['custom:wedding_id']) {
+            try {
+              const cognitoWeddingId = payload['custom:wedding_id'] as string;
+              const groups = payload['cognito:groups'] as string[];
+              const cognitoRole = (payload['custom:role'] || (groups && groups[0]) || 'planner') as any;
+              
+              const { data: newMember } = await client.models.WeddingMember.create({
+                profileId: currentUser.userId,
+                weddingId: cognitoWeddingId,
+                role: cognitoRole
+              });
+              
+              if (newMember) {
+                fetchedMemberRecords = [newMember];
+                setMemberships(fetchedMemberRecords);
+              }
+            } catch (migrationErr) {
+              console.error("Failed to self-heal user membership:", migrationErr);
+            }
+          }
           
           const localWeddingId = typeof window !== 'undefined' ? localStorage.getItem('weddingId') : null;
           
@@ -39,14 +62,14 @@ export function useAuth() {
           let activeId = null;
           let activeRole = 'guest'; // default fallback
           
-          if (memberRecords.length > 0) {
-            const validLocal = memberRecords.find(m => m.weddingId === localWeddingId);
+          if (fetchedMemberRecords.length > 0) {
+            const validLocal = fetchedMemberRecords.find(m => m.weddingId === localWeddingId);
             if (validLocal) {
               activeId = validLocal.weddingId;
               activeRole = validLocal.role || 'guest';
             } else {
-              activeId = memberRecords[0].weddingId;
-              activeRole = memberRecords[0].role || 'guest';
+              activeId = fetchedMemberRecords[0].weddingId;
+              activeRole = fetchedMemberRecords[0].role || 'guest';
               if (typeof window !== 'undefined') {
                 localStorage.setItem('weddingId', activeId);
               }
