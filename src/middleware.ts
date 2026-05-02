@@ -6,19 +6,15 @@ export async function middleware(request: NextRequest) {
   const url = request.nextUrl;
   const hostname = request.headers.get('host') || '';
 
-  // 1. Custom Domain & Subdomain Routing for Public Sites
-  const isAppDomain = hostname.includes('localhost') || hostname === 'weddingsteward.com' || hostname.startsWith('app.');
+  // 1. Custom Domain Routing (True Custom Domains)
+  const isCustomDomain = !hostname.includes('localhost') && !hostname.endsWith('weddingsteward.com');
   
-  if (!isAppDomain) {
-    // It's a custom domain or a subdomain (e.g. sarah-tom.weddingsteward.com)
-    let slug = hostname.replace('.weddingsteward.com', '');
-    
-    // In a full implementation, if it's a custom domain (e.g. sarahandtom.com),
-    // you would fetch the DB here to find the matching subdomain/slug.
-    // For this MVP, we pass the slug directly.
-    
-    // Rewrite the URL to the /[slug] dynamic route
-    return NextResponse.rewrite(new URL(`/${slug}${url.pathname}`, request.url));
+  if (isCustomDomain) {
+    // It's a true custom domain (e.g. sarahandtom.com)
+    // You would fetch the DB here to find the matching slug for this domain.
+    // For MVP, we rewrite to a placeholder or extract from host if possible.
+    const slug = hostname.split('.')[0]; // naive extraction for MVP
+    return NextResponse.rewrite(new URL(`/w/${slug}${url.pathname}`, request.url));
   }
 
   // 2. Auth Protection for Dashboard and Portal

@@ -6,16 +6,15 @@ export function PublicSiteLayout({ children, slug }: { children: React.ReactNode
   // Client-side interactive layout shell
   return (
     <div className="public-site-wrapper min-h-screen flex flex-col">
-      <header className="sticky top-0 z-50 bg-[var(--color-bg)]/90 backdrop-blur-md border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="font-heading text-xl font-bold" style={{ color: 'var(--color-primary)' }}>
-            {slug.replace(/-/g, ' ').toUpperCase()}
+      <header className="fixed top-0 inset-x-0 z-50 bg-[var(--color-bg)]/80 backdrop-blur-lg border-b border-gray-200/50 transition-all duration-300">
+        <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="font-heading text-2xl font-bold tracking-widest uppercase" style={{ color: 'var(--color-primary)' }}>
+            {slug.replace(/-/g, ' ')}
           </div>
-          <nav className="hidden md:flex space-x-6 text-sm">
-            {/* StickyNav will populate this based on enabled sections */}
-            <a href="#hero" className="hover:opacity-70 transition-opacity">Welcome</a>
-            <a href="#story" className="hover:opacity-70 transition-opacity">Our Story</a>
-            <a href="#rsvp" className="hover:opacity-70 transition-opacity font-bold" style={{ color: 'var(--color-primary)' }}>RSVP</a>
+          <nav className="hidden md:flex space-x-10 text-sm font-medium tracking-wide uppercase">
+            <a href="#hero" className="hover:opacity-60 transition-opacity" style={{ color: 'var(--color-primary)' }}>Welcome</a>
+            <a href="#story" className="hover:opacity-60 transition-opacity" style={{ color: 'var(--color-primary)' }}>Our Story</a>
+            <a href="#rsvp" className="px-6 py-2 rounded-full text-white transition-all hover:shadow-lg" style={{ backgroundColor: 'var(--color-primary)' }}>RSVP</a>
           </nav>
         </div>
       </header>

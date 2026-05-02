@@ -16,8 +16,8 @@ export function LivePreview({ config }: { config: Schema['WebsiteConfig']['type'
     }
   }, [config]);
 
-  // Use a special query param to let the public route know it's being previewed
-  const previewUrl = `http://${config.subdomain}.localhost:3000?preview=true`;
+  // Path-based preview URL
+  const previewUrl = `/w/${config.subdomain}?preview=true`;
 
   return (
     <iframe

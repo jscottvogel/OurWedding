@@ -21,14 +21,13 @@ export default function WebsiteDomainPage() {
           <div>
             <label className="block text-sm font-medium text-charcoal mb-2">Wedding Steward Subdomain</label>
             <div className="flex items-center">
-              <span className="bg-gray-100 border border-r-0 border-light-gray px-3 py-2 rounded-l-md text-gray-500 text-sm">https://</span>
+              <span className="bg-gray-100 border border-r-0 border-light-gray px-3 py-2 rounded-l-md text-gray-500 text-sm">weddingsteward.com/w/</span>
               <input 
                 type="text" 
                 value={config.subdomain}
                 readOnly
-                className="flex-1 bg-gray-50 border-light-gray text-gray-600 focus:ring-0 cursor-not-allowed" 
+                className="flex-1 bg-gray-50 border-light-gray text-gray-600 focus:ring-0 cursor-not-allowed rounded-r-md" 
               />
-              <span className="bg-gray-100 border border-l-0 border-light-gray px-3 py-2 rounded-r-md text-gray-500 text-sm">.weddingsteward.com</span>
             </div>
           </div>
           

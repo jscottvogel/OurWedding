@@ -24,7 +24,7 @@ export default function WebsiteOverviewPage() {
             {config.publishStatus === 'PUBLISHED' ? 'Unpublish' : 'Publish Website'}
           </button>
           <a 
-            href={`https://${config.subdomain}.weddingsteward.com`} 
+            href={`/w/${config.subdomain}`} 
             target="_blank" 
             rel="noopener noreferrer"
             className="border border-sage text-sage px-4 py-2 rounded font-medium hover:bg-sage/10"
