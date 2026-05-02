@@ -17,6 +17,12 @@ const schema = a.schema({
       qrCodeUrl: a.string(),
       mealOptions: a.string().array(),
       isActive: a.boolean().default(true),
+      websiteEnabled: a.boolean().default(false),
+      rsvpDeadline: a.date(),
+      rsvpMealOptions: a.string().array(),
+      rsvpCustomQuestions: a.string(),
+      rsvpConfirmationMsg: a.string(),
+      spotifyEmbedUrl: a.string(),
     })
     .secondaryIndexes((index) => [index('slug')])
     .authorization((allow) => [
@@ -117,6 +123,8 @@ const schema = a.schema({
       itemType: a.enum(['START', 'END', 'EVENT']),
       mode: a.string(),
       isFixed: a.boolean(),
+      isPublic: a.boolean().default(false),
+      venuePhotoUrl: a.string(),
     })
     .secondaryIndexes((index) => [index('weddingId')])
     .authorization((allow) => [
@@ -135,6 +143,7 @@ const schema = a.schema({
       caption: a.string(),
       uploadedAt: a.datetime(),
       isDeleted: a.boolean().default(false),
+      showOnWebsite: a.boolean().default(false),
     })
     .secondaryIndexes((index) => [index('weddingId')])
     .authorization((allow) => [
@@ -223,6 +232,143 @@ const schema = a.schema({
       allow.authenticated().to(['create', 'read', 'update', 'delete']),
       allow.guest().to(['read']),
       allow.publicApiKey().to(['read']),
+    ]),
+
+  WebsiteConfig: a
+    .model({
+      weddingId: a.string().required(),
+      publishStatus: a.enum(['DRAFT', 'PUBLISHED', 'POST_WEDDING']),
+      subdomain: a.string().required(),
+      customDomain: a.string(),
+      passwordProtected: a.boolean().default(false),
+      sitePassword: a.string(),
+      siteTitle: a.string(),
+      metaDescription: a.string(),
+      ogImageUrl: a.string(),
+      themeId: a.string().required(),
+      primaryColor: a.string().required(),
+      accentColor: a.string().required(),
+      backgroundColor: a.string().required(),
+      headingFont: a.string().required(),
+      bodyFont: a.string().required(),
+      buttonStyle: a.enum(['ROUNDED', 'SQUARE', 'PILL']),
+      sectionOrder: a.string().required(),
+      enabledSections: a.string().required(),
+      customCss: a.string(),
+      customJs: a.string(),
+      headInjection: a.string(),
+      viewCount: a.integer().default(0),
+    })
+    .secondaryIndexes((index) => [index('weddingId'), index('subdomain')])
+    .authorization((allow) => [
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
+      allow.guest().to(['read']),
+      allow.publicApiKey().to(['read']),
+    ]),
+
+  WebsiteStory: a
+    .model({
+      weddingId: a.string().required(),
+      coupleStory: a.string(),
+      howWeMetDate: a.date(),
+      engagementDate: a.date(),
+      engagementStory: a.string(),
+      milestones: a.string(),
+    })
+    .secondaryIndexes((index) => [index('weddingId')])
+    .authorization((allow) => [
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
+      allow.guest().to(['read']),
+      allow.publicApiKey().to(['read']),
+    ]),
+
+  WebsiteTravel: a
+    .model({
+      weddingId: a.string().required(),
+      hotelName: a.string().required(),
+      address: a.string(),
+      bookingUrl: a.string(),
+      roomBlockCode: a.string(),
+      blockDeadline: a.date(),
+      distanceFromVenue: a.string(),
+      priceRange: a.string(),
+      notes: a.string(),
+      displayOrder: a.integer().default(0),
+      isVisible: a.boolean().default(true),
+    })
+    .secondaryIndexes((index) => [index('weddingId')])
+    .authorization((allow) => [
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
+      allow.guest().to(['read']),
+      allow.publicApiKey().to(['read']),
+    ]),
+
+  WebsitePartyMember: a
+    .model({
+      weddingId: a.string().required(),
+      name: a.string().required(),
+      role: a.string().required(),
+      bio: a.string(),
+      photoUrl: a.string(),
+      displayOrder: a.integer().default(0),
+      isVisible: a.boolean().default(true),
+    })
+    .secondaryIndexes((index) => [index('weddingId')])
+    .authorization((allow) => [
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
+      allow.guest().to(['read']),
+      allow.publicApiKey().to(['read']),
+    ]),
+
+  WebsiteRegistry: a
+    .model({
+      weddingId: a.string().required(),
+      registryName: a.string().required(),
+      registryUrl: a.string().required(),
+      logoUrl: a.string(),
+      description: a.string(),
+      isCashFund: a.boolean().default(false),
+      displayOrder: a.integer().default(0),
+      isVisible: a.boolean().default(true),
+    })
+    .secondaryIndexes((index) => [index('weddingId')])
+    .authorization((allow) => [
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
+      allow.guest().to(['read']),
+      allow.publicApiKey().to(['read']),
+    ]),
+
+  WebsiteFaq: a
+    .model({
+      weddingId: a.string().required(),
+      question: a.string().required(),
+      answer: a.string().required(),
+      category: a.enum(['GENERAL', 'DRESS_CODE', 'VENUE', 'GIFTS', 'KIDS_PETS', 'OTHER']),
+      displayOrder: a.integer().default(0),
+      isVisible: a.boolean().default(true),
+    })
+    .secondaryIndexes((index) => [index('weddingId')])
+    .authorization((allow) => [
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
+      allow.guest().to(['read']),
+      allow.publicApiKey().to(['read']),
+    ]),
+
+  WebsiteGuestbook: a
+    .model({
+      weddingId: a.string().required(),
+      guestName: a.string().required(),
+      message: a.string(),
+      songRequest: a.string(),
+      messageType: a.enum(['GUESTBOOK', 'SONG_REQUEST', 'BOTH']),
+      isApproved: a.boolean().default(true),
+      isDeleted: a.boolean().default(false),
+    })
+    .secondaryIndexes((index) => [index('weddingId')])
+    .authorization((allow) => [
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
+      allow.guest().to(['create', 'read']),
+      allow.publicApiKey().to(['create', 'read']),
     ]),
 
   getWeddingBySlug: a
