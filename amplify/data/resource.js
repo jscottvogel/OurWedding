@@ -344,7 +344,7 @@ var schema = backend_1.a.schema({
         weddingId: backend_1.a.string().required(),
         question: backend_1.a.string().required(),
         answer: backend_1.a.string().required(),
-        category: backend_1.a.enum(['GENERAL', 'DRESS_CODE', 'VENUE', 'GIFTS', 'KIDS_PETS', 'OTHER']),
+        category: backend_1.a.string(),
         displayOrder: backend_1.a.integer().default(0),
         isVisible: backend_1.a.boolean().default(true),
     })
@@ -352,7 +352,7 @@ var schema = backend_1.a.schema({
         .authorization(function (allow) { return [
         allow.authenticated().to(['create', 'read', 'update', 'delete']),
         allow.guest().to(['read']),
-        allow.publicApiKey().to(['read']),
+        allow.publicApiKey().to(['create', 'read']),
     ]; }),
     WebsiteGuestbook: backend_1.a
         .model({

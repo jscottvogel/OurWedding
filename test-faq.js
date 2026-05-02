@@ -51,7 +51,7 @@ function run() {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 4, , 5]);
-                    return [4 /*yield*/, client.models.Wedding.list()];
+                    return [4 /*yield*/, client.models.Wedding.list({ authMode: 'apiKey' })];
                 case 1:
                     weddings = (_a.sent()).data;
                     if (weddings.length === 0) {
@@ -64,13 +64,15 @@ function run() {
                             weddingId: weddingId,
                             question: 'Test Question',
                             answer: 'Test Answer',
+                            // @ts-ignore
                             category: 'GENERAL',
+                            // @ts-ignore
                             isVisible: true
-                        })];
+                        }, { authMode: 'apiKey' })];
                 case 2:
                     result = _a.sent();
                     console.log('Create Result:', JSON.stringify(result, null, 2));
-                    return [4 /*yield*/, client.models.WebsiteFaq.list()];
+                    return [4 /*yield*/, client.models.WebsiteFaq.list({ authMode: 'apiKey' })];
                 case 3:
                     faqs = (_a.sent()).data;
                     console.log('All FAQs:', JSON.stringify(faqs, null, 2));

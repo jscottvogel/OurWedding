@@ -9,8 +9,7 @@ const client = generateClient<Schema>();
 
 async function run() {
   try {
-    // Get the first wedding
-    const { data: weddings } = await client.models.Wedding.list();
+    const { data: weddings } = await client.models.Wedding.list({ authMode: 'apiKey' });
     if (weddings.length === 0) {
       console.log('No weddings found');
       return;
@@ -22,13 +21,15 @@ async function run() {
       weddingId,
       question: 'Test Question',
       answer: 'Test Answer',
+      // @ts-ignore
       category: 'GENERAL',
+      // @ts-ignore
       isVisible: true
-    });
+    }, { authMode: 'apiKey' });
     
     console.log('Create Result:', JSON.stringify(result, null, 2));
 
-    const { data: faqs } = await client.models.WebsiteFaq.list();
+    const { data: faqs } = await client.models.WebsiteFaq.list({ authMode: 'apiKey' });
     console.log('All FAQs:', JSON.stringify(faqs, null, 2));
 
   } catch (err) {

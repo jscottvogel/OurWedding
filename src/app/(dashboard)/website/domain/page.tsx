@@ -13,6 +13,7 @@ export default function WebsiteDomainPage() {
 
   const [localCustomDomain, setLocalCustomDomain] = useState('');
   const [localSiteTitle, setLocalSiteTitle] = useState('');
+  const [localSubdomain, setLocalSubdomain] = useState('');
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   const defaultTitle = wedding ? `${wedding.coupleName1} & ${wedding.coupleName2}'s Wedding` : '';
@@ -21,15 +22,17 @@ export default function WebsiteDomainPage() {
     if (config) {
       setLocalCustomDomain(config.customDomain || '');
       setLocalSiteTitle(config.siteTitle || defaultTitle);
+      setLocalSubdomain(config.subdomain || '');
     }
   }, [config, defaultTitle]);
 
   const { isSaving, lastSaved } = useAutoSave(
-    { customDomain: localCustomDomain, siteTitle: localSiteTitle },
+    { customDomain: localCustomDomain, siteTitle: localSiteTitle, subdomain: localSubdomain },
     async (values) => {
       await updateConfig({
         customDomain: values.customDomain,
-        siteTitle: values.siteTitle
+        siteTitle: values.siteTitle,
+        subdomain: values.subdomain
       });
     },
     2000
@@ -61,9 +64,9 @@ export default function WebsiteDomainPage() {
               <span className="bg-gray-100 border border-r-0 border-light-gray px-3 py-2 rounded-l-md text-gray-500 text-sm">weddingsteward.com/w/</span>
               <input 
                 type="text" 
-                value={config.subdomain}
-                readOnly
-                className="flex-1 bg-gray-50 border-light-gray text-gray-600 focus:ring-0 cursor-not-allowed rounded-r-md" 
+                value={localSubdomain}
+                onChange={(e) => setLocalSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                className="flex-1 bg-white border-light-gray text-charcoal focus:ring-sage focus:border-sage rounded-r-md" 
               />
             </div>
             <p className="text-xs text-mid-gray mt-2">This is the default link to your wedding website.</p>

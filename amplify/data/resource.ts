@@ -360,7 +360,7 @@ const schema = a.schema({
       weddingId: a.string().required(),
       question: a.string().required(),
       answer: a.string().required(),
-      category: a.enum(['GENERAL', 'DRESS_CODE', 'VENUE', 'GIFTS', 'KIDS_PETS', 'OTHER']),
+      category: a.string(),
       displayOrder: a.integer().default(0),
       isVisible: a.boolean().default(true),
     })
@@ -368,7 +368,7 @@ const schema = a.schema({
     .authorization((allow) => [
       allow.authenticated().to(['create', 'read', 'update', 'delete']),
       allow.guest().to(['read']),
-      allow.publicApiKey().to(['read']),
+      allow.publicApiKey().to(['create', 'read']),
     ]),
 
   WebsiteGuestbook: a
