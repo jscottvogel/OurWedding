@@ -1,10 +1,13 @@
 import type { Schema } from '../../data/resource';
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import mammoth from 'mammoth';
+import * as xlsx from 'xlsx';
 
 const bedrockClient = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' });
 
 export const handler: Schema['askIvy']['functionHandler'] = async (event, context) => {
-  const { message, weddingContext, conversationHistory, imageBase64 } = event.arguments;
+  const { message, weddingContext, conversationHistory, imageBase64, documentKey } = event.arguments;
 
   if (!message) {
     throw new Error('Message is required');
@@ -40,6 +43,36 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
     }
   } catch (e) {
     console.error('Failed to parse wedding context:', e);
+  }
+
+  let extractedText = '';
+  if (documentKey) {
+    try {
+      const s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
+      const getObjCmd = new GetObjectCommand({
+        Bucket: process.env.STORAGE_BUCKET_NAME,
+        Key: documentKey
+      });
+      const s3Result = await s3Client.send(getObjCmd);
+      const byteArray = await s3Result.Body?.transformToByteArray();
+      
+      if (byteArray) {
+        if (documentKey.toLowerCase().endsWith('.docx')) {
+          const mammothResult = await mammoth.extractRawText({ buffer: Buffer.from(byteArray) });
+          extractedText = mammothResult.value;
+        } else if (documentKey.toLowerCase().endsWith('.xlsx')) {
+          const workbook = xlsx.read(byteArray, { type: 'buffer' });
+          let csvText = '';
+          for (const sheetName of workbook.SheetNames) {
+            csvText += `\n--- Sheet: ${sheetName} ---\n`;
+            csvText += xlsx.utils.sheet_to_csv(workbook.Sheets[sheetName]);
+          }
+          extractedText = csvText;
+        }
+      }
+    } catch (err) {
+      console.error('Failed to parse document:', err);
+    }
   }
 
   const isChecklistGeneration = message === 'GENERATE_CHECKLIST_JSON';
@@ -81,13 +114,18 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
           role: msg.role === 'assistant' ? 'assistant' : 'user',
           content: msg.content
         }));
+      }
+    } catch (e) {
+      console.error('Failed to parse history:', e);
     }
-  } catch (e) {
-    console.error('Failed to parse history:', e);
-  }
-
-  // If no history or last message isn't the current message, append current message
-  if (formattedMessages.length === 0 || formattedMessages[formattedMessages.length - 1].content !== message || imageBase64) {
+  
+    let finalMessage = message;
+    if (extractedText) {
+      finalMessage += `\n\n[ATTACHED DOCUMENT CONTENTS]:\n${extractedText}`;
+    }
+  
+    // If no history or last message isn't the current message, append current message
+    if (formattedMessages.length === 0 || formattedMessages[formattedMessages.length - 1].content !== message || imageBase64) {
     if (imageBase64) {
       // Anthropic vision format
       formattedMessages.push({
@@ -103,12 +141,12 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
           },
           {
             type: "text",
-            text: message
+            text: finalMessage
           }
         ]
       });
     } else {
-      formattedMessages.push({ role: 'user', content: message });
+      formattedMessages.push({ role: 'user', content: finalMessage });
     }
   }
 

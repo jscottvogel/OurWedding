@@ -15,6 +15,9 @@ export const storage = defineStorage({
     ],
     'exports/*': [
       allow.groups(['admin', 'planner']).to(['read', 'delete'])
+    ],
+    'chat/*': [
+      allow.authenticated.to(['read', 'write', 'delete'])
     ]
   })
 });

@@ -32,6 +32,15 @@ backend.askIvy.resources.lambda.addToRolePolicy(
   })
 );
 
+backend.askIvy.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    actions: ['s3:GetObject'],
+    resources: [`${backend.storage.resources.bucket.bucketArn}/chat/*`],
+  })
+);
+
+backend.askIvy.addEnvironment('STORAGE_BUCKET_NAME', backend.storage.resources.bucket.bucketName);
+
 backend.sendEmail.resources.lambda.addToRolePolicy(
   new iam.PolicyStatement({
     actions: [

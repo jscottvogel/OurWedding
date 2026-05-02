@@ -266,7 +266,8 @@ const schema = a.schema({
       message: a.string(), 
       weddingContext: a.string(), 
       conversationHistory: a.string(),
-      imageBase64: a.string()
+      imageBase64: a.string(),
+      documentKey: a.string()
     })
     .returns(a.string())
     .authorization((allow) => [allow.authenticated()])

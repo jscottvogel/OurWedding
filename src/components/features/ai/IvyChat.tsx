@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Sparkles, X, Send, User, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Sparkles, X, Send, User, Loader2, Paperclip } from 'lucide-react';
 import { useWedding } from '@/lib/hooks/useWedding';
 import { useChecklist } from '@/lib/hooks/useChecklist';
 import { useVendors } from '@/lib/hooks/useVendors';
 import { useRunSheet } from '@/lib/hooks/useRunSheet';
 import { useGallery } from '@/lib/hooks/useGallery';
 import { generateClient } from 'aws-amplify/data';
+import { uploadData } from 'aws-amplify/storage';
 import type { Schema } from '../../../../amplify/data/resource';
 
 const client = generateClient<Schema>();
@@ -26,6 +27,9 @@ export default function IvyChat() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const [documentKey, setDocumentKey] = useState<string | null>(null);
+  const [documentName, setDocumentName] = useState<string | null>(null);
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -51,67 +55,91 @@ export default function IvyChat() {
     }
   }, [messages, isOpen]);
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 800;
-        const MAX_HEIGHT = 800;
-        let width = img.width;
-        let height = img.height;
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
 
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
           }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
 
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-        
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        const base64Data = dataUrl.split(',')[1];
-        
-        setImageBase64(base64Data);
-        setImagePreviewUrl(dataUrl);
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          const base64Data = dataUrl.split(',')[1];
+          
+          setImageBase64(base64Data);
+          setImagePreviewUrl(dataUrl);
+        };
+        img.src = event.target?.result as string;
       };
-      img.src = event.target?.result as string;
-    };
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    } else if (file.name.endsWith('.docx') || file.name.endsWith('.xlsx')) {
+      // Document upload
+      setIsUploadingDoc(true);
+      const timestamp = new Date().getTime();
+      const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const key = `chat/${timestamp}-${safeName}`;
+      
+      try {
+        await uploadData({
+          path: key,
+          data: file
+        }).result;
+        setDocumentKey(key);
+        setDocumentName(file.name);
+      } catch (err) {
+        console.error('Failed to upload document', err);
+      } finally {
+        setIsUploadingDoc(false);
+      }
+    }
     
     // Clear input so the same file can be selected again
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const removeImage = () => {
+  const removeAttachment = () => {
     setImageBase64(null);
     setImagePreviewUrl(null);
+    setDocumentKey(null);
+    setDocumentName(null);
   };
 
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if ((!input.trim() && !imageBase64) || isTyping) return;
+    if ((!input.trim() && !imageBase64 && !documentKey) || isTyping || isUploadingDoc) return;
 
-    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: input || 'Attached an image.' };
+    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: input || (documentName ? `Attached document: ${documentName}` : 'Attached an image.') };
     setMessages(prev => [...prev, userMsg]);
     
     const imageToSend = imageBase64;
+    const documentToSend = documentKey;
     
     setInput('');
-    removeImage();
+    removeAttachment();
     setIsTyping(true);
 
     try {
@@ -130,7 +158,8 @@ export default function IvyChat() {
         message: userMsg.content,
         weddingContext: JSON.stringify(fullContext),
         conversationHistory: JSON.stringify(messages),
-        imageBase64: imageToSend || undefined
+        imageBase64: imageToSend || undefined,
+        documentKey: documentToSend || undefined
       });
       
       if (response.errors) {
@@ -302,12 +331,19 @@ export default function IvyChat() {
 
         {/* Input */}
         <div className="p-4 bg-white border-t border-light-gray rounded-b-2xl">
-          {imagePreviewUrl && (
-            <div className="mb-3 relative inline-block">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={imagePreviewUrl} alt="Preview" className="h-16 rounded-md border border-light-gray object-cover" />
+          {(imagePreviewUrl || documentName) && (
+            <div className="mb-3 relative inline-block bg-ivory rounded-md border border-light-gray pr-6 p-2">
+              {imagePreviewUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={imagePreviewUrl} alt="Preview" className="h-16 rounded-md object-cover" />
+              ) : (
+                <div className="flex items-center text-sm text-sage font-medium">
+                  <Paperclip className="w-4 h-4 mr-2" />
+                  {documentName}
+                </div>
+              )}
               <button 
-                onClick={removeImage}
+                onClick={removeAttachment}
                 className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 shadow-sm"
               >
                 <X className="w-3 h-3" />
@@ -319,15 +355,15 @@ export default function IvyChat() {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               className="w-10 h-10 bg-ivory text-sage rounded-full flex items-center justify-center hover:bg-sage/10 transition-colors border border-sage/20 flex-shrink-0"
-              disabled={isTyping}
+              disabled={isTyping || isUploadingDoc}
             >
-              <ImageIcon className="w-5 h-5" />
+              {isUploadingDoc ? <Loader2 className="w-5 h-5 animate-spin" /> : <Paperclip className="w-5 h-5" />}
             </button>
             <input 
               type="file" 
               ref={fileInputRef} 
-              onChange={handleImageSelect} 
-              accept="image/*" 
+              onChange={handleFileSelect} 
+              accept="image/*,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
               className="hidden" 
             />
             <input
@@ -336,11 +372,11 @@ export default function IvyChat() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask me anything..."
               className="flex-1 border border-light-gray rounded-full px-4 py-2 text-sm focus:border-sage focus:outline-none min-w-0"
-              disabled={isTyping}
+              disabled={isTyping || isUploadingDoc}
             />
             <button
               type="submit"
-              disabled={(!input.trim() && !imageBase64) || isTyping}
+              disabled={(!input.trim() && !imageBase64 && !documentKey) || isTyping || isUploadingDoc}
               className="w-10 h-10 bg-sage text-white rounded-full flex items-center justify-center hover:bg-dark-sage disabled:opacity-50 transition-colors flex-shrink-0"
             >
               <Send className="w-4 h-4 ml-0.5" />
