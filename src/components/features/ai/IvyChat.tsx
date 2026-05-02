@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Sparkles, X, Send, User, Loader2 } from 'lucide-react';
+import { Sparkles, X, Send, User, Loader2, Image as ImageIcon } from 'lucide-react';
 import { useWedding } from '@/lib/hooks/useWedding';
 import { useChecklist } from '@/lib/hooks/useChecklist';
 import { useVendors } from '@/lib/hooks/useVendors';
@@ -25,6 +25,9 @@ export default function IvyChat() {
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { wedding } = useWedding();
@@ -48,13 +51,67 @@ export default function IvyChat() {
     }
   }, [messages, isOpen]);
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        const base64Data = dataUrl.split(',')[1];
+        
+        setImageBase64(base64Data);
+        setImagePreviewUrl(dataUrl);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+    
+    // Clear input so the same file can be selected again
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeImage = () => {
+    setImageBase64(null);
+    setImagePreviewUrl(null);
+  };
+
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!input.trim() || isTyping) return;
+    if ((!input.trim() && !imageBase64) || isTyping) return;
 
-    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: input };
+    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: input || 'Attached an image.' };
     setMessages(prev => [...prev, userMsg]);
+    
+    const imageToSend = imageBase64;
+    
     setInput('');
+    removeImage();
     setIsTyping(true);
 
     try {
@@ -72,7 +129,8 @@ export default function IvyChat() {
       const response = await client.mutations.askIvy({
         message: userMsg.content,
         weddingContext: JSON.stringify(fullContext),
-        conversationHistory: JSON.stringify(messages)
+        conversationHistory: JSON.stringify(messages),
+        imageBase64: imageToSend || undefined
       });
       
       if (response.errors) {
@@ -244,19 +302,46 @@ export default function IvyChat() {
 
         {/* Input */}
         <div className="p-4 bg-white border-t border-light-gray rounded-b-2xl">
+          {imagePreviewUrl && (
+            <div className="mb-3 relative inline-block">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={imagePreviewUrl} alt="Preview" className="h-16 rounded-md border border-light-gray object-cover" />
+              <button 
+                onClick={removeImage}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 shadow-sm"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
           <form onSubmit={handleSend} className="flex space-x-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-10 h-10 bg-ivory text-sage rounded-full flex items-center justify-center hover:bg-sage/10 transition-colors border border-sage/20 flex-shrink-0"
+              disabled={isTyping}
+            >
+              <ImageIcon className="w-5 h-5" />
+            </button>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleImageSelect} 
+              accept="image/*" 
+              className="hidden" 
+            />
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask me anything..."
-              className="flex-1 border border-light-gray rounded-full px-4 py-2 text-sm focus:border-sage focus:outline-none"
+              className="flex-1 border border-light-gray rounded-full px-4 py-2 text-sm focus:border-sage focus:outline-none min-w-0"
               disabled={isTyping}
             />
             <button
               type="submit"
-              disabled={!input.trim() || isTyping}
-              className="w-10 h-10 bg-sage text-white rounded-full flex items-center justify-center hover:bg-dark-sage disabled:opacity-50 transition-colors"
+              disabled={(!input.trim() && !imageBase64) || isTyping}
+              className="w-10 h-10 bg-sage text-white rounded-full flex items-center justify-center hover:bg-dark-sage disabled:opacity-50 transition-colors flex-shrink-0"
             >
               <Send className="w-4 h-4 ml-0.5" />
             </button>

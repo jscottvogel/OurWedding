@@ -4,7 +4,7 @@ import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedroc
 const bedrockClient = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' });
 
 export const handler: Schema['askIvy']['functionHandler'] = async (event, context) => {
-  const { message, weddingContext, conversationHistory } = event.arguments;
+  const { message, weddingContext, conversationHistory, imageBase64 } = event.arguments;
 
   if (!message) {
     throw new Error('Message is required');
@@ -52,6 +52,7 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
     You have tools to add tasks, vendors, runsheet items, and update gallery captions. If the user asks you to create a "typical" schedule, checklist, or list, you CAN and SHOULD use your tools multiple times in a row to generate the full list of items in a single response!
     For a typical runsheet, you MUST generate a granular breakdown containing at least 10 to 15 distinct events (e.g. hair/makeup, arrivals, first look, photos, ceremony, cocktail hour, reception, speeches, dancing, send-off).
     IMPORTANT: NEVER clear or delete existing items when asked to populate or add to a schedule unless the user EXPLICITLY says "clear" or "start over".
+    VISION CAPABILITY: If the user provides an image, carefully analyze it. If it is a picture of handwritten notes, an invoice, a checklist, or an inspiration board, extract the relevant information and explicitly use your tools (e.g., \`add_task\`, \`add_vendor\`, \`add_runsheet_item\`) to digitize and save it to their dashboard!
     CRITICAL: You DO NOT have a multi-turn tool execution loop. If the user asks you to perform multiple actions (e.g., "clear the run sheet AND populate it"), you MUST output ALL necessary tool blocks in the EXACT SAME response. Do NOT output a single tool and stop. Output the clear tool and all 15 add tools simultaneously!
   `;
 
@@ -86,8 +87,29 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
   }
 
   // If no history or last message isn't the current message, append current message
-  if (formattedMessages.length === 0 || formattedMessages[formattedMessages.length - 1].content !== message) {
-    formattedMessages.push({ role: 'user', content: message });
+  if (formattedMessages.length === 0 || formattedMessages[formattedMessages.length - 1].content !== message || imageBase64) {
+    if (imageBase64) {
+      // Anthropic vision format
+      formattedMessages.push({
+        role: 'user',
+        content: [
+          {
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: "image/jpeg",
+              data: imageBase64
+            }
+          },
+          {
+            type: "text",
+            text: message
+          }
+        ]
+      });
+    } else {
+      formattedMessages.push({ role: 'user', content: message });
+    }
   }
 
   const requestBody: any = {
