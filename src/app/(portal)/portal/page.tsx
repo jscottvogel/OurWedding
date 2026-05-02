@@ -37,7 +37,10 @@ export default function VendorPortalPage() {
             {wedding.weddingDate && (
               <div className="bg-white/20 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center">
                 <Clock className="w-5 h-5 mr-2" />
-                <span className="font-medium">{new Date(wedding.weddingDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                <span className="font-medium">{wedding.weddingDate ? (() => {
+                  const [y, m, d] = wedding.weddingDate.split('-').map(Number);
+                  return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                })() : 'TBD'}</span>
               </div>
             )}
           </div>

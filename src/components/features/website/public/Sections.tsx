@@ -4,7 +4,11 @@ import { format } from 'date-fns';
 
 export function HeroSection({ wedding }: { wedding?: Schema['Wedding']['type'] | null }) {
   if (!wedding) return null;
-  const formattedDate = wedding.weddingDate ? format(new Date(wedding.weddingDate), 'MMMM d, yyyy') : 'Date TBD';
+  let formattedDate = 'Date TBD';
+  if (wedding.weddingDate) {
+    const [year, month, day] = wedding.weddingDate.split('-').map(Number);
+    formattedDate = format(new Date(year, month - 1, day), 'MMMM d, yyyy');
+  }
   const heroUrl = wedding.heroImageKey ? `https://${process.env.NEXT_PUBLIC_STORAGE_BUCKET_NAME}.s3.amazonaws.com/${wedding.heroImageKey}` : '/images/hero.png';
   
   return (

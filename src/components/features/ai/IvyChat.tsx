@@ -239,6 +239,18 @@ export default function IvyChat() {
             if (wedding?.id) await client.models.WebsiteFaq.create({ weddingId: wedding.id, question: toolCall.input.question, answer: toolCall.input.answer, category: toolCall.input.category as any, isVisible: true });
             lastActionMessage = "I've added that FAQ to your website!";
             addedCount++;
+          } else if (toolCall.name === 'delete_travel_item') {
+            await client.models.WebsiteTravel.delete({ id: toolCall.input.id });
+            lastActionMessage = "I've removed that from your travel accommodations!";
+          } else if (toolCall.name === 'delete_party_member') {
+            await client.models.WebsitePartyMember.delete({ id: toolCall.input.id });
+            lastActionMessage = "I've removed them from the wedding party!";
+          } else if (toolCall.name === 'delete_registry') {
+            await client.models.WebsiteRegistry.delete({ id: toolCall.input.id });
+            lastActionMessage = "I've removed that registry link!";
+          } else if (toolCall.name === 'delete_faq') {
+            await client.models.WebsiteFaq.delete({ id: toolCall.input.id });
+            lastActionMessage = "I've deleted that FAQ!";
           } else if (['add_runsheet_item', 'update_runsheet_item', 'delete_runsheet_item', 'clear_runsheet', 'update_gallery_caption'].includes(toolCall.name)) {
             runsheetActions.push(toolCall);
             if (toolCall.name === 'add_runsheet_item') {

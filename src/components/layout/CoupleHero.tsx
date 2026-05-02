@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useWedding } from '@/lib/hooks/useWedding';
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, startOfDay } from 'date-fns';
 import { Edit2 } from 'lucide-react';
 
 export default function CoupleHero() {
@@ -91,7 +91,9 @@ export default function CoupleHero() {
     );
   }
 
-  const daysToGo = differenceInDays(new Date(wedding.weddingDate), new Date());
+  const [year, month, day] = wedding.weddingDate.split('-').map(Number);
+  const localWeddingDate = new Date(year, month - 1, day);
+  const daysToGo = differenceInDays(localWeddingDate, startOfDay(new Date()));
 
   return (
     <div className="relative h-80 md:h-96 w-full bg-dark-sage overflow-hidden group">
@@ -132,7 +134,7 @@ export default function CoupleHero() {
         </h1>
         <div className="flex items-center text-ivory space-x-4">
           <span className="text-lg font-medium">
-            {new Date(wedding.weddingDate).toLocaleDateString(undefined, { 
+            {localWeddingDate.toLocaleDateString(undefined, { 
               weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
             })}
           </span>

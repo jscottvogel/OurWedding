@@ -3,6 +3,7 @@
 import { useWebsiteConfig } from '@/lib/hooks/useWebsiteConfig';
 import { Loader2, GripVertical, Settings } from 'lucide-react';
 import { useState } from 'react';
+import { WebsiteEditorPanel } from '@/components/features/website/studio/WebsiteEditors';
 
 export default function WebsiteContentPage() {
   const { config, isLoading } = useWebsiteConfig();
@@ -30,14 +31,17 @@ export default function WebsiteContentPage() {
             {sections.map((section: string) => (
               <div 
                 key={section} 
-                className={`flex items-center justify-between p-4 border rounded-lg bg-white ${enabledSections.has(section) ? 'border-sage/30' : 'border-light-gray opacity-70'}`}
+                className={`flex items-center justify-between p-4 border rounded-lg bg-white transition-all ${activeSection === section ? 'ring-2 ring-sage shadow-md' : ''} ${enabledSections.has(section) ? 'border-sage/30' : 'border-light-gray opacity-70'}`}
               >
                 <div className="flex items-center">
                   <GripVertical className="w-5 h-5 text-gray-400 mr-3 cursor-grab" />
                   <div className="font-medium text-charcoal capitalize">{section.replace('_', ' ')}</div>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <button className="text-sm font-medium text-sage hover:text-dark-sage flex items-center">
+                  <button 
+                    onClick={() => setActiveSection(section)}
+                    className="text-sm font-medium text-sage hover:text-dark-sage flex items-center px-2 py-1 rounded hover:bg-sage/10 transition-colors"
+                  >
                     <Settings className="w-4 h-4 mr-1" /> Edit
                   </button>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -51,9 +55,14 @@ export default function WebsiteContentPage() {
         </div>
       </div>
       
-      {/* Slide-over editor placeholder logic */}
-      <div className="hidden lg:block bg-gray-50 border border-light-gray rounded-xl p-6 text-center text-gray-400">
-        Select a section to edit its content here.
+      <div className="hidden lg:block">
+        {activeSection ? (
+          <WebsiteEditorPanel section={activeSection} />
+        ) : (
+          <div className="bg-gray-50 border border-light-gray rounded-xl p-12 text-center text-gray-400">
+            Select a section's Edit button to manage its content here.
+          </div>
+        )}
       </div>
     </div>
   );

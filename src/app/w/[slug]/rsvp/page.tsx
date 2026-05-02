@@ -72,7 +72,10 @@ export default function GuestRSVPPage({ params }: { params: { slug: string } }) 
           </h1>
           {wedding.weddingDate && (
             <p className="text-ivory text-lg mt-2 font-medium">
-              {new Date(wedding.weddingDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+              {wedding.weddingDate && (() => {
+                const [y, m, d] = wedding.weddingDate.split('-').map(Number);
+                return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+              })()}
             </p>
           )}
         </div>

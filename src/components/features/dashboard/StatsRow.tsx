@@ -4,7 +4,7 @@ import { useWedding } from '@/lib/hooks/useWedding';
 import { useChecklist } from '@/lib/hooks/useChecklist';
 import { useGuests } from '@/lib/hooks/useGuests';
 import { useBudget } from '@/lib/hooks/useBudget';
-import { differenceInDays } from 'date-fns';
+import { differenceInDays, startOfDay } from 'date-fns';
 
 export default function StatsRow() {
   const { wedding, loading: weddingLoading } = useWedding();
@@ -22,7 +22,9 @@ export default function StatsRow() {
     );
   }
 
-  const daysToGo = differenceInDays(new Date(wedding.weddingDate), new Date());
+  const [year, month, day] = wedding.weddingDate.split('-').map(Number);
+  const localWeddingDate = new Date(year, month - 1, day);
+  const daysToGo = differenceInDays(localWeddingDate, startOfDay(new Date()));
   
   // Calculate real stats
   const checklistStats = { 

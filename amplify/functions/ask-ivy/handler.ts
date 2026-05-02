@@ -381,6 +381,50 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
           },
           required: ["question", "answer"]
         }
+      },
+      {
+        name: "delete_travel_item",
+        description: "Delete an existing travel accommodation from the website.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "The ID of the travel item to delete." }
+          },
+          required: ["id"]
+        }
+      },
+      {
+        name: "delete_party_member",
+        description: "Delete an existing member from the wedding party.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "The ID of the party member to delete." }
+          },
+          required: ["id"]
+        }
+      },
+      {
+        name: "delete_registry",
+        description: "Delete an existing registry link from the website.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "The ID of the registry item to delete." }
+          },
+          required: ["id"]
+        }
+      },
+      {
+        name: "delete_faq",
+        description: "Delete an existing FAQ from the website.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "The ID of the FAQ to delete." }
+          },
+          required: ["id"]
+        }
       }
     ];
   }
