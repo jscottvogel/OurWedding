@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
+import type { Schema } from '../../../../../amplify/data/resource';
 
 export function PublicSiteLayout({ children, slug }: { children: React.ReactNode, slug: string }) {
   // Client-side interactive layout shell
   return (
-    <div className="public-site-wrapper min-h-screen flex flex-col">
+    <div className="public-site-wrapper min-h-screen flex flex-col transition-colors duration-500">
       <header className="fixed top-0 inset-x-0 z-50 bg-[var(--color-bg)]/80 backdrop-blur-lg border-b border-gray-200/50 transition-all duration-300">
         <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="font-heading text-2xl font-bold tracking-widest uppercase" style={{ color: 'var(--color-primary)' }}>

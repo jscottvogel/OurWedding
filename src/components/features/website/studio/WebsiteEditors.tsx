@@ -53,6 +53,16 @@ export function WebsiteEditorPanel({ section }: { section: string }) {
           <p className="text-mid-gray">Guestbook moderation and settings are coming soon!</p>
         </div>
       );
+    case 'rsvp':
+      return (
+        <div className="text-center p-8 bg-ivory rounded-xl border border-light-gray">
+          <h3 className="text-xl font-bold text-charcoal mb-4">RSVP Settings</h3>
+          <p className="text-mid-gray mb-6">Your RSVP deadlines, meal options, and guest responses are managed in the dedicated RSVP tab.</p>
+          <a href="/website/rsvp" className="inline-flex items-center text-sage hover:text-dark-sage font-medium">
+            Manage RSVP <ExternalLink className="w-4 h-4 ml-2" />
+          </a>
+        </div>
+      );
     default:
       return (
         <div className="text-center p-8 bg-gray-50 rounded-xl border border-light-gray text-mid-gray">

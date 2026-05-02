@@ -35,7 +35,7 @@ export default function GuestRSVPPage({ params }: { params: { slug: string } }) 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-ivory flex items-center justify-center">
+      <div className="min-h-screen bg-transparent flex items-center justify-center">
         <div className="animate-pulse text-sage font-medium flex flex-col items-center">
           <Mail className="w-8 h-8 mb-4 animate-bounce" />
           Loading RSVP...
@@ -46,7 +46,7 @@ export default function GuestRSVPPage({ params }: { params: { slug: string } }) 
 
   if (!wedding) {
     return (
-      <div className="min-h-screen bg-ivory flex flex-col items-center justify-center p-4 text-center">
+      <div className="min-h-screen bg-transparent flex flex-col items-center justify-center p-4 text-center">
         <h1 className="text-3xl font-display text-charcoal mb-4">Wedding Not Found</h1>
         <p className="text-mid-gray">Please check the link provided on your invitation.</p>
       </div>
@@ -54,7 +54,7 @@ export default function GuestRSVPPage({ params }: { params: { slug: string } }) 
   }
 
   return (
-    <div className="min-h-screen bg-ivory flex flex-col">
+    <div className="min-h-screen bg-transparent flex flex-col transition-colors duration-500">
       {/* Hero Banner */}
       <div className="relative h-64 w-full bg-sage flex items-center justify-center text-center p-6">
         {wedding.heroImageKey && (

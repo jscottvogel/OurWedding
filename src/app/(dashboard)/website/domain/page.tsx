@@ -79,7 +79,7 @@ export default function WebsiteDomainPage() {
             />
             
             <h4 className="text-sm font-bold text-charcoal mb-2">DNS Instructions</h4>
-            <p className="text-sm text-mid-gray mb-4">To connect your domain, log in to your domain provider (GoDaddy, Namecheap, etc.) and add the following records:</p>
+            <p className="text-sm text-mid-gray mb-4">To connect your domain, log in to your domain provider (GoDaddy, Namecheap, etc.) and add the following CNAME record:</p>
             
             <div className="bg-gray-50 border border-light-gray rounded-lg overflow-hidden mb-3">
               <table className="w-full text-sm text-left">
@@ -92,19 +92,15 @@ export default function WebsiteDomainPage() {
                 </thead>
                 <tbody className="divide-y divide-light-gray text-mid-gray">
                   <tr>
-                    <td className="px-4 py-3 font-mono">A</td>
-                    <td className="px-4 py-3 font-mono">@</td>
-                    <td className="px-4 py-3 font-mono">76.76.21.21</td>
-                  </tr>
-                  <tr>
                     <td className="px-4 py-3 font-mono">CNAME</td>
                     <td className="px-4 py-3 font-mono">www</td>
-                    <td className="px-4 py-3 font-mono">cname.vercel-dns.com</td>
+                    <td className="px-4 py-3 font-mono">domains.weddingsteward.com</td>
                   </tr>
                 </tbody>
               </table>
             </div>
-            <p className="text-xs text-sage italic">Note: If you are using AWS Amplify Hosting, please refer to the Amplify Console for your specific branch URL instead of the Vercel records above.</p>
+            <p className="text-xs text-mid-gray mb-1">For root domains (e.g. sarahandtom.com), we recommend setting up <strong>URL Forwarding</strong> in your DNS provider to redirect to your www subdomain.</p>
+            <p className="text-xs text-sage italic mt-3">Note: Once your DNS changes propagate, please contact support to have your SSL certificate provisioned.</p>
           </div>
         </div>
       </div>
