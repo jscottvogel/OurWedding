@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
-import type { Schema } from '../../../../amplify/data/resource';
+import type { Schema } from '../../../../../amplify/data/resource';
 import UploaderComponent from '@/components/features/gallery/UploaderComponent';
 import { Camera } from 'lucide-react';
 import { useGallery } from '@/lib/hooks/useGallery';

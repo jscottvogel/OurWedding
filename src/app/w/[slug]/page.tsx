@@ -6,7 +6,7 @@ import { AnalyticsTracker } from '@/components/features/website/public/Analytics
 import { generateServerClientUsingCookies } from '@aws-amplify/adapter-nextjs/api';
 import { cookies } from 'next/headers';
 import outputs from '@/../amplify_outputs.json';
-import type { Schema } from '../../../../../amplify/data/resource';
+import type { Schema } from '../../../../amplify/data/resource';
 
 export default async function PublicSitePage({ params }: { params: { slug: string } }) {
   const cookieStore = cookies();

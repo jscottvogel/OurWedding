@@ -1,4 +1,4 @@
-import { type Schema } from '../../amplify/data/resource';
+import { type Schema } from '../../../amplify/data/resource';
 
 export type WebsiteConfig = Schema['WebsiteConfig']['type'];
 export type WebsiteStory = Schema['WebsiteStory']['type'];

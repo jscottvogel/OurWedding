@@ -22,7 +22,7 @@ export default function WebsiteAdvancedPage() {
     if (config) {
       setCustomCss(config.customCss || '');
       setCustomJs(config.customJs || '');
-      setCustomHtml(config.customHtml || '');
+      setCustomHtml(config.headInjection || '');
     }
   }, [config]);
 
@@ -33,7 +33,7 @@ export default function WebsiteAdvancedPage() {
       await updateConfig({
         customCss: values.customCss,
         customJs: values.customJs,
-        customHtml: values.customHtml
+        headInjection: values.customHtml
       });
     },
     2000 // 2 second debounce

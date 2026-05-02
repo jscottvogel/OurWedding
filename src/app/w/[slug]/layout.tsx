@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import { generateClient } from 'aws-amplify/data';
-import type { Schema } from '../../../../../amplify/data/resource';
+import type { Schema } from '../../../../amplify/data/resource';
 import { ThemeWrapper } from '@/components/features/website/public/ThemeWrapper';
 // We'll use a basic client for public unauth fetching.
 // In a full production Gen 2 app, you'd use generateServerClientUsingCookies here.

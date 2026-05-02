@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
-import type { Schema } from '../../../../amplify/data/resource';
+import type { Schema } from '../../../../../amplify/data/resource';
 import RSVPForm from '@/components/features/guests/RSVPForm';
 import { useGuests } from '@/lib/hooks/useGuests';
 import { Mail } from 'lucide-react';
