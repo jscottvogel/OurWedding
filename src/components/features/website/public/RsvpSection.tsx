@@ -13,7 +13,7 @@ export function RsvpSection({ slug, guests, wedding }: { slug: string, guests?: 
   };
 
   return (
-    <section id="rsvp" className="py-20 bg-ivory">
+    <section id="rsvp" className="py-20 bg-transparent">
       <div className="max-w-3xl mx-auto px-4">
         <h2 className="text-4xl font-heading text-center mb-12" style={{ color: 'var(--color-primary)' }}>RSVP</h2>
         <RSVPForm guests={guests || []} onUpdate={handleUpdate} wedding={wedding} />

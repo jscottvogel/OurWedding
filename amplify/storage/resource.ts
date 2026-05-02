@@ -18,6 +18,14 @@ export const storage = defineStorage({
     ],
     'chat/*': [
       allow.authenticated.to(['read', 'write', 'delete'])
+    ],
+    'story/*': [
+      allow.authenticated.to(['read', 'write', 'delete']),
+      allow.guest.to(['read'])
+    ],
+    'logo/*': [
+      allow.authenticated.to(['read', 'write', 'delete']),
+      allow.guest.to(['read'])
     ]
   })
 });

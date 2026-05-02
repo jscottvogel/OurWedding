@@ -294,8 +294,18 @@ function FaqEditor({ weddingId, items }: { weddingId: string, items: Schema['Web
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!q || !a) return;
-    await client.models.WebsiteFaq.create({ weddingId, question: q, answer: a, category: 'GENERAL', isVisible: true });
-    setQ(''); setA('');
+    try {
+      const res = await client.models.WebsiteFaq.create({ weddingId, question: q, answer: a, category: 'GENERAL', isVisible: true });
+      if (res.errors) {
+        console.error('Failed to create FAQ:', res.errors);
+        alert('Error adding FAQ: ' + res.errors[0].message);
+      } else {
+        setQ(''); setA('');
+      }
+    } catch (err: any) {
+      console.error('Error in FaqEditor:', err);
+      alert('Error adding FAQ: ' + err.message);
+    }
   };
 
   return (

@@ -245,6 +245,8 @@ const schema = a.schema({
       siteTitle: a.string(),
       metaDescription: a.string(),
       ogImageUrl: a.string(),
+      siteLogoType: a.enum(['TEXT_ONLY', 'STEWARD', 'RINGS', 'CROSS', 'DOVE', 'HEART', 'CUSTOM']),
+      siteLogoKey: a.string(),
       themeId: a.string().required(),
       primaryColor: a.string().required(),
       accentColor: a.string().required(),

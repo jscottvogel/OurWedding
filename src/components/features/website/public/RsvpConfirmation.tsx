@@ -27,7 +27,7 @@ export function RsvpConfirmation({ attending }: { attending: boolean }) {
   }, [attending]);
 
   return (
-    <section id="rsvp-confirmation" className="py-20 bg-white">
+    <section id="rsvp-confirmation" className="py-20 bg-transparent">
       <div className="max-w-xl mx-auto px-4 text-center">
         <h2 className="text-4xl font-heading mb-6" style={{ color: 'var(--color-primary)' }}>
           {attending ? "You're on the list!" : "We'll miss you!"}

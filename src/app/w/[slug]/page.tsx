@@ -40,7 +40,8 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
     { data: partyMembers },
     { data: registries },
     { data: faqs },
-    { data: guests }
+    { data: guests },
+    { data: vendors }
   ] = await Promise.all([
     client.models.Wedding.get({ id: weddingId }, { authMode: 'apiKey' }),
     client.models.WebsiteStory.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' }),
@@ -49,25 +50,49 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
     client.models.WebsitePartyMember.list({ filter: { weddingId: { eq: weddingId }, isVisible: { eq: true } }, authMode: 'apiKey' }),
     client.models.WebsiteRegistry.list({ filter: { weddingId: { eq: weddingId }, isVisible: { eq: true } }, authMode: 'apiKey' }),
     client.models.WebsiteFaq.list({ filter: { weddingId: { eq: weddingId }, isVisible: { eq: true } }, authMode: 'apiKey' }),
-    client.models.Guest.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' })
+    client.models.Guest.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' }),
+    client.models.Vendor.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' })
   ]);
 
   const story = stories[0];
+  const venueVendor = vendors.find(v => v.category?.toLowerCase() === 'venue');
 
   const siteTitle = config.siteTitle || (wedding ? `${wedding.coupleName1} & ${wedding.coupleName2}` : 'Our Wedding');
 
+  let enabledSections: Set<string>;
+  let sectionOrder: string[];
+  try {
+    enabledSections = new Set(JSON.parse(config.enabledSections || '[]'));
+    sectionOrder = JSON.parse(config.sectionOrder || '[]');
+  } catch(e) {
+    enabledSections = new Set(["hero", "story", "events", "rsvp", "travel", "party", "gallery", "registry", "faq", "guestbook"]);
+    sectionOrder = ["hero", "story", "events", "rsvp", "travel", "party", "gallery", "registry", "faq", "guestbook"];
+  }
+
   return (
-    <PublicSiteLayout siteTitle={siteTitle}>
-      <HeroSection wedding={wedding} />
-      <OurStorySection story={story} />
-      <EventsSection events={events} />
-      <RsvpSection slug={params.slug} guests={guests} wedding={wedding} />
-      <TravelSection travels={travels} />
-      <WeddingPartySection partyMembers={partyMembers} />
-      <GallerySection />
-      <RegistrySection registries={registries} />
-      <FaqSection faqs={faqs} />
-      <GuestbookSection />
+    <PublicSiteLayout 
+      siteTitle={siteTitle}
+      logoType={config.siteLogoType}
+      logoKey={config.siteLogoKey}
+      enabledSections={enabledSections}
+      sectionOrder={sectionOrder}
+    >
+      {sectionOrder.map(section => {
+        if (!enabledSections.has(section)) return null;
+        switch (section) {
+          case 'hero': return <HeroSection key={section} wedding={wedding} venueVendor={venueVendor} />;
+          case 'story': return <OurStorySection key={section} story={story} />;
+          case 'events': return <EventsSection key={section} events={events} />;
+          case 'rsvp': return <RsvpSection key={section} slug={params.slug} guests={guests} wedding={wedding} />;
+          case 'travel': return <TravelSection key={section} travels={travels} />;
+          case 'party': return <WeddingPartySection key={section} partyMembers={partyMembers} />;
+          case 'gallery': return <GallerySection key={section} />;
+          case 'registry': return <RegistrySection key={section} registries={registries} />;
+          case 'faq': return <FaqSection key={section} faqs={faqs} />;
+          case 'guestbook': return <GuestbookSection key={section} />;
+          default: return null;
+        }
+      })}
       <AnalyticsTracker weddingId={weddingId} configId={config.id} currentViewCount={config.viewCount || 0} />
     </PublicSiteLayout>
   );
