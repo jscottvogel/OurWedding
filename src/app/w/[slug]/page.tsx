@@ -54,8 +54,10 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
 
   const story = stories[0];
 
+  const siteTitle = config.siteTitle || (wedding ? `${wedding.coupleName1} & ${wedding.coupleName2}` : 'Our Wedding');
+
   return (
-    <PublicSiteLayout slug={params.slug}>
+    <PublicSiteLayout siteTitle={siteTitle}>
       <HeroSection wedding={wedding} />
       <OurStorySection story={story} />
       <EventsSection events={events} />

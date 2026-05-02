@@ -5,7 +5,8 @@ import { useWebsiteContent } from '@/lib/hooks/useWebsiteContent';
 import { useWedding } from '@/lib/hooks/useWedding';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../../../amplify/data/resource';
-import { Trash2, Plus, ExternalLink } from 'lucide-react';
+import { Trash2, Plus, ExternalLink, Loader2, Image as ImageIcon } from 'lucide-react';
+import { uploadData } from 'aws-amplify/storage';
 
 const client = generateClient<Schema>();
 
@@ -84,19 +85,24 @@ export function WebsiteEditorPanel({ section }: { section: string }) {
 
 function OurStoryEditor({ weddingId, story }: { weddingId: string, story: Schema['WebsiteStory']['type'] | null }) {
   const [content, setContent] = useState('');
+  const [imageKey, setImageKey] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
-    if (story) setContent(story.coupleStory || '');
+    if (story) {
+      setContent(story.coupleStory || '');
+      setImageKey(story.storyImageKey || null);
+    }
   }, [story]);
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
       if (story?.id) {
-        await client.models.WebsiteStory.update({ id: story.id, coupleStory: content });
+        await client.models.WebsiteStory.update({ id: story.id, coupleStory: content, storyImageKey: imageKey });
       } else {
-        await client.models.WebsiteStory.create({ weddingId, coupleStory: content });
+        await client.models.WebsiteStory.create({ weddingId, coupleStory: content, storyImageKey: imageKey });
       }
     } catch (err) {
       console.error(err);
@@ -109,6 +115,47 @@ function OurStoryEditor({ weddingId, story }: { weddingId: string, story: Schema
   return (
     <div className="bg-white p-6 rounded-xl border border-light-gray">
       <h3 className="text-lg font-bold text-charcoal mb-4">Our Story</h3>
+      
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-charcoal mb-2">Story Photo (Optional)</label>
+        <div className="flex items-center space-x-4">
+          <label className="cursor-pointer bg-ivory text-sage px-4 py-2 rounded-md font-medium border border-sage/20 hover:bg-sage/10 transition-colors flex items-center">
+            {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ImageIcon className="w-4 h-4 mr-2" />}
+            {isUploading ? 'Uploading...' : (imageKey ? 'Change Photo' : 'Upload Photo')}
+            <input 
+              type="file" 
+              className="hidden" 
+              accept="image/*"
+              disabled={isUploading}
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setIsUploading(true);
+                try {
+                  const key = `story/${Date.now()}-${file.name}`;
+                  await uploadData({ path: key, data: file }).result;
+                  setImageKey(key);
+                } catch (error) {
+                  console.error('Upload failed', error);
+                  alert('Failed to upload image');
+                } finally {
+                  setIsUploading(false);
+                }
+              }}
+            />
+          </label>
+          {imageKey && (
+            <button 
+              onClick={() => setImageKey(null)}
+              className="text-red-500 hover:text-red-700 text-sm font-medium"
+            >
+              Remove Photo
+            </button>
+          )}
+        </div>
+      </div>
+
+      <label className="block text-sm font-medium text-charcoal mb-2">The Story</label>
       <textarea
         rows={10}
         value={content}
@@ -118,7 +165,7 @@ function OurStoryEditor({ weddingId, story }: { weddingId: string, story: Schema
       />
       <button 
         onClick={handleSave} 
-        disabled={isSaving}
+        disabled={isSaving || isUploading}
         className="w-full bg-sage text-white py-2 rounded-md font-medium hover:bg-dark-sage disabled:opacity-50"
       >
         {isSaving ? 'Saving...' : 'Save Story'}

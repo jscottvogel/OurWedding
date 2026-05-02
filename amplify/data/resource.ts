@@ -284,6 +284,7 @@ const schema = a.schema({
     .model({
       weddingId: a.string().required(),
       coupleStory: a.string(),
+      storyImageKey: a.string(),
       howWeMetDate: a.date(),
       engagementDate: a.date(),
       engagementStory: a.string(),
