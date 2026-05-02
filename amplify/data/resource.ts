@@ -262,8 +262,22 @@ const schema = a.schema({
     .secondaryIndexes((index) => [index('weddingId'), index('subdomain')])
     .authorization((allow) => [
       allow.authenticated().to(['create', 'read', 'update', 'delete']),
-      allow.guest().to(['read']),
-      allow.publicApiKey().to(['read']),
+      allow.guest().to(['read', 'update']), // Allow guest to update viewCount
+      allow.publicApiKey().to(['read', 'update']),
+    ]),
+
+  WebsiteAnalytics: a
+    .model({
+      weddingId: a.string().required(),
+      dateString: a.string().required(),
+      views: a.integer().default(0),
+      uniqueVisitors: a.integer().default(0),
+    })
+    .secondaryIndexes((index) => [index('weddingId')])
+    .authorization((allow) => [
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
+      allow.guest().to(['create', 'read', 'update']),
+      allow.publicApiKey().to(['create', 'read', 'update']),
     ]),
 
   WebsiteStory: a

@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { PublicSiteLayout } from '@/components/features/website/public/PublicSiteLayout';
 import { HeroSection, OurStorySection, EventsSection, TravelSection, WeddingPartySection, GallerySection, RegistrySection, FaqSection, GuestbookSection } from '@/components/features/website/public/Sections';
 import { RsvpSection } from '@/components/features/website/public/RsvpSection';
+import { AnalyticsTracker } from '@/components/features/website/public/AnalyticsTracker';
 import { generateServerClientUsingCookies } from '@aws-amplify/adapter-nextjs/api';
 import { cookies } from 'next/headers';
 import outputs from '@/../amplify_outputs.json';
@@ -65,6 +66,7 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
       <RegistrySection registries={registries} />
       <FaqSection faqs={faqs} />
       <GuestbookSection />
+      <AnalyticsTracker weddingId={weddingId} configId={config.id} currentViewCount={config.viewCount || 0} />
     </PublicSiteLayout>
   );
 }

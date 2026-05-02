@@ -1,15 +1,27 @@
 'use client';
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useWebsiteAnalytics } from '@/lib/hooks/useWebsiteAnalytics';
+import { Loader2 } from 'lucide-react';
 
 export function AnalyticsChart() {
-  // Mock data for the MVP. In reality, this would be aggregated from WebsiteViewLog
+  const { data: records, loading } = useWebsiteAnalytics();
+
+  if (loading) {
+    return <div className="h-80 w-full flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-sage" /></div>;
+  }
+
+  // Create a continuous 30-day timeline
   const data = Array.from({ length: 30 }, (_, i) => {
     const date = new Date();
     date.setDate(date.getDate() - (29 - i));
+    const dateString = date.toISOString().split('T')[0];
+    const record = records.find(r => r.dateString === dateString);
+    
     return {
       name: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      views: Math.floor(Math.random() * 50) + (i > 25 ? 100 : 10) // spike in last few days
+      views: record ? record.views : 0,
+      uniqueVisitors: record ? record.uniqueVisitors : 0
     };
   });
 

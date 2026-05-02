@@ -40,7 +40,7 @@ export default function WebsiteDomainPage() {
               className="w-full border-light-gray rounded-md focus:ring-sage focus:border-sage mb-2" 
             />
             <div className="bg-blue-50 text-blue-800 text-sm p-3 rounded-md">
-              <strong>Instructions:</strong> Point a CNAME record from your domain provider to <code className="bg-white px-1 py-0.5 rounded">sites.weddingsteward.com</code>.
+              <strong>Instructions:</strong> Point a CNAME record from your domain provider to <code className="bg-white px-1 py-0.5 rounded">weddingsteward.com</code>.
             </div>
           </div>
         </div>
