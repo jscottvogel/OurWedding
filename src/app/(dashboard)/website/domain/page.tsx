@@ -78,29 +78,27 @@ export default function WebsiteDomainPage() {
               className="w-full border-light-gray rounded-md focus:ring-sage focus:border-sage mb-6" 
             />
             
-            <h4 className="text-sm font-bold text-charcoal mb-2">DNS Instructions</h4>
-            <p className="text-sm text-mid-gray mb-4">To connect your domain, log in to your domain provider (GoDaddy, Namecheap, etc.) and add the following CNAME record:</p>
+            <h4 className="text-sm font-bold text-charcoal mb-2">URL Forwarding Instructions</h4>
+            <p className="text-sm text-mid-gray mb-4">
+              To use your custom domain, log in to your domain provider (GoDaddy, Namecheap, etc.) and locate their <strong>Domain Forwarding</strong> or <strong>URL Redirect</strong> settings.
+            </p>
             
-            <div className="bg-gray-50 border border-light-gray rounded-lg overflow-hidden mb-3">
-              <table className="w-full text-sm text-left">
-                <thead className="bg-gray-100 text-charcoal font-medium border-b border-light-gray">
-                  <tr>
-                    <th className="px-4 py-2">Type</th>
-                    <th className="px-4 py-2">Name / Host</th>
-                    <th className="px-4 py-2">Value / Target</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-light-gray text-mid-gray">
-                  <tr>
-                    <td className="px-4 py-3 font-mono">CNAME</td>
-                    <td className="px-4 py-3 font-mono">www</td>
-                    <td className="px-4 py-3 font-mono">domains.weddingsteward.com</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div className="bg-gray-50 border border-light-gray rounded-lg p-4 mb-4">
+              <p className="text-sm text-charcoal font-medium mb-1">Set your domain to forward to:</p>
+              <div className="font-mono text-sage text-sm bg-white border border-light-gray p-2 rounded">
+                https://weddingsteward.com/w/{config.subdomain}
+              </div>
             </div>
-            <p className="text-xs text-mid-gray mb-1">For root domains (e.g. sarahandtom.com), we recommend setting up <strong>URL Forwarding</strong> in your DNS provider to redirect to your www subdomain.</p>
-            <p className="text-xs text-sage italic mt-3">Note: Once your DNS changes propagate, please contact support to have your SSL certificate provisioned.</p>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <p className="text-xs text-amber-800 font-medium">
+                Important Note for Domain Setup:
+              </p>
+              <ul className="list-disc pl-4 mt-1 text-xs text-amber-700 space-y-1">
+                <li>Choose <strong>"Forward only"</strong> (or "301 Permanent Redirect"). Do not use masking/framing, as it can break mobile layouts.</li>
+                <li><strong>Do not use CNAME or A records</strong> for this setup. Standard DNS records cannot point to a URL path (like <span className="font-mono">/w/...</span>).</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>

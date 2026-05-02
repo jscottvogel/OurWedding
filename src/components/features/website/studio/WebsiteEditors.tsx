@@ -36,11 +36,11 @@ export function WebsiteEditorPanel({ section }: { section: string }) {
           </a>
         </div>
       );
-    case 'our_story':
+    case 'story':
       return <OurStoryEditor weddingId={wedding.id} story={website.story} />;
     case 'travel':
       return <TravelEditor weddingId={wedding.id} items={website.travels} />;
-    case 'wedding_party':
+    case 'party':
       return <PartyEditor weddingId={wedding.id} items={website.partyMembers} />;
     case 'registry':
       return <RegistryEditor weddingId={wedding.id} items={website.registries} />;
@@ -60,6 +60,16 @@ export function WebsiteEditorPanel({ section }: { section: string }) {
           <p className="text-mid-gray mb-6">Your RSVP deadlines, meal options, and guest responses are managed in the dedicated RSVP tab.</p>
           <a href="/website/rsvp" className="inline-flex items-center text-sage hover:text-dark-sage font-medium">
             Manage RSVP <ExternalLink className="w-4 h-4 ml-2" />
+          </a>
+        </div>
+      );
+    case 'gallery':
+      return (
+        <div className="text-center p-8 bg-ivory rounded-xl border border-light-gray">
+          <h3 className="text-xl font-bold text-charcoal mb-4">Photo Gallery</h3>
+          <p className="text-mid-gray mb-6">Your public gallery photos are managed in the main Gallery dashboard.</p>
+          <a href="/gallery" className="inline-flex items-center text-sage hover:text-dark-sage font-medium">
+            Manage Gallery <ExternalLink className="w-4 h-4 ml-2" />
           </a>
         </div>
       );

@@ -34,6 +34,10 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
       }
       if (parsed.website) {
         additionalInfo += `\n\nWebsite Content:`;
+        if (parsed.website.config) {
+          const cfg = parsed.website.config;
+          additionalInfo += `\nConfiguration [ID: ${cfg.id}]: Title: "${cfg.siteTitle}", Background: ${cfg.backgroundColor}, Primary Color: ${cfg.primaryColor}, Accent Color: ${cfg.accentColor}, Heading Font: ${cfg.headingFont}, Body Font: ${cfg.bodyFont}, Password Protected: ${cfg.passwordProtected}`;
+        }
         additionalInfo += `\nStory: ${parsed.website.story?.coupleStory || 'Not written yet.'}`;
         if (parsed.website.partyMembers?.length > 0) additionalInfo += `\nWedding Party:\n` + parsed.website.partyMembers.map((p: any) => `- [ID: ${p.id}] ${p.name} (${p.role})`).join('\n');
         if (parsed.website.travels?.length > 0) additionalInfo += `\nTravel:\n` + parsed.website.travels.map((t: any) => `- [ID: ${t.id}] ${t.hotelName}`).join('\n');
@@ -90,7 +94,7 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
     You assist the couple in planning their wedding. Be concise and keep answers short (under 3 paragraphs).
     Here is the context about their wedding:
     ${contextStr}
-    You have tools to add tasks, vendors, runsheet items, and update gallery captions. If the user asks you to create a "typical" schedule, checklist, or list, you CAN and SHOULD use your tools multiple times in a row to generate the full list of items in a single response!
+    You have tools to add tasks, vendors, runsheet items, and update gallery captions. You are also a Website Editor and can update the global website configuration (colors, title, password) and add/update/delete website content (FAQs, Registry, Wedding Party, Travel, Story). If the user asks you to create a "typical" schedule, checklist, or list, you CAN and SHOULD use your tools multiple times in a row to generate the full list of items in a single response!
     For a typical runsheet, you MUST generate a granular breakdown containing at least 10 to 15 distinct events (e.g. hair/makeup, arrivals, first look, photos, ceremony, cocktail hour, reception, speeches, dancing, send-off).
     IMPORTANT: NEVER clear or delete existing items when asked to populate or add to a schedule unless the user EXPLICITLY says "clear" or "start over".
     VISION CAPABILITY: If the user provides an image, carefully analyze it. If it is a picture of handwritten notes, an invoice, a checklist, or an inspiration board, extract the relevant information and explicitly use your tools (e.g., \`add_task\`, \`add_vendor\`, \`add_runsheet_item\`) to digitize and save it to their dashboard!
@@ -424,6 +428,106 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
             id: { type: "string", description: "The ID of the FAQ to delete." }
           },
           required: ["id"]
+        }
+      },
+      {
+        name: "update_website_config",
+        description: "Update the global website configuration (colors, title, password, fonts).",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "The ID of the WebsiteConfig to update." },
+            updates: {
+              type: "object",
+              properties: {
+                siteTitle: { type: "string" },
+                primaryColor: { type: "string" },
+                accentColor: { type: "string" },
+                backgroundColor: { type: "string" },
+                headingFont: { type: "string" },
+                bodyFont: { type: "string" },
+                passwordProtected: { type: "boolean" },
+                sitePassword: { type: "string" }
+              }
+            }
+          },
+          required: ["id", "updates"]
+        }
+      },
+      {
+        name: "update_travel_item",
+        description: "Update an existing travel/hotel accommodation on the website.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            updates: {
+              type: "object",
+              properties: {
+                hotelName: { type: "string" },
+                address: { type: "string" },
+                bookingUrl: { type: "string" },
+                notes: { type: "string" }
+              }
+            }
+          },
+          required: ["id", "updates"]
+        }
+      },
+      {
+        name: "update_party_member",
+        description: "Update an existing member of the wedding party.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            updates: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                role: { type: "string" },
+                bio: { type: "string" }
+              }
+            }
+          },
+          required: ["id", "updates"]
+        }
+      },
+      {
+        name: "update_registry",
+        description: "Update an existing registry link.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            updates: {
+              type: "object",
+              properties: {
+                registryName: { type: "string" },
+                registryUrl: { type: "string" }
+              }
+            }
+          },
+          required: ["id", "updates"]
+        }
+      },
+      {
+        name: "update_faq",
+        description: "Update an existing FAQ.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            updates: {
+              type: "object",
+              properties: {
+                question: { type: "string" },
+                answer: { type: "string" },
+                category: { type: "string" }
+              }
+            }
+          },
+          required: ["id", "updates"]
         }
       }
     ];

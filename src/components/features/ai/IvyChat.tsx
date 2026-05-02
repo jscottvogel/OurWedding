@@ -8,6 +8,7 @@ import { useVendors } from '@/lib/hooks/useVendors';
 import { useRunSheet } from '@/lib/hooks/useRunSheet';
 import { useGallery } from '@/lib/hooks/useGallery';
 import { useWebsiteContent } from '@/lib/hooks/useWebsiteContent';
+import { useWebsiteConfig } from '@/lib/hooks/useWebsiteConfig';
 import { generateClient } from 'aws-amplify/data';
 import { uploadData } from 'aws-amplify/storage';
 import type { Schema } from '../../../../amplify/data/resource';
@@ -41,6 +42,7 @@ export default function IvyChat() {
   const { blocks, insertNewBlock, updateItem: updateRunsheetItem, deleteItem: deleteRunsheetItem, clearRunsheet, processIvyActions } = useRunSheet();
   const { photos } = useGallery();
   const website = useWebsiteContent();
+  const { config: websiteConfig, updateConfig } = useWebsiteConfig();
   
   const runsheet = blocks.flatMap(b => b.items);
   const addRunsheetItem = async (item: any) => {
@@ -153,7 +155,10 @@ export default function IvyChat() {
         vendors: vendors.map(v => ({ id: v.id, name: v.companyName, category: v.category, status: v.contractStatus })),
         runsheet: runsheet.map((r: any) => ({ id: r.id, title: r.title, time: r.eventTime })),
         gallery: photos.map(p => ({ id: p.id, uploader: p.uploaderName, caption: p.caption || '' })),
-        website
+        website: {
+          ...website,
+          config: websiteConfig
+        }
       };
 
       // Pass the full conversation history and wedding context
@@ -245,9 +250,24 @@ export default function IvyChat() {
           } else if (toolCall.name === 'delete_party_member') {
             await client.models.WebsitePartyMember.delete({ id: toolCall.input.id });
             lastActionMessage = "I've removed them from the wedding party!";
+          } else if (toolCall.name === 'update_website_config') {
+            await updateConfig(toolCall.input.updates);
+            lastActionMessage = "I've updated the website configuration for you!";
           } else if (toolCall.name === 'delete_registry') {
             await client.models.WebsiteRegistry.delete({ id: toolCall.input.id });
             lastActionMessage = "I've removed that registry link!";
+          } else if (toolCall.name === 'update_travel_item') {
+            await client.models.WebsiteTravel.update({ id: toolCall.input.id, ...toolCall.input.updates });
+            lastActionMessage = "I've updated that travel accommodation!";
+          } else if (toolCall.name === 'update_party_member') {
+            await client.models.WebsitePartyMember.update({ id: toolCall.input.id, ...toolCall.input.updates });
+            lastActionMessage = "I've updated the wedding party member!";
+          } else if (toolCall.name === 'update_registry') {
+            await client.models.WebsiteRegistry.update({ id: toolCall.input.id, ...toolCall.input.updates });
+            lastActionMessage = "I've updated that registry link!";
+          } else if (toolCall.name === 'update_faq') {
+            await client.models.WebsiteFaq.update({ id: toolCall.input.id, ...toolCall.input.updates });
+            lastActionMessage = "I've updated the FAQ!";
           } else if (toolCall.name === 'delete_faq') {
             await client.models.WebsiteFaq.delete({ id: toolCall.input.id });
             lastActionMessage = "I've deleted that FAQ!";
