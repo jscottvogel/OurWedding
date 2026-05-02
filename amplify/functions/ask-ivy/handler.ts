@@ -32,6 +32,14 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
       if (parsed.gallery && parsed.gallery.length > 0) {
         additionalInfo += `\n\nGallery Photos:\n` + parsed.gallery.map((g: any) => `- [ID: ${g.id}] Uploaded by: ${g.uploader} | Current Caption: ${g.caption || 'None'}`).join('\n');
       }
+      if (parsed.website) {
+        additionalInfo += `\n\nWebsite Content:`;
+        additionalInfo += `\nStory: ${parsed.website.story?.coupleStory || 'Not written yet.'}`;
+        if (parsed.website.partyMembers?.length > 0) additionalInfo += `\nWedding Party:\n` + parsed.website.partyMembers.map((p: any) => `- [ID: ${p.id}] ${p.name} (${p.role})`).join('\n');
+        if (parsed.website.travels?.length > 0) additionalInfo += `\nTravel:\n` + parsed.website.travels.map((t: any) => `- [ID: ${t.id}] ${t.hotelName}`).join('\n');
+        if (parsed.website.registries?.length > 0) additionalInfo += `\nRegistries:\n` + parsed.website.registries.map((r: any) => `- [ID: ${r.id}] ${r.registryName}`).join('\n');
+        if (parsed.website.faqs?.length > 0) additionalInfo += `\nFAQs:\n` + parsed.website.faqs.map((f: any) => `- [ID: ${f.id}] Q: ${f.question}`).join('\n');
+      }
 
       contextStr = `
         Couple: ${parsed.coupleName1} and ${parsed.coupleName2}
@@ -311,6 +319,67 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
             caption: { type: "string", description: "The new caption text." }
           },
           required: ["id", "caption"]
+        }
+      },
+      {
+        name: "update_story",
+        description: "Update the couple's story on the website.",
+        input_schema: {
+          type: "object",
+          properties: { coupleStory: { type: "string", description: "The new story text." } },
+          required: ["coupleStory"]
+        }
+      },
+      {
+        name: "add_travel_item",
+        description: "Add a new hotel or travel accommodation to the website.",
+        input_schema: {
+          type: "object",
+          properties: {
+            hotelName: { type: "string" },
+            address: { type: "string" },
+            bookingUrl: { type: "string" },
+            notes: { type: "string" }
+          },
+          required: ["hotelName"]
+        }
+      },
+      {
+        name: "add_party_member",
+        description: "Add a member to the wedding party.",
+        input_schema: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            role: { type: "string" },
+            bio: { type: "string" }
+          },
+          required: ["name", "role"]
+        }
+      },
+      {
+        name: "add_registry",
+        description: "Add a new gift registry link to the website.",
+        input_schema: {
+          type: "object",
+          properties: {
+            registryName: { type: "string" },
+            registryUrl: { type: "string" }
+          },
+          required: ["registryName", "registryUrl"]
+        }
+      },
+      {
+        name: "add_faq",
+        description: "Add a new FAQ to the website.",
+        input_schema: {
+          type: "object",
+          properties: {
+            question: { type: "string" },
+            answer: { type: "string" },
+            category: { type: "string", description: "Must be: GENERAL, DRESS_CODE, VENUE, GIFTS, KIDS_PETS, OTHER" }
+          },
+          required: ["question", "answer"]
         }
       }
     ];

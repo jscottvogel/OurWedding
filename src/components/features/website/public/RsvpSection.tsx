@@ -3,17 +3,12 @@
 import { useState } from 'react';
 import Fuse from 'fuse.js';
 import { RsvpConfirmation } from './RsvpConfirmation';
+import type { Schema } from '../../../../../amplify/data/resource';
 
-// Mock guest data for MVP
-const MOCK_GUESTS = [
-  { id: '1', firstName: 'John', lastName: 'Doe', plusOneAllowed: true, rsvpStatus: 'PENDING' },
-  { id: '2', firstName: 'Jane', lastName: 'Smith', plusOneAllowed: false, rsvpStatus: 'PENDING' }
-];
-
-export function RsvpSection({ slug }: { slug: string }) {
+export function RsvpSection({ slug, guests }: { slug: string, guests?: Schema['Guest']['type'][] }) {
   const [step, setStep] = useState(1);
   const [nameSearch, setNameSearch] = useState('');
-  const [matchedGuest, setMatchedGuest] = useState<any>(null);
+  const [matchedGuest, setMatchedGuest] = useState<Schema['Guest']['type'] | null>(null);
   const [attending, setAttending] = useState<boolean | null>(null);
   const [plusOneName, setPlusOneName] = useState('');
   const [mealChoice, setMealChoice] = useState('');
@@ -27,7 +22,11 @@ export function RsvpSection({ slug }: { slug: string }) {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const fuse = new Fuse(MOCK_GUESTS, { keys: ['firstName', 'lastName'], threshold: 0.35 });
+    if (!guests || guests.length === 0) {
+      alert("Guest list is empty. Please contact the couple.");
+      return;
+    }
+    const fuse = new Fuse(guests, { keys: ['firstName', 'lastName'], threshold: 0.35 });
     const results = fuse.search(nameSearch);
     if (results.length > 0) {
       setMatchedGuest(results[0].item);
@@ -44,7 +43,7 @@ export function RsvpSection({ slug }: { slug: string }) {
         method: 'POST',
         body: JSON.stringify({
           weddingSlug: slug,
-          guestId: matchedGuest.id,
+          guestId: matchedGuest?.id,
           attending,
           plusOneName,
           mealChoice,
@@ -86,12 +85,12 @@ export function RsvpSection({ slug }: { slug: string }) {
             </form>
           )}
 
-          {step === 2 && (
+          {step === 2 && matchedGuest && (
             <div className="space-y-6 text-center">
               <h3 className="text-lg font-bold">Hi {matchedGuest.firstName}, will you be joining us?</h3>
               <div className="flex flex-col space-y-3">
                 <button 
-                  onClick={() => { setAttending(true); setStep(matchedGuest.plusOneAllowed ? 3 : 4); }}
+                  onClick={() => { setAttending(true); setStep(3); }}
                   className="bg-sage text-white py-3 rounded font-bold"
                 >
                   Joyfully Accepts
@@ -142,7 +141,7 @@ export function RsvpSection({ slug }: { slug: string }) {
             </div>
           )}
 
-          {step === 6 && (
+          {step === 6 && matchedGuest && (
             <div className="space-y-6">
               <h3 className="text-lg font-bold text-center">Review & Submit</h3>
               <div className="bg-white p-4 border rounded">
@@ -150,7 +149,7 @@ export function RsvpSection({ slug }: { slug: string }) {
                 <p><strong>Attending:</strong> {attending ? 'Yes' : 'No'}</p>
                 {attending && (
                   <>
-                    {matchedGuest.plusOneAllowed && <p><strong>Plus One:</strong> {plusOneName || 'None'}</p>}
+                    <p><strong>Plus One:</strong> {plusOneName || 'None'}</p>
                     <p><strong>Meal:</strong> {mealChoice}</p>
                     <p><strong>Dietary Notes:</strong> {dietaryNotes || 'None'}</p>
                   </>

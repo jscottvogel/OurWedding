@@ -7,6 +7,7 @@ import { useChecklist } from '@/lib/hooks/useChecklist';
 import { useVendors } from '@/lib/hooks/useVendors';
 import { useRunSheet } from '@/lib/hooks/useRunSheet';
 import { useGallery } from '@/lib/hooks/useGallery';
+import { useWebsiteContent } from '@/lib/hooks/useWebsiteContent';
 import { generateClient } from 'aws-amplify/data';
 import { uploadData } from 'aws-amplify/storage';
 import type { Schema } from '../../../../amplify/data/resource';
@@ -39,6 +40,7 @@ export default function IvyChat() {
   const { vendors, addVendor, updateVendor, deleteVendor } = useVendors();
   const { blocks, insertNewBlock, updateItem: updateRunsheetItem, deleteItem: deleteRunsheetItem, clearRunsheet, processIvyActions } = useRunSheet();
   const { photos } = useGallery();
+  const website = useWebsiteContent();
   
   const runsheet = blocks.flatMap(b => b.items);
   const addRunsheetItem = async (item: any) => {
@@ -150,7 +152,8 @@ export default function IvyChat() {
         checklist: tasks.map(t => ({ id: t.id, title: t.title, status: t.isCompleted ? 'done' : 'pending', category: t.category })),
         vendors: vendors.map(v => ({ id: v.id, name: v.companyName, category: v.category, status: v.contractStatus })),
         runsheet: runsheet.map((r: any) => ({ id: r.id, title: r.title, time: r.eventTime })),
-        gallery: photos.map(p => ({ id: p.id, uploader: p.uploaderName, caption: p.caption || '' }))
+        gallery: photos.map(p => ({ id: p.id, uploader: p.uploaderName, caption: p.caption || '' })),
+        website
       };
 
       // Pass the full conversation history and wedding context
@@ -213,7 +216,30 @@ export default function IvyChat() {
           } else if (toolCall.name === 'delete_vendor') {
             await deleteVendor(toolCall.input.id);
             lastActionMessage = "I've removed that vendor from your list!";
-          } else if (['add_runsheet_item', 'update_runsheet_item', 'delete_runsheet_item', 'clear_runsheet'].includes(toolCall.name)) {
+          } else if (toolCall.name === 'update_story') {
+            if (website.story) {
+              await client.models.WebsiteStory.update({ id: website.story.id, coupleStory: toolCall.input.coupleStory });
+            } else if (wedding?.id) {
+              await client.models.WebsiteStory.create({ weddingId: wedding.id, coupleStory: toolCall.input.coupleStory });
+            }
+            lastActionMessage = "I've updated your story on the website!";
+          } else if (toolCall.name === 'add_travel_item') {
+            if (wedding?.id) await client.models.WebsiteTravel.create({ weddingId: wedding.id, hotelName: toolCall.input.hotelName, address: toolCall.input.address, bookingUrl: toolCall.input.bookingUrl, notes: toolCall.input.notes, isVisible: true });
+            lastActionMessage = `I've added ${toolCall.input.hotelName} to the travel section!`;
+            addedCount++;
+          } else if (toolCall.name === 'add_party_member') {
+            if (wedding?.id) await client.models.WebsitePartyMember.create({ weddingId: wedding.id, name: toolCall.input.name, role: toolCall.input.role as any, bio: toolCall.input.bio, isVisible: true });
+            lastActionMessage = `I've added ${toolCall.input.name} to the wedding party!`;
+            addedCount++;
+          } else if (toolCall.name === 'add_registry') {
+            if (wedding?.id) await client.models.WebsiteRegistry.create({ weddingId: wedding.id, registryName: toolCall.input.registryName, registryUrl: toolCall.input.registryUrl, isVisible: true });
+            lastActionMessage = `I've added ${toolCall.input.registryName} to your registry!`;
+            addedCount++;
+          } else if (toolCall.name === 'add_faq') {
+            if (wedding?.id) await client.models.WebsiteFaq.create({ weddingId: wedding.id, question: toolCall.input.question, answer: toolCall.input.answer, category: toolCall.input.category as any, isVisible: true });
+            lastActionMessage = "I've added that FAQ to your website!";
+            addedCount++;
+          } else if (['add_runsheet_item', 'update_runsheet_item', 'delete_runsheet_item', 'clear_runsheet', 'update_gallery_caption'].includes(toolCall.name)) {
             runsheetActions.push(toolCall);
             if (toolCall.name === 'add_runsheet_item') {
               lastActionMessage = `I've added "${toolCall.input.title}" to your run sheet at ${toolCall.input.eventTime}!`;
