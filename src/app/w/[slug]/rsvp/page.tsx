@@ -86,6 +86,7 @@ export default function GuestRSVPPage({ params }: { params: { slug: string } }) 
         <RSVPForm 
           guests={guests} 
           onUpdate={updateGuest}
+          wedding={wedding}
         />
       </div>
     </div>

@@ -8,9 +8,10 @@ import { toast } from 'sonner';
 interface RSVPFormProps {
   guests: Schema['Guest']['type'][];
   onUpdate: (id: string, updates: Partial<Schema['Guest']['type']>) => Promise<any>;
+  wedding?: Schema['Wedding']['type'] | null;
 }
 
-export default function RSVPForm({ guests, onUpdate }: RSVPFormProps) {
+export default function RSVPForm({ guests, onUpdate, wedding }: RSVPFormProps) {
   const [step, setStep] = useState<'SEARCH' | 'RSVP' | 'SUCCESS'>('SEARCH');
   const [searchFirst, setSearchFirst] = useState('');
   const [searchLast, setSearchLast] = useState('');
@@ -140,13 +141,13 @@ export default function RSVPForm({ guests, onUpdate }: RSVPFormProps) {
                   className="w-full border border-light-gray rounded-lg p-3 bg-white focus:border-sage focus:outline-none"
                 >
                   <option value="" disabled>Select a meal...</option>
-                  <option value="Beef">Herb Crusted Beef Tenderloin</option>
-                  <option value="Chicken">Roasted Lemon Herb Chicken</option>
-                  <option value="Vegetarian">Seasonal Vegetable Risotto (V)</option>
+                  {(wedding?.rsvpMealOptions || wedding?.mealOptions || ['Beef', 'Chicken', 'Vegetarian']).filter(Boolean).map(m => (
+                    <option key={m as string} value={m as string}>{m}</option>
+                  ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-charcoal mb-1">Dietary Requirements</label>
+                <label className="block text-sm font-medium text-charcoal mb-1">Special Instructions or Dietary Needs</label>
                 <input 
                   type="text" 
                   value={dietaryRequirements}

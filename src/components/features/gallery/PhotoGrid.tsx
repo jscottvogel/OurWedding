@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { GalleryPhoto } from '@/lib/hooks/useGallery';
-import { X, Download, Trash2 } from 'lucide-react';
+import { X, Download, Trash2, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface PhotoGridProps {
@@ -96,65 +96,68 @@ export default function PhotoGrid({ photos, onDelete, onUpdateCaption, onUpdateU
 
       {/* Lightbox Modal */}
       {selectedPhoto && (
-        <div className="fixed inset-0 bg-charcoal/95 z-50 flex items-center justify-center p-4 md:p-8">
-          <button 
-            onClick={() => { setSelectedPhoto(null); setIsEditingCaption(false); setIsEditingUploader(false); }}
-            className="absolute top-6 right-6 p-2 text-white/70 hover:text-white transition-colors"
-          >
-            <X className="w-8 h-8" />
-          </button>
-          
-          <div className="relative max-w-5xl w-full max-h-full flex flex-col items-center">
+        <div className="fixed inset-0 bg-charcoal/95 z-[100] overflow-y-auto flex">
+          <div className="m-auto flex flex-col items-center max-w-5xl w-full p-4 md:p-8 relative min-h-screen justify-center">
+            <button 
+              onClick={() => { setSelectedPhoto(null); setIsEditingCaption(false); setIsEditingUploader(false); }}
+              className="absolute top-4 right-4 md:top-8 md:right-8 p-2 text-white/70 hover:text-white transition-colors bg-black/20 rounded-full"
+            >
+              <X className="w-8 h-8" />
+            </button>
+            
             {selectedPhoto.fileType?.startsWith('video/') ? (
               <video 
                 src={selectedPhoto.url} 
                 controls autoPlay
-                className="max-w-full max-h-[80vh] object-contain rounded-lg"
+                className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl"
               />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img 
                 src={selectedPhoto.url} 
                 alt="Enlarged gallery photo" 
-                className="max-w-full max-h-[80vh] object-contain rounded-lg"
+                className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl"
               />
             )}
             
-            <div className="mt-4 flex items-center justify-between w-full max-w-lg bg-white/10 backdrop-blur-sm rounded-lg p-4">
+            <div className="mt-6 flex items-start justify-between w-full max-w-2xl bg-charcoal/80 border border-white/10 backdrop-blur-md rounded-xl p-5 shadow-xl">
               <div className="flex-1 mr-4">
                 {isEditingUploader ? (
-                  <div className="flex items-center mb-1">
-                    <p className="text-white font-medium text-sm text-white/70 mr-2">Uploaded by</p>
+                  <div className="flex items-center mb-2">
+                    <p className="text-white font-medium text-sm mr-2 opacity-80">Uploaded by</p>
                     <input 
                       type="text" 
                       value={draftUploader}
                       onChange={(e) => setDraftUploader(e.target.value)}
-                      className="bg-white/20 border border-white/30 text-white placeholder-white/50 rounded-l px-2 py-0.5 text-sm focus:outline-none w-32"
+                      className="bg-black/40 border border-white/20 text-white placeholder-white/40 rounded-l px-3 py-1 text-sm focus:outline-none focus:border-sage w-40"
                       autoFocus
                     />
                     <button 
                       onClick={handleSaveUploader}
-                      className="bg-sage text-white px-2 py-0.5 rounded-r text-sm font-medium hover:bg-dark-sage"
+                      className="bg-sage text-white px-3 py-1 rounded-r text-sm font-medium hover:bg-dark-sage transition-colors"
                     >
                       Save
                     </button>
                   </div>
                 ) : (
-                  <div className="flex items-center group/uploader mb-1">
-                    <p className="text-white font-medium text-sm text-white/70">Uploaded by {selectedPhoto.uploaderName}</p>
+                  <div className="flex items-center mb-2 group">
+                    <p className="text-white font-medium text-sm opacity-90 flex items-center">
+                      Uploaded by <span className="font-bold ml-1">{selectedPhoto.uploaderName}</span>
+                    </p>
                     {isAdmin && onUpdateUploaderName && (
                       <button 
                         onClick={() => { setDraftUploader(selectedPhoto.uploaderName); setIsEditingUploader(true); }}
-                        className="ml-2 text-white/50 hover:text-white text-xs underline opacity-0 group-hover/uploader:opacity-100 transition-opacity"
+                        className="ml-3 p-1.5 text-white/60 hover:text-sage hover:bg-white/10 rounded transition-all"
+                        title="Edit uploader name"
                       >
-                        Edit
+                        <Pencil className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
                 )}
                 
                 {selectedPhoto.uploadedAt && (
-                  <p className="text-white/50 text-xs mb-2">{format(new Date(selectedPhoto.uploadedAt), 'MMMM d, yyyy - h:mm a')}</p>
+                  <p className="text-white/50 text-xs mb-3">{format(new Date(selectedPhoto.uploadedAt), 'MMMM d, yyyy - h:mm a')}</p>
                 )}
                 
                 {isEditingCaption ? (
@@ -164,41 +167,45 @@ export default function PhotoGrid({ photos, onDelete, onUpdateCaption, onUpdateU
                       value={draftCaption}
                       onChange={(e) => setDraftCaption(e.target.value)}
                       placeholder="Add a caption..."
-                      className="flex-1 bg-white/20 border border-white/30 text-white placeholder-white/50 rounded-l px-3 py-1.5 text-sm focus:outline-none"
+                      className="flex-1 bg-black/40 border border-white/20 text-white placeholder-white/40 rounded-l px-3 py-2 text-sm focus:outline-none focus:border-sage"
                       autoFocus
                     />
                     <button 
                       onClick={handleSaveCaption}
-                      className="bg-sage text-white px-3 py-1.5 rounded-r text-sm font-medium hover:bg-dark-sage"
+                      className="bg-sage text-white px-4 py-2 rounded-r text-sm font-medium hover:bg-dark-sage transition-colors"
                     >
                       Save
                     </button>
                   </div>
                 ) : (
-                  <div className="mt-1 flex items-start group/caption">
-                    <p className="text-white text-sm whitespace-pre-wrap flex-1">
+                  <div className="mt-2 flex items-start group">
+                    <p className="text-white text-sm whitespace-pre-wrap flex-1 leading-relaxed">
                       {selectedPhoto.caption || <span className="text-white/40 italic">No caption added</span>}
                     </p>
                     {isAdmin && onUpdateCaption && (
                       <button 
                         onClick={() => { setDraftCaption(selectedPhoto.caption || ''); setIsEditingCaption(true); }}
-                        className="ml-2 text-white/50 hover:text-white text-xs underline opacity-0 group-hover/caption:opacity-100 transition-opacity"
+                        className="ml-3 p-1.5 text-white/60 hover:text-sage hover:bg-white/10 rounded transition-all"
+                        title="Edit caption"
                       >
-                        Edit
+                        <Pencil className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
                 )}
               </div>
-              <a 
-                href={selectedPhoto.url} 
-                download
-                target="_blank"
-                rel="noreferrer"
-                className="p-2 bg-sage hover:bg-dark-sage text-white rounded-lg transition-colors flex items-center"
-              >
-                <Download className="w-5 h-5" />
-              </a>
+              <div className="flex flex-col items-center space-y-2">
+                <a 
+                  href={selectedPhoto.url} 
+                  download
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-3 bg-white/10 hover:bg-sage text-white rounded-xl transition-colors flex items-center justify-center group"
+                  title="Download photo"
+                >
+                  <Download className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                </a>
+              </div>
             </div>
           </div>
         </div>

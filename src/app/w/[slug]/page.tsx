@@ -59,7 +59,7 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
       <HeroSection wedding={wedding} />
       <OurStorySection story={story} />
       <EventsSection events={events} />
-      <RsvpSection slug={params.slug} guests={guests} />
+      <RsvpSection slug={params.slug} guests={guests} wedding={wedding} />
       <TravelSection travels={travels} />
       <WeddingPartySection partyMembers={partyMembers} />
       <GallerySection />
