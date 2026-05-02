@@ -22,21 +22,14 @@ export default function SettingsPage() {
   const [team, setTeam] = useState<{ id: string; email: string; role: string; profileId: string }[]>([]);
 
   useEffect(() => {
-    if (!weddingId) return;
+    if (!weddingId || !user) return;
     // Query WeddingMembers instead of Profile
     const sub = client.models.WeddingMember.observeQuery({
       filter: { weddingId: { eq: weddingId } }
     }).subscribe({
       next: async ({ items }) => {
-        // For now, we use profileId to represent the email of pending invites, 
-        // or we fetch the related Profile for real users if needed.
-        // Since we are mocking pending invites by setting profileId = 'INVITE_...' 
-        // we can extract the email from the WeddingMember or fetch it.
-        // Actually, we need to fetch the Profiles to get the emails for real users.
         const teamWithEmails = await Promise.all(items.map(async (item) => {
           if (item.profileId.startsWith('INVITE_')) {
-            // we stored the email in profileId for invites temporarily, wait, we can't do that easily.
-            // Let's assume we store the email in profileId for invites like 'INVITE_email@example.com'
             return {
               id: item.id,
               email: item.profileId.replace('INVITE_', ''),
@@ -44,11 +37,16 @@ export default function SettingsPage() {
               profileId: item.profileId
             };
           } else {
-            // Fetch real profile
-            const { data: profile } = await client.models.Profile.get({ cognitoSub: item.profileId });
+            // Use the secondary index to fetch profile by cognitoSub
+            const { data: profiles } = await client.models.Profile.listProfileByCognitoSub({ cognitoSub: item.profileId });
+            const profile = profiles[0];
+            
+            // Fallback to the current logged in user's email if the profile record is missing
+            const fallbackEmail = item.profileId === user.userId ? user.signInDetails?.loginId : null;
+            
             return {
               id: item.id,
-              email: profile?.email || 'Unknown',
+              email: profile?.email || fallbackEmail || 'Unknown',
               role: item.role || 'planner',
               profileId: item.profileId
             };
@@ -58,7 +56,7 @@ export default function SettingsPage() {
       }
     });
     return () => sub.unsubscribe();
-  }, [weddingId]);
+  }, [weddingId, user]);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
