@@ -13,7 +13,7 @@ export default function PasswordPage({ params }: { params: { slug: string } }) {
     
     // In real implementation, this would call /api/website/verify-password
     if (password === 'testpassword') { // Placeholder logic
-      router.push(`/${params.slug}`);
+      router.push(`/w/${params.slug}`);
     } else {
       setError(true);
       setTimeout(() => setError(false), 2000);
