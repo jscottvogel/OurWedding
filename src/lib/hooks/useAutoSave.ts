@@ -11,6 +11,17 @@ export function useAutoSave<T>(
   
   const initialMount = useRef(true);
   const timeoutRef = useRef<NodeJS.Timeout>();
+  const saveFnRef = useRef(saveFn);
+  const valueRef = useRef(value);
+
+  // Keep refs up to date without triggering the effect
+  useEffect(() => {
+    saveFnRef.current = saveFn;
+    valueRef.current = value;
+  }, [saveFn, value]);
+
+  // Use stringified value to prevent infinite render loops when objects are passed inline
+  const stringifiedValue = JSON.stringify(value);
 
   useEffect(() => {
     if (initialMount.current) {
@@ -26,7 +37,7 @@ export function useAutoSave<T>(
       setIsSaving(true);
       setError(null);
       try {
-        await saveFn(value);
+        await saveFnRef.current(valueRef.current);
         setLastSaved(new Date());
       } catch (e) {
         setError(e as Error);
@@ -40,7 +51,8 @@ export function useAutoSave<T>(
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [value, saveFn, delayMs]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stringifiedValue, delayMs]);
 
   return { isSaving, lastSaved, error };
 }
