@@ -17,15 +17,13 @@ export default function GuestsPage() {
   const handleExport = () => {
     if (!weddingId || guests.length === 0) return;
     try {
-      const headers = ['First Name', 'Last Name', 'Email', 'Phone', 'Meal', 'RSVP', 'Attending Count', 'Tags'];
+      const headers = ['First Name', 'Last Name', 'Email', 'RSVP Status', 'Notes', 'Tag'];
       const rows = guests.map(g => [
         `"${(g.firstName || '').replace(/"/g, '""')}"`,
         `"${(g.lastName || '').replace(/"/g, '""')}"`,
         `"${(g.email || '').replace(/"/g, '""')}"`,
-        `"${(g.phone || '').replace(/"/g, '""')}"`,
-        `"${(g.mealChoice || '').replace(/"/g, '""')}"`,
         `"${g.rsvpStatus || 'PENDING'}"`,
-        `${g.attendingCount || 1}`,
+        `"${(g.notes || '').replace(/"/g, '""')}"`,
         `"${(g.tags || '').replace(/"/g, '""')}"`
       ]);
       const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');

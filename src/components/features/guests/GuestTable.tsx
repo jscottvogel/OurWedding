@@ -20,6 +20,7 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [notes, setNotes] = useState('');
   const [tags, setTags] = useState('');
   const [rsvpStatus, setRsvpStatus] = useState<Schema['Guest']['type']['rsvpStatus']>('PENDING');
 
@@ -27,6 +28,7 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
     setFirstName('');
     setLastName('');
     setEmail('');
+    setNotes('');
     setTags('');
     setRsvpStatus('PENDING');
     setIsAdding(false);
@@ -35,13 +37,13 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
 
   const handleAddSubmit = async () => {
     if (!firstName) return;
-    await onAdd({ firstName, lastName, email, tags, rsvpStatus, attendingCount: 1 });
+    await onAdd({ firstName, lastName, email, notes, tags, rsvpStatus, attendingCount: 1 });
     resetForm();
   };
 
   const handleUpdateSubmit = async () => {
     if (!editingId || !firstName) return;
-    await onUpdate(editingId, { firstName, lastName, email, tags, rsvpStatus });
+    await onUpdate(editingId, { firstName, lastName, email, notes, tags, rsvpStatus });
     resetForm();
   };
 
@@ -49,6 +51,7 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
     setFirstName(guest.firstName);
     setLastName(guest.lastName || '');
     setEmail(guest.email || '');
+    setNotes(guest.notes || '');
     setTags(guest.tags || '');
     setRsvpStatus(guest.rsvpStatus || 'PENDING');
     setEditingId(guest.id);
@@ -93,11 +96,12 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
         <table className="w-full text-left border-collapse">
           <thead className="sticky top-0 bg-white z-10 shadow-sm">
             <tr className="border-b border-light-gray text-xs font-medium text-mid-gray uppercase tracking-wider">
-              <th className="p-4 w-1/4">Name</th>
-              <th className="p-4 w-1/4 hidden md:table-cell">Email</th>
-              <th className="p-4 w-1/6 text-center hidden lg:table-cell">Tags</th>
-              <th className="p-4 w-1/6 text-center">RSVP</th>
-              <th className="p-4 w-1/6 text-center hidden xl:table-cell">Meal</th>
+              <th className="p-4 w-[15%]">First Name</th>
+              <th className="p-4 w-[15%] hidden md:table-cell">Last Name</th>
+              <th className="p-4 w-[20%] hidden md:table-cell">Email</th>
+              <th className="p-4 w-[15%] text-center">RSVP Status</th>
+              <th className="p-4 w-[15%] hidden lg:table-cell">Notes</th>
+              <th className="p-4 w-[10%] text-center hidden xl:table-cell">Tag</th>
               <th className="p-4 w-24"></th>
             </tr>
           </thead>
@@ -105,16 +109,13 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
             {isAdding && (
               <tr className="bg-sage/5">
                 <td className="p-3">
-                  <div className="flex space-x-2">
-                    <input type="text" placeholder="First" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-1/2 p-2 border rounded text-sm focus:border-sage focus:outline-none" />
-                    <input type="text" placeholder="Last" value={lastName} onChange={e => setLastName(e.target.value)} className="w-1/2 p-2 border rounded text-sm focus:border-sage focus:outline-none" />
-                  </div>
+                  <input type="text" placeholder="First Name" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
+                </td>
+                <td className="p-3 hidden md:table-cell">
+                  <input type="text" placeholder="Last Name" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
                 </td>
                 <td className="p-3 hidden md:table-cell">
                   <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
-                </td>
-                <td className="p-3 hidden lg:table-cell">
-                  <input type="text" placeholder="Tags (comma separated)" value={tags} onChange={e => setTags(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
                 </td>
                 <td className="p-3 text-center">
                   <select value={rsvpStatus || 'PENDING'} onChange={e => setRsvpStatus(e.target.value as any)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white">
@@ -123,7 +124,12 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
                     <option value="DECLINED">Declined</option>
                   </select>
                 </td>
-                <td className="p-3 hidden xl:table-cell"></td>
+                <td className="p-3 hidden lg:table-cell">
+                  <input type="text" placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
+                </td>
+                <td className="p-3 hidden xl:table-cell text-center">
+                  <input type="text" placeholder="Tag" value={tags} onChange={e => setTags(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
+                </td>
                 <td className="p-3">
                   <div className="flex items-center justify-end space-x-2">
                     <button onClick={resetForm} className="p-1.5 text-mid-gray hover:bg-light-gray rounded"><X className="w-4 h-4" /></button>
@@ -137,16 +143,13 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
               editingId === guest.id ? (
                 <tr key={guest.id} className="bg-sage/5">
                   <td className="p-3">
-                    <div className="flex space-x-2">
-                      <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-1/2 p-2 border rounded text-sm focus:border-sage focus:outline-none" />
-                      <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-1/2 p-2 border rounded text-sm focus:border-sage focus:outline-none" />
-                    </div>
+                    <input type="text" placeholder="First Name" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
                   </td>
                   <td className="p-3 hidden md:table-cell">
-                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
+                    <input type="text" placeholder="Last Name" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
                   </td>
-                  <td className="p-3 hidden lg:table-cell">
-                    <input type="text" value={tags} onChange={e => setTags(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
+                  <td className="p-3 hidden md:table-cell">
+                    <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
                   </td>
                   <td className="p-3 text-center">
                     <select value={rsvpStatus || 'PENDING'} onChange={e => setRsvpStatus(e.target.value as any)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white">
@@ -155,7 +158,12 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
                       <option value="DECLINED">Declined</option>
                     </select>
                   </td>
-                  <td className="p-3 hidden xl:table-cell"></td>
+                  <td className="p-3 hidden lg:table-cell">
+                    <input type="text" placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
+                  </td>
+                  <td className="p-3 hidden xl:table-cell text-center">
+                    <input type="text" placeholder="Tag" value={tags} onChange={e => setTags(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
+                  </td>
                   <td className="p-3">
                     <div className="flex items-center justify-end space-x-2">
                       <button onClick={resetForm} className="p-1.5 text-mid-gray hover:bg-light-gray rounded"><X className="w-4 h-4" /></button>
@@ -166,20 +174,10 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
               ) : (
                 <tr key={guest.id} className="hover:bg-ivory/30 transition-colors group">
                   <td className="p-4">
-                    <p className="font-medium text-charcoal">{guest.firstName} {guest.lastName}</p>
+                    <p className="font-medium text-charcoal">{guest.firstName}</p>
                   </td>
+                  <td className="p-4 hidden md:table-cell text-mid-gray text-sm">{guest.lastName || '-'}</td>
                   <td className="p-4 hidden md:table-cell text-mid-gray text-sm">{guest.email || '-'}</td>
-                  <td className="p-4 hidden lg:table-cell text-center text-sm text-charcoal">
-                    {guest.tags ? (
-                      <div className="flex flex-wrap gap-1 justify-center">
-                        {guest.tags.split(',').map(tag => (
-                          <span key={tag} className="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600 border border-gray-200">
-                            {tag.trim()}
-                          </span>
-                        ))}
-                      </div>
-                    ) : '-'}
-                  </td>
                   <td className="p-4 text-center">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       guest.rsvpStatus === 'CONFIRMED' ? 'bg-sage/20 text-dark-sage' :
@@ -189,8 +187,15 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
                       {guest.rsvpStatus}
                     </span>
                   </td>
+                  <td className="p-4 hidden lg:table-cell text-sm text-charcoal truncate max-w-[150px]">
+                    {guest.notes || '-'}
+                  </td>
                   <td className="p-4 hidden xl:table-cell text-center text-sm text-charcoal">
-                    {guest.mealChoice || '-'}
+                    {guest.tags ? (
+                      <span className="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600 border border-gray-200">
+                        {guest.tags.split(',')[0].trim()}
+                      </span>
+                    ) : '-'}
                   </td>
                   <td className="p-4">
                     <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">

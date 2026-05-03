@@ -46,8 +46,8 @@ export default function GuestBulkImport({ onImport, isOpen, onClose }: GuestBulk
       const firstNameIdx = headers.findIndex(h => h.includes('first'));
       const lastNameIdx = headers.findIndex(h => h.includes('last'));
       const emailIdx = headers.findIndex(h => h.includes('email'));
-      const phoneIdx = headers.findIndex(h => h.includes('phone'));
-      const mealIdx = headers.findIndex(h => h.includes('meal'));
+      const rsvpIdx = headers.findIndex(h => h.includes('rsvp'));
+      const notesIdx = headers.findIndex(h => h.includes('note'));
       const tagIdx = headers.findIndex(h => h.includes('tag'));
 
       if (firstNameIdx === -1) {
@@ -68,10 +68,9 @@ export default function GuestBulkImport({ onImport, isOpen, onClose }: GuestBulk
             firstName: cols[firstNameIdx],
             lastName: lastNameIdx !== -1 ? cols[lastNameIdx] : undefined,
             email: emailIdx !== -1 ? cols[emailIdx] : undefined,
-            phone: phoneIdx !== -1 ? cols[phoneIdx] : undefined,
-            mealChoice: mealIdx !== -1 ? cols[mealIdx] : undefined,
+            notes: notesIdx !== -1 ? cols[notesIdx] : undefined,
             tags: tagIdx !== -1 ? cols[tagIdx] : undefined,
-            rsvpStatus: 'PENDING',
+            rsvpStatus: rsvpIdx !== -1 ? (cols[rsvpIdx].toUpperCase() as any) : 'PENDING',
             attendingCount: 1,
           });
         }
@@ -113,7 +112,7 @@ export default function GuestBulkImport({ onImport, isOpen, onClose }: GuestBulk
             </p>
             <ul className="text-xs text-mid-gray list-disc pl-5 space-y-1">
               <li><span className="font-medium text-charcoal">Required column:</span> "First Name"</li>
-              <li><span className="font-medium text-charcoal">Optional columns:</span> "Last Name", "Email", "Phone", "Meal", "Tags"</li>
+              <li><span className="font-medium text-charcoal">Optional columns:</span> "Last Name", "Email", "RSVP Status", "Notes", "Tag"</li>
             </ul>
           </div>
 
