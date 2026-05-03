@@ -6,7 +6,6 @@ import { useGuests } from '@/lib/hooks/useGuests';
 import GuestTable from '@/components/features/guests/GuestTable';
 import GuestBulkImport from '@/components/features/guests/GuestBulkImport';
 import { Download, Upload, Users, UserCheck, UserX, Clock } from 'lucide-react';
-import { exportGuestListToCsv } from '@/lib/actions/guests';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { toast } from 'sonner';
 
@@ -15,10 +14,21 @@ export default function GuestsPage() {
   const { weddingId } = useAuth();
   const [isImportOpen, setIsImportOpen] = useState(false);
 
-  const handleExport = async () => {
-    if (!weddingId) return;
+  const handleExport = () => {
+    if (!weddingId || guests.length === 0) return;
     try {
-      const csvContent = await exportGuestListToCsv(weddingId);
+      const headers = ['First Name', 'Last Name', 'Email', 'Phone', 'Meal', 'RSVP', 'Attending Count', 'Tags'];
+      const rows = guests.map(g => [
+        `"${(g.firstName || '').replace(/"/g, '""')}"`,
+        `"${(g.lastName || '').replace(/"/g, '""')}"`,
+        `"${(g.email || '').replace(/"/g, '""')}"`,
+        `"${(g.phone || '').replace(/"/g, '""')}"`,
+        `"${(g.mealChoice || '').replace(/"/g, '""')}"`,
+        `"${g.rsvpStatus || 'PENDING'}"`,
+        `${g.attendingCount || 1}`,
+        `"${(g.tags || '').replace(/"/g, '""')}"`
+      ]);
+      const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');

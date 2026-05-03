@@ -20,12 +20,14 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [tags, setTags] = useState('');
   const [rsvpStatus, setRsvpStatus] = useState<Schema['Guest']['type']['rsvpStatus']>('PENDING');
 
   const resetForm = () => {
     setFirstName('');
     setLastName('');
     setEmail('');
+    setTags('');
     setRsvpStatus('PENDING');
     setIsAdding(false);
     setEditingId(null);
@@ -33,13 +35,13 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
 
   const handleAddSubmit = async () => {
     if (!firstName) return;
-    await onAdd({ firstName, lastName, email, rsvpStatus, attendingCount: 1 });
+    await onAdd({ firstName, lastName, email, tags, rsvpStatus, attendingCount: 1 });
     resetForm();
   };
 
   const handleUpdateSubmit = async () => {
     if (!editingId || !firstName) return;
-    await onUpdate(editingId, { firstName, lastName, email, rsvpStatus });
+    await onUpdate(editingId, { firstName, lastName, email, tags, rsvpStatus });
     resetForm();
   };
 
@@ -47,13 +49,15 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
     setFirstName(guest.firstName);
     setLastName(guest.lastName || '');
     setEmail(guest.email || '');
+    setTags(guest.tags || '');
     setRsvpStatus(guest.rsvpStatus || 'PENDING');
     setEditingId(guest.id);
   };
 
   const filteredGuests = guests.filter(g => 
     (g.firstName.toLowerCase() + ' ' + (g.lastName || '').toLowerCase()).includes(searchTerm.toLowerCase()) ||
-    (g.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+    (g.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (g.tags || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -91,8 +95,9 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
             <tr className="border-b border-light-gray text-xs font-medium text-mid-gray uppercase tracking-wider">
               <th className="p-4 w-1/4">Name</th>
               <th className="p-4 w-1/4 hidden md:table-cell">Email</th>
+              <th className="p-4 w-1/6 text-center hidden lg:table-cell">Tags</th>
               <th className="p-4 w-1/6 text-center">RSVP</th>
-              <th className="p-4 w-1/6 text-center hidden lg:table-cell">Meal</th>
+              <th className="p-4 w-1/6 text-center hidden xl:table-cell">Meal</th>
               <th className="p-4 w-24"></th>
             </tr>
           </thead>
@@ -108,6 +113,9 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
                 <td className="p-3 hidden md:table-cell">
                   <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
                 </td>
+                <td className="p-3 hidden lg:table-cell">
+                  <input type="text" placeholder="Tags (comma separated)" value={tags} onChange={e => setTags(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
+                </td>
                 <td className="p-3 text-center">
                   <select value={rsvpStatus || 'PENDING'} onChange={e => setRsvpStatus(e.target.value as any)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white">
                     <option value="PENDING">Pending</option>
@@ -115,7 +123,7 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
                     <option value="DECLINED">Declined</option>
                   </select>
                 </td>
-                <td className="p-3 hidden lg:table-cell"></td>
+                <td className="p-3 hidden xl:table-cell"></td>
                 <td className="p-3">
                   <div className="flex items-center justify-end space-x-2">
                     <button onClick={resetForm} className="p-1.5 text-mid-gray hover:bg-light-gray rounded"><X className="w-4 h-4" /></button>
@@ -137,6 +145,9 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
                   <td className="p-3 hidden md:table-cell">
                     <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
                   </td>
+                  <td className="p-3 hidden lg:table-cell">
+                    <input type="text" value={tags} onChange={e => setTags(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
+                  </td>
                   <td className="p-3 text-center">
                     <select value={rsvpStatus || 'PENDING'} onChange={e => setRsvpStatus(e.target.value as any)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white">
                       <option value="PENDING">Pending</option>
@@ -144,7 +155,7 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
                       <option value="DECLINED">Declined</option>
                     </select>
                   </td>
-                  <td className="p-3 hidden lg:table-cell"></td>
+                  <td className="p-3 hidden xl:table-cell"></td>
                   <td className="p-3">
                     <div className="flex items-center justify-end space-x-2">
                       <button onClick={resetForm} className="p-1.5 text-mid-gray hover:bg-light-gray rounded"><X className="w-4 h-4" /></button>
@@ -158,6 +169,17 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
                     <p className="font-medium text-charcoal">{guest.firstName} {guest.lastName}</p>
                   </td>
                   <td className="p-4 hidden md:table-cell text-mid-gray text-sm">{guest.email || '-'}</td>
+                  <td className="p-4 hidden lg:table-cell text-center text-sm text-charcoal">
+                    {guest.tags ? (
+                      <div className="flex flex-wrap gap-1 justify-center">
+                        {guest.tags.split(',').map(tag => (
+                          <span key={tag} className="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600 border border-gray-200">
+                            {tag.trim()}
+                          </span>
+                        ))}
+                      </div>
+                    ) : '-'}
+                  </td>
                   <td className="p-4 text-center">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       guest.rsvpStatus === 'CONFIRMED' ? 'bg-sage/20 text-dark-sage' :
@@ -167,7 +189,7 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
                       {guest.rsvpStatus}
                     </span>
                   </td>
-                  <td className="p-4 hidden lg:table-cell text-center text-sm text-charcoal">
+                  <td className="p-4 hidden xl:table-cell text-center text-sm text-charcoal">
                     {guest.mealChoice || '-'}
                   </td>
                   <td className="p-4">

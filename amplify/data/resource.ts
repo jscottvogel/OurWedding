@@ -171,6 +171,7 @@ const schema = a.schema({
       dietaryGlutenFree: a.boolean(),
       dietaryNutFree: a.boolean(),
       tableId: a.string(),
+      tags: a.string(),
     })
     .secondaryIndexes((index) => [index('weddingId')])
     .authorization((allow) => [

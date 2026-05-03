@@ -48,6 +48,7 @@ export default function GuestBulkImport({ onImport, isOpen, onClose }: GuestBulk
       const emailIdx = headers.findIndex(h => h.includes('email'));
       const phoneIdx = headers.findIndex(h => h.includes('phone'));
       const mealIdx = headers.findIndex(h => h.includes('meal'));
+      const tagIdx = headers.findIndex(h => h.includes('tag'));
 
       if (firstNameIdx === -1) {
         throw new Error('CSV must contain a "First Name" column.');
@@ -69,6 +70,7 @@ export default function GuestBulkImport({ onImport, isOpen, onClose }: GuestBulk
             email: emailIdx !== -1 ? cols[emailIdx] : undefined,
             phone: phoneIdx !== -1 ? cols[phoneIdx] : undefined,
             mealChoice: mealIdx !== -1 ? cols[mealIdx] : undefined,
+            tags: tagIdx !== -1 ? cols[tagIdx] : undefined,
             rsvpStatus: 'PENDING',
             attendingCount: 1,
           });
@@ -111,7 +113,7 @@ export default function GuestBulkImport({ onImport, isOpen, onClose }: GuestBulk
             </p>
             <ul className="text-xs text-mid-gray list-disc pl-5 space-y-1">
               <li><span className="font-medium text-charcoal">Required column:</span> "First Name"</li>
-              <li><span className="font-medium text-charcoal">Optional columns:</span> "Last Name", "Email", "Phone", "Meal"</li>
+              <li><span className="font-medium text-charcoal">Optional columns:</span> "Last Name", "Email", "Phone", "Meal", "Tags"</li>
             </ul>
           </div>
 
