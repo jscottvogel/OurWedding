@@ -254,6 +254,10 @@ function RegistryEditor({ weddingId, items }: { weddingId: string, items: Schema
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
 
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editUrl, setEditUrl] = useState('');
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !url) return;
@@ -261,19 +265,55 @@ function RegistryEditor({ weddingId, items }: { weddingId: string, items: Schema
     setName(''); setUrl('');
   };
 
+  const startEdit = (r: Schema['WebsiteRegistry']['type']) => {
+    setEditingId(r.id);
+    setEditName(r.registryName || '');
+    setEditUrl(r.registryUrl || '');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingId || !editName || !editUrl) return;
+    await client.models.WebsiteRegistry.update({ id: editingId, registryName: editName, registryUrl: editUrl });
+    setEditingId(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+  };
+
   return (
     <div className="bg-white p-6 rounded-xl border border-light-gray">
       <h3 className="text-lg font-bold text-charcoal mb-4">Gift Registry</h3>
       <div className="space-y-3 mb-6">
         {items.map(r => (
-          <div key={r.id} className="flex justify-between items-center p-3 bg-gray-50 rounded border border-light-gray">
-            <div>
-              <p className="font-bold text-sm text-charcoal">{r.registryName}</p>
-              <a href={r.registryUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline">View Link</a>
+          <div key={r.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 bg-gray-50 rounded border border-light-gray">
+            {editingId === r.id ? (
+              <div className="flex-1 w-full space-y-2 mr-0 sm:mr-4 mb-3 sm:mb-0">
+                <input type="text" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Store Name" className="w-full text-sm border-light-gray rounded px-3 py-2" />
+                <input type="url" value={editUrl} onChange={e => setEditUrl(e.target.value)} placeholder="URL" className="w-full text-sm border-light-gray rounded px-3 py-2" />
+              </div>
+            ) : (
+              <div className="flex-1 pr-4 overflow-hidden">
+                <p className="font-bold text-sm text-charcoal truncate">{r.registryName}</p>
+                <a href={r.registryUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline truncate block">{r.registryUrl}</a>
+              </div>
+            )}
+            
+            <div className="flex items-center space-x-2 self-end sm:self-auto">
+              {editingId === r.id ? (
+                <>
+                  <button onClick={handleSaveEdit} className="text-xs bg-sage text-white px-3 py-1.5 rounded font-medium hover:bg-dark-sage">Save</button>
+                  <button onClick={cancelEdit} className="text-xs text-mid-gray hover:text-charcoal px-3 py-1.5 font-medium">Cancel</button>
+                </>
+              ) : (
+                <>
+                  <button onClick={() => startEdit(r)} className="text-xs text-sage font-medium hover:underline mr-1">Edit</button>
+                  <button onClick={() => client.models.WebsiteRegistry.delete({ id: r.id })} className="text-red-500 hover:text-red-700 p-1.5">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </>
+              )}
             </div>
-            <button onClick={() => client.models.WebsiteRegistry.delete({ id: r.id })} className="text-red-500 hover:text-red-700">
-              <Trash2 className="w-4 h-4" />
-            </button>
           </div>
         ))}
       </div>
