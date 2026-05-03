@@ -1,25 +1,48 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import type { Schema } from '../../../../../amplify/data/resource';
 import { StorageImage } from './StorageImage';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export function GalleryCarousel({ photos }: { photos: Schema['GalleryUpload']['type'][] }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
       const scrollAmount = window.innerWidth < 768 ? window.innerWidth * 0.65 : 320;
-      scrollRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
+      
+      let newLeft = scrollLeft + (direction === 'left' ? -scrollAmount : scrollAmount);
+      
+      if (direction === 'right' && scrollLeft + clientWidth >= scrollWidth - 10) {
+        newLeft = 0;
+      } else if (direction === 'left' && scrollLeft <= 0) {
+        newLeft = scrollWidth - clientWidth;
+      }
+      
+      scrollRef.current.scrollTo({
+        left: newLeft,
         behavior: 'smooth'
       });
     }
   };
 
+  useEffect(() => {
+    if (isHovered || photos.length <= 2) return;
+    const interval = setInterval(() => scroll('right'), 3500);
+    return () => clearInterval(interval);
+  }, [isHovered, photos.length]);
+
   return (
-    <div className="relative group">
+    <div 
+      className="relative group"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onTouchStart={() => setIsHovered(true)}
+      onTouchEnd={() => setIsHovered(false)}
+    >
       <div 
         ref={scrollRef}
         className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-8 px-4 -mx-4 scrollbar-hide" 

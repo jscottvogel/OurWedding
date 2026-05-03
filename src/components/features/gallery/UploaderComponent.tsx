@@ -188,6 +188,10 @@ export default function UploaderComponent({ weddingId, onUploadComplete }: Uploa
             </>
           )}
         </button>
+        
+        <p className="text-xs text-mid-gray text-center pt-2">
+          Note: To ensure a beautiful gallery, all uploaded images must be approved before they will be visible on the website.
+        </p>
       </div>
     </div>
   );
