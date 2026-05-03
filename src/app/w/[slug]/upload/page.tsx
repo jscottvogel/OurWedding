@@ -17,11 +17,28 @@ export default function GuestUploadPage({ params }: { params: { slug: string } }
   useEffect(() => {
     const fetchWedding = async () => {
       try {
-        const result = await client.models.Wedding.list({
-          filter: { slug: { eq: params.slug } },
+        const decodedSlug = decodeURIComponent(params.slug);
+        const configResult = await client.models.WebsiteConfig.list({
+          filter: { 
+            or: [
+              { subdomain: { eq: decodedSlug } },
+              { customDomain: { contains: decodedSlug } }
+            ]
+          },
           authMode: 'apiKey'
         });
-        setWedding(result.data[0] || null);
+        
+        const config = configResult.data[0];
+        if (!config) {
+          setLoading(false);
+          return;
+        }
+
+        const weddingResult = await client.models.Wedding.get(
+          { id: config.weddingId },
+          { authMode: 'apiKey' }
+        );
+        setWedding(weddingResult.data || null);
       } catch (err) {
         console.error('Failed to load wedding', err);
       } finally {
