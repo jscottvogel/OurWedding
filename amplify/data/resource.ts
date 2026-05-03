@@ -131,6 +131,8 @@ const schema = a.schema({
     .authorization((allow) => [
       allow.authenticated().to(['create', 'read', 'update', 'delete']),
       allow.groups(['vendor']).to(['read']),
+      allow.guest().to(['read']),
+      allow.publicApiKey().to(['read']),
     ]),
 
   GalleryUpload: a
