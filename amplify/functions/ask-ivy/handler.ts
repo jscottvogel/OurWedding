@@ -44,6 +44,15 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
         if (parsed.website.registries?.length > 0) additionalInfo += `\nRegistries:\n` + parsed.website.registries.map((r: any) => `- [ID: ${r.id}] ${r.registryName}`).join('\n');
         if (parsed.website.faqs?.length > 0) additionalInfo += `\nFAQs:\n` + parsed.website.faqs.map((f: any) => `- [ID: ${f.id}] Q: ${f.question}`).join('\n');
       }
+      if (parsed.guests && parsed.guests.length > 0) {
+        additionalInfo += `\n\nGuests:\n` + parsed.guests.map((g: any) => `- [ID: ${g.id}] ${g.firstName} ${g.lastName} (RSVP: ${g.rsvpStatus}, Party: ${g.partyId || 'None'}, Meal: ${g.mealChoice || 'None'}, Diet: ${g.dietaryRestrictions || 'None'})`).join('\n');
+      }
+      if (parsed.budget && parsed.budget.length > 0) {
+        additionalInfo += `\n\nBudget Items:\n` + parsed.budget.map((b: any) => `- [ID: ${b.id}] ${b.expenseName} - $${b.amount} (${b.category}, Paid: ${b.isPaid})`).join('\n');
+      }
+      if (parsed.guestbook && parsed.guestbook.length > 0) {
+        additionalInfo += `\n\nGuestbook Entries:\n` + parsed.guestbook.map((g: any) => `- [ID: ${g.id}] From: ${g.guestName} | Msg: "${g.message || ''}" | Approved: ${g.isApproved}`).join('\n');
+      }
 
       contextStr = `
         Couple: ${parsed.coupleName1} and ${parsed.coupleName2}
@@ -528,6 +537,147 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
             }
           },
           required: ["id", "updates"]
+        }
+      },
+      {
+        name: "add_guest",
+        description: "Add a new guest to the wedding guest list.",
+        input_schema: {
+          type: "object",
+          properties: {
+            firstName: { type: "string" },
+            lastName: { type: "string" },
+            email: { type: "string" },
+            rsvpStatus: { type: "string", description: "Must be: PENDING, ATTENDING, DECLINED" },
+            partyId: { type: "string", description: "Optional party grouping ID" }
+          },
+          required: ["firstName", "lastName"]
+        }
+      },
+      {
+        name: "update_guest",
+        description: "Update an existing guest's details or RSVP status.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string", description: "The ID of the guest." },
+            updates: {
+              type: "object",
+              properties: {
+                firstName: { type: "string" },
+                lastName: { type: "string" },
+                email: { type: "string" },
+                rsvpStatus: { type: "string", description: "Must be: PENDING, ATTENDING, DECLINED" },
+                mealChoice: { type: "string" },
+                dietaryRestrictions: { type: "string" },
+                partyId: { type: "string" }
+              }
+            }
+          },
+          required: ["id", "updates"]
+        }
+      },
+      {
+        name: "delete_guest",
+        description: "Delete an existing guest from the list.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string" }
+          },
+          required: ["id"]
+        }
+      },
+      {
+        name: "add_budget_item",
+        description: "Add a new expense to the wedding budget.",
+        input_schema: {
+          type: "object",
+          properties: {
+            expenseName: { type: "string" },
+            amount: { type: "number" },
+            category: { type: "string" },
+            isPaid: { type: "boolean" },
+            dueDate: { type: "string", description: "YYYY-MM-DD" },
+            notes: { type: "string" }
+          },
+          required: ["expenseName", "amount", "category"]
+        }
+      },
+      {
+        name: "update_budget_item",
+        description: "Update an existing budget item.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            updates: {
+              type: "object",
+              properties: {
+                expenseName: { type: "string" },
+                amount: { type: "number" },
+                category: { type: "string" },
+                isPaid: { type: "boolean" },
+                dueDate: { type: "string" },
+                notes: { type: "string" }
+              }
+            }
+          },
+          required: ["id", "updates"]
+        }
+      },
+      {
+        name: "delete_budget_item",
+        description: "Delete an existing expense from the budget.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string" }
+          },
+          required: ["id"]
+        }
+      },
+      {
+        name: "update_guestbook_approval",
+        description: "Approve or hide a guestbook entry.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            isApproved: { type: "boolean" }
+          },
+          required: ["id", "isApproved"]
+        }
+      },
+      {
+        name: "delete_guestbook_entry",
+        description: "Delete an inappropriate guestbook entry completely.",
+        input_schema: {
+          type: "object",
+          properties: {
+            id: { type: "string" }
+          },
+          required: ["id"]
+        }
+      },
+      {
+        name: "update_wedding_details",
+        description: "Update core wedding settings like the date, venue name, or overall budget total.",
+        input_schema: {
+          type: "object",
+          properties: {
+            updates: {
+              type: "object",
+              properties: {
+                weddingDate: { type: "string", description: "YYYY-MM-DD format" },
+                venueName: { type: "string" },
+                budgetTotal: { type: "number" },
+                coupleName1: { type: "string" },
+                coupleName2: { type: "string" }
+              }
+            }
+          },
+          required: ["updates"]
         }
       }
     ];

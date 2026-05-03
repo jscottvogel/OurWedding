@@ -9,6 +9,9 @@ import { useRunSheet } from '@/lib/hooks/useRunSheet';
 import { useGallery } from '@/lib/hooks/useGallery';
 import { useWebsiteContent } from '@/lib/hooks/useWebsiteContent';
 import { useWebsiteConfig } from '@/lib/hooks/useWebsiteConfig';
+import { useGuests } from '@/lib/hooks/useGuests';
+import { useBudget } from '@/lib/hooks/useBudget';
+import { useGuestbook } from '@/lib/hooks/useGuestbook';
 import { generateClient } from 'aws-amplify/data';
 import { uploadData } from 'aws-amplify/storage';
 import type { Schema } from '../../../../amplify/data/resource';
@@ -43,6 +46,9 @@ export default function IvyChat() {
   const { photos } = useGallery();
   const website = useWebsiteContent();
   const { config: websiteConfig, updateConfig } = useWebsiteConfig();
+  const { guests, addGuest, updateGuest, deleteGuest } = useGuests();
+  const { items: budgetItems, addItem: addBudgetItem, updateItem: updateBudgetItem, deleteItem: deleteBudgetItem } = useBudget();
+  const { entries: guestbookEntries, deleteEntry: deleteGuestbookEntry } = useGuestbook();
   
   const runsheet = blocks.flatMap(b => b.items);
   const addRunsheetItem = async (item: any) => {
@@ -155,6 +161,9 @@ export default function IvyChat() {
         vendors: vendors.map(v => ({ id: v.id, name: v.companyName, category: v.category, status: v.contractStatus })),
         runsheet: runsheet.map((r: any) => ({ id: r.id, title: r.title, time: r.eventTime })),
         gallery: photos.map(p => ({ id: p.id, uploader: p.uploaderName, caption: p.caption || '' })),
+        guests: guests.map(g => ({ id: g.id, firstName: g.firstName, lastName: g.lastName, rsvpStatus: g.rsvpStatus, partyId: g.partyId, mealChoice: g.mealChoice, dietaryRestrictions: g.dietaryRestrictions })),
+        budget: budgetItems.map(b => ({ id: b.id, expenseName: b.expenseName, amount: b.amount, category: b.category, isPaid: b.isPaid })),
+        guestbook: guestbookEntries.map(e => ({ id: e.id, guestName: e.guestName, message: e.message, isApproved: e.isApproved })),
         website: {
           ...website,
           config: websiteConfig
@@ -271,6 +280,51 @@ export default function IvyChat() {
           } else if (toolCall.name === 'delete_faq') {
             await client.models.WebsiteFaq.delete({ id: toolCall.input.id });
             lastActionMessage = "I've deleted that FAQ!";
+          } else if (toolCall.name === 'add_guest') {
+            await addGuest({
+              firstName: toolCall.input.firstName,
+              lastName: toolCall.input.lastName,
+              email: toolCall.input.email,
+              rsvpStatus: toolCall.input.rsvpStatus || 'PENDING',
+              partyId: toolCall.input.partyId,
+              isPlusOne: false
+            });
+            lastActionMessage = `I've added ${toolCall.input.firstName} to your guest list!`;
+            addedCount++;
+          } else if (toolCall.name === 'update_guest') {
+            await updateGuest(toolCall.input.id, toolCall.input.updates);
+            lastActionMessage = "I've updated the guest details!";
+          } else if (toolCall.name === 'delete_guest') {
+            await deleteGuest(toolCall.input.id);
+            lastActionMessage = "I've removed that guest from the list!";
+          } else if (toolCall.name === 'add_budget_item') {
+            await addBudgetItem({
+              expenseName: toolCall.input.expenseName,
+              amount: toolCall.input.amount,
+              category: toolCall.input.category as any,
+              isPaid: toolCall.input.isPaid || false,
+              dueDate: toolCall.input.dueDate,
+              notes: toolCall.input.notes
+            });
+            lastActionMessage = `I've added the ${toolCall.input.expenseName} expense to your budget!`;
+            addedCount++;
+          } else if (toolCall.name === 'update_budget_item') {
+            await updateBudgetItem(toolCall.input.id, toolCall.input.updates);
+            lastActionMessage = "I've updated the budget item!";
+          } else if (toolCall.name === 'delete_budget_item') {
+            await deleteBudgetItem(toolCall.input.id);
+            lastActionMessage = "I've removed that expense from your budget!";
+          } else if (toolCall.name === 'update_guestbook_approval') {
+            await client.models.WebsiteGuestbook.update({ id: toolCall.input.id, isApproved: toolCall.input.isApproved });
+            lastActionMessage = `I've ${toolCall.input.isApproved ? 'approved' : 'hidden'} that guestbook entry!`;
+          } else if (toolCall.name === 'delete_guestbook_entry') {
+            await deleteGuestbookEntry(toolCall.input.id);
+            lastActionMessage = "I've permanently deleted that guestbook entry.";
+          } else if (toolCall.name === 'update_wedding_details') {
+            if (wedding?.id) {
+               await client.models.Wedding.update({ id: wedding.id, ...toolCall.input.updates });
+            }
+            lastActionMessage = "I've updated your core wedding details!";
           } else if (['add_runsheet_item', 'update_runsheet_item', 'delete_runsheet_item', 'clear_runsheet', 'update_gallery_caption'].includes(toolCall.name)) {
             runsheetActions.push(toolCall);
             if (toolCall.name === 'add_runsheet_item') {
