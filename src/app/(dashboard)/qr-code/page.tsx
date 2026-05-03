@@ -12,7 +12,9 @@ export default function QRCodePage() {
 
   useEffect(() => {
     if (wedding?.slug && typeof window !== 'undefined') {
-      const url = `${window.location.origin}/${wedding.slug}/upload`;
+      const hostname = window.location.hostname;
+      const baseUrl = hostname.includes('localhost') ? window.location.origin : 'https://weddingsteward.com';
+      const url = `${baseUrl}/w/${wedding.slug}/upload`;
       setUploadUrl(url);
       
       if (!wedding.qrCodeUrl) {

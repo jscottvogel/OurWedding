@@ -10,7 +10,9 @@ export function GalleryShare({ slug }: { slug: string }) {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && slug) {
-      const url = `${window.location.origin}/w/${slug}/upload`;
+      const isCustomDomain = !window.location.hostname.includes('localhost') && !window.location.hostname.includes('weddingsteward.com');
+      const path = isCustomDomain ? '/upload' : `/w/${slug}/upload`;
+      const url = `${window.location.origin}${path}`;
       setUploadUrl(url);
 
       import('qrcode').then((QRCode) => {
@@ -41,7 +43,7 @@ export function GalleryShare({ slug }: { slug: string }) {
         
         <div className="flex flex-wrap items-center gap-3 pt-2">
           <a 
-            href={`/w/${slug}/upload`}
+            href={uploadUrl || `/w/${slug}/upload`}
             className="inline-flex items-center justify-center px-6 py-3 rounded-full text-white font-medium hover:opacity-90 transition-opacity"
             style={{ backgroundColor: 'var(--color-primary)' }}
           >

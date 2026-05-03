@@ -11,7 +11,9 @@ export default function QRQuickShare() {
 
   const handleCopy = () => {
     if (wedding?.slug && typeof window !== 'undefined') {
-      const url = `${window.location.origin}/${wedding.slug}/upload`;
+      const hostname = window.location.hostname;
+      const baseUrl = hostname.includes('localhost') ? window.location.origin : 'https://weddingsteward.com';
+      const url = `${baseUrl}/w/${wedding.slug}/upload`;
       navigator.clipboard.writeText(url);
       toast.success('Link copied to clipboard');
     }
@@ -22,7 +24,9 @@ export default function QRQuickShare() {
   useEffect(() => {
     if (wedding?.slug && !wedding?.qrCodeUrl && typeof window !== 'undefined') {
       import('qrcode').then((QRCode) => {
-        const url = `${window.location.origin}/${wedding.slug}/upload`;
+        const hostname = window.location.hostname;
+        const baseUrl = hostname.includes('localhost') ? window.location.origin : 'https://weddingsteward.com';
+        const url = `${baseUrl}/w/${wedding.slug}/upload`;
         QRCode.default.toDataURL(url, { width: 300, margin: 1 })
           .then(url => setLocalQr(url))
           .catch(err => console.error(err));
