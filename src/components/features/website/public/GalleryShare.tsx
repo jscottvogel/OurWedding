@@ -46,6 +46,9 @@ export function GalleryShare({ slug }: { slug: string }) {
         <p className="text-charcoal/80 leading-relaxed">
           Help us capture every special moment. Scan the QR code or use the link below to upload photos directly from your phone.
         </p>
+        <p className="text-xs text-charcoal/60 italic">
+          Note: To ensure a beautiful gallery, all uploaded images must be approved before they will be visible on the website.
+        </p>
         
         <div className="flex flex-wrap items-center gap-3 pt-2">
           <a 

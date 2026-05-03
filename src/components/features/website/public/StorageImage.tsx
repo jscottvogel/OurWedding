@@ -5,6 +5,7 @@ import { getUrl } from 'aws-amplify/storage';
 
 interface StorageImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   storageKey: string;
+  fileType?: string | null;
 }
 
 export function StorageImage({ storageKey, ...props }: StorageImageProps) {
@@ -29,6 +30,21 @@ export function StorageImage({ storageKey, ...props }: StorageImageProps) {
   if (!url) {
     // You could return a skeleton loader or null here
     return <div className={`animate-pulse bg-gray-200 ${props.className || ''}`} style={props.style} />;
+  }
+
+  if (fileType?.startsWith('video/')) {
+    // Render video for mp4, quicktime, etc.
+    return (
+      <video 
+        src={url} 
+        autoPlay 
+        loop 
+        muted 
+        playsInline 
+        className={props.className} 
+        style={props.style}
+      />
+    );
   }
 
   return <img src={url} {...props} />;

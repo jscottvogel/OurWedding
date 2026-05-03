@@ -29,11 +29,37 @@ export function GalleryCarousel({ photos }: { photos: Schema['GalleryUpload']['t
     }
   };
 
+  const animationRef = useRef<number>();
+
   useEffect(() => {
-    if (isHovered || photos.length <= 2) return;
-    const interval = setInterval(() => scroll('right'), 3500);
-    return () => clearInterval(interval);
+    if (photos.length <= 2 || isHovered) {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      return;
+    }
+
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const animate = () => {
+      // If we've scrolled past the first set of photos (half the total scrollable width)
+      // We instantly jump back to 0. Since the content is duplicated, this is invisible.
+      if (container.scrollLeft >= (container.scrollWidth - container.clientWidth) / 2) {
+        container.scrollLeft = 0;
+      } else {
+        container.scrollLeft += 1;
+      }
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animationRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
   }, [isHovered, photos.length]);
+
+  // Duplicate photos for infinite scroll effect
+  const displayPhotos = photos.length > 2 ? [...photos, ...photos] : photos;
 
   return (
     <div 
@@ -45,16 +71,17 @@ export function GalleryCarousel({ photos }: { photos: Schema['GalleryUpload']['t
     >
       <div 
         ref={scrollRef}
-        className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-8 px-4 -mx-4 scrollbar-hide" 
+        className="flex overflow-x-auto gap-4 pb-8 px-4 -mx-4 scrollbar-hide" 
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {photos.map((photo) => (
+        {displayPhotos.map((photo, idx) => (
           <div 
-            key={photo.id} 
-            className="snap-start shrink-0 w-[65vw] md:w-[300px] aspect-square relative rounded-2xl overflow-hidden shadow-sm border border-black/5 group/item"
+            key={`${photo.id}-${idx}`} 
+            className="shrink-0 w-[65vw] md:w-[300px] aspect-square relative rounded-2xl overflow-hidden shadow-sm border border-black/5 group/item"
           >
             <StorageImage 
               storageKey={photo.fileKey}
+              fileType={photo.fileType}
               className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-700 ease-out"
               alt={photo.caption || "Wedding Gallery Photo"}
             />
