@@ -23,7 +23,8 @@ const backend = defineBackend({
   removeUser,
 });
 
-backend.storage.resources.bucket.addCorsRule({
+const bucket = backend.storage.resources.bucket as s3.Bucket;
+bucket.addCorsRule({
   allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT, s3.HttpMethods.POST, s3.HttpMethods.DELETE, s3.HttpMethods.HEAD],
   allowedOrigins: ['*'],
   allowedHeaders: ['*'],
