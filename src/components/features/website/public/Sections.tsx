@@ -225,6 +225,7 @@ export function WeddingPartySection({ partyMembers }: { partyMembers?: Schema['W
 }
 
 import { GalleryShare } from './GalleryShare';
+import { GalleryCarousel } from './GalleryCarousel';
 
 export function GallerySection({ photos, slug }: { photos?: Schema['GalleryUpload']['type'][], slug?: string }) {
   if (!photos || photos.length === 0) {
@@ -244,22 +245,7 @@ export function GallerySection({ photos, slug }: { photos?: Schema['GalleryUploa
       <div className="max-w-6xl mx-auto px-4 text-center">
         <h2 className="text-4xl font-heading mb-12" style={{ color: 'var(--color-primary)' }}>Gallery</h2>
         
-        <div className="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-8 px-4 -mx-4 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {photos.map((photo) => (
-            <div key={photo.id} className="snap-center shrink-0 w-[85vw] max-w-[600px] aspect-[4/5] md:aspect-square relative rounded-2xl overflow-hidden shadow-lg border border-black/5">
-              <StorageImage 
-                storageKey={photo.fileKey}
-                className="w-full h-full object-cover"
-                alt={photo.caption || "Wedding Gallery Photo"}
-              />
-              {photo.caption && (
-                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6 pt-20 text-left">
-                  <p className="text-white text-lg font-medium tracking-wide">{photo.caption}</p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        <GalleryCarousel photos={photos} />
         
         {slug && (
           <div className="mt-8 px-4">
