@@ -61,14 +61,18 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
 
   const siteTitle = config.siteTitle || (wedding ? `${wedding.coupleName1} & ${wedding.coupleName2}` : 'Our Wedding');
 
+  const defaultSections = ["hero", "story", "events", "rsvp", "travel", "party", "gallery", "registry", "faq", "guestbook"];
   let enabledSections: Set<string>;
   let sectionOrder: string[];
   try {
     enabledSections = new Set(JSON.parse(config.enabledSections || '[]'));
-    sectionOrder = JSON.parse(config.sectionOrder || '[]');
+    const parsedOrder = JSON.parse(config.sectionOrder || '[]');
+    // Merge any missing sections from default to support new features (like gallery)
+    const missingSections = defaultSections.filter(s => !parsedOrder.includes(s));
+    sectionOrder = [...parsedOrder, ...missingSections];
   } catch(e) {
-    enabledSections = new Set(["hero", "story", "events", "rsvp", "travel", "party", "gallery", "registry", "faq", "guestbook"]);
-    sectionOrder = ["hero", "story", "events", "rsvp", "travel", "party", "gallery", "registry", "faq", "guestbook"];
+    enabledSections = new Set(defaultSections);
+    sectionOrder = [...defaultSections];
   }
 
   return (

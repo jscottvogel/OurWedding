@@ -102,8 +102,11 @@ export default function WebsiteContentPage() {
 
   if (!config) return null;
 
-  const sections: string[] = JSON.parse(config.sectionOrder);
-  const enabledSections = new Set(JSON.parse(config.enabledSections));
+  const parsedOrder = JSON.parse(config.sectionOrder || '[]');
+  const defaultSections = ["hero", "story", "events", "rsvp", "travel", "party", "gallery", "registry", "faq", "guestbook"];
+  const missingSections = defaultSections.filter(s => !parsedOrder.includes(s));
+  const sections: string[] = [...parsedOrder, ...missingSections];
+  const enabledSections = new Set(JSON.parse(config.enabledSections || '[]'));
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
