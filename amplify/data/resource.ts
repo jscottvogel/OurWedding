@@ -176,8 +176,8 @@ const schema = a.schema({
     .secondaryIndexes((index) => [index('weddingId')])
     .authorization((allow) => [
       allow.authenticated().to(['create', 'read', 'update', 'delete']),
-      allow.guest().to(['create']),
-      allow.publicApiKey().to(['create']),
+      allow.guest().to(['create', 'read', 'update']),
+      allow.publicApiKey().to(['create', 'read', 'update']),
     ]),
 
   SeatingTable: a

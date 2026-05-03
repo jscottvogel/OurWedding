@@ -32,10 +32,14 @@ export default function RSVPForm({ guests, onUpdate, wedding }: RSVPFormProps) {
     
     // Simulate network delay for UX
     setTimeout(() => {
-      const match = guests.find(g => 
-        g.firstName.toLowerCase() === searchFirst.toLowerCase().trim() && 
-        (g.lastName || '').toLowerCase() === searchLast.toLowerCase().trim()
-      );
+      const match = guests.find(g => {
+        const dbFirst = (g.firstName || '').toLowerCase().trim();
+        const dbLast = (g.lastName || '').toLowerCase().trim();
+        const searchFirstClean = searchFirst.toLowerCase().trim();
+        const searchLastClean = searchLast.toLowerCase().trim();
+        
+        return dbFirst === searchFirstClean && dbLast === searchLastClean;
+      });
       
       if (match) {
         setFoundGuest(match);
