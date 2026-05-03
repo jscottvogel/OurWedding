@@ -82,6 +82,24 @@ export function useAuth() {
               console.error("Failed to resolve pending invitations:", inviteErr);
             }
           }
+
+          // Self-heal missing Profile record for the current user
+          if (userEmail) {
+            try {
+              const { data: profiles } = await client.models.Profile.listProfileByCognitoSub({
+                cognitoSub: currentUser.userId
+              });
+              
+              if (!profiles || profiles.length === 0) {
+                await client.models.Profile.create({
+                  cognitoSub: currentUser.userId,
+                  email: userEmail
+                });
+              }
+            } catch (profileErr) {
+              console.error("Failed to self-heal user profile:", profileErr);
+            }
+          }
           
           const localWeddingId = typeof window !== 'undefined' ? localStorage.getItem('weddingId') : null;
           
