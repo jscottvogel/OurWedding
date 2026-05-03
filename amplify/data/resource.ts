@@ -382,6 +382,8 @@ const schema = a.schema({
       message: a.string(),
       songRequest: a.string(),
       messageType: a.enum(['GUESTBOOK', 'SONG_REQUEST', 'BOTH']),
+      mediaKey: a.string(),
+      mediaType: a.string(),
       isApproved: a.boolean().default(true),
       isDeleted: a.boolean().default(false),
     })

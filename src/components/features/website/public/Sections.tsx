@@ -3,6 +3,7 @@ import type { Schema } from '../../../../../amplify/data/resource';
 import { format } from 'date-fns';
 import { StorageImage } from './StorageImage';
 import { StorageBackgroundImage } from './StorageBackgroundImage';
+import { Music } from 'lucide-react';
 
 export function HeroSection({ wedding, venueVendor }: { wedding?: Schema['Wedding']['type'] | null, venueVendor?: Schema['Vendor']['type'] | null }) {
   if (!wedding) return null;
@@ -302,12 +303,65 @@ export function FaqSection({ faqs }: { faqs?: Schema['WebsiteFaq']['type'][] }) 
   );
 }
 
-export function GuestbookSection() {
+export function GuestbookSection({ entries, slug }: { entries?: Schema['WebsiteGuestbook']['type'][], slug?: string }) {
+  const approvedEntries = entries ? entries.filter(e => e.isApproved && !e.isDeleted) : [];
+
   return (
     <section id="guestbook" className="py-20 bg-transparent">
-      <div className="max-w-4xl mx-auto px-4 text-center">
-        <h2 className="text-4xl font-heading mb-12" style={{ color: 'var(--color-primary)' }}>Guestbook</h2>
-        <p className="text-center text-charcoal/70 text-lg">Guestbook coming soon!</p>
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-heading mb-4" style={{ color: 'var(--color-primary)' }}>Guestbook</h2>
+          <p className="text-lg text-charcoal/70 mb-6 max-w-2xl mx-auto">Leave a note, share a memory, or request a song for the dance floor!</p>
+          
+          {slug && (
+            <a 
+              href={`/w/${slug}/guestbook`}
+              className="inline-block bg-[var(--color-accent)] text-white px-8 py-3 rounded-full font-medium shadow hover:shadow-md transition-all hover:-translate-y-1"
+            >
+              Sign the Guestbook
+            </a>
+          )}
+        </div>
+
+        {approvedEntries.length === 0 ? (
+          <p className="text-center text-charcoal/50 italic py-12">Be the first to sign the guestbook!</p>
+        ) : (
+          <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+            {approvedEntries.map(entry => (
+              <div key={entry.id} className="break-inside-avoid bg-[var(--color-bg)]/80 backdrop-blur-md rounded-xl shadow-sm border border-black/5 overflow-hidden flex flex-col">
+                {entry.mediaKey && (
+                  <div className="w-full relative bg-black/5">
+                    <StorageImage
+                      storageKey={entry.mediaKey}
+                      fileType={entry.mediaType}
+                      className="w-full h-auto object-cover"
+                    />
+                  </div>
+                )}
+                <div className="p-6">
+                  {entry.message && (
+                    <p className="text-charcoal/80 italic mb-4 font-body leading-relaxed whitespace-pre-wrap">
+                      "{entry.message}"
+                    </p>
+                  )}
+                  
+                  {entry.songRequest && (
+                    <div className="flex items-center text-sm text-charcoal/70 bg-black/5 p-3 rounded mb-4">
+                      <Music className="w-4 h-4 mr-2" style={{ color: 'var(--color-accent)' }} />
+                      <span className="truncate">{entry.songRequest}</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-end pt-2 border-t border-black/5">
+                    <p className="font-bold text-sm" style={{ color: 'var(--color-primary)' }}>
+                      - {entry.guestName}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

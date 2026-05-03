@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   Home, CheckSquare, Users, FileText, 
-  DollarSign, Map, Image as ImageIcon, QrCode, Globe, Settings, LogOut 
+  DollarSign, Map, Image as ImageIcon, QrCode, Globe, Settings, LogOut, BookOpen
 } from 'lucide-react';
 import { signOut } from 'aws-amplify/auth';
 import { useRouter } from 'next/navigation';
@@ -21,6 +21,7 @@ const navItems = [
   { href: '/seating', label: 'Seating Chart', icon: Map },
   { href: '/website', label: 'Website Studio', icon: Globe },
   { href: '/gallery', label: 'Gallery', icon: ImageIcon },
+  { href: '/guestbook', label: 'Guestbook', icon: BookOpen },
   { href: '/qr-code', label: 'QR Code', icon: QrCode },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];

@@ -48,7 +48,8 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
     { data: faqs },
     { data: guests },
     { data: vendors },
-    { data: gallery }
+    { data: gallery },
+    { data: guestbookEntries }
   ] = await Promise.all([
     client.models.Wedding.get({ id: weddingId }, { authMode: 'apiKey' }),
     client.models.WebsiteStory.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' }),
@@ -59,7 +60,8 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
     client.models.WebsiteFaq.list({ filter: { weddingId: { eq: weddingId }, isVisible: { eq: true } }, authMode: 'apiKey' }),
     client.models.Guest.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' }),
     client.models.Vendor.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' }),
-    client.models.GalleryUpload.list({ filter: { weddingId: { eq: weddingId }, showOnWebsite: { eq: true } }, authMode: 'apiKey' })
+    client.models.GalleryUpload.list({ filter: { weddingId: { eq: weddingId }, showOnWebsite: { eq: true } }, authMode: 'apiKey' }),
+    client.models.WebsiteGuestbook.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' })
   ]);
 
   const story = stories[0];
@@ -101,7 +103,7 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
           case 'gallery': return <GallerySection key={section} photos={gallery} slug={params.slug} />;
           case 'registry': return <RegistrySection key={section} registries={registries} />;
           case 'faq': return <FaqSection key={section} faqs={faqs} />;
-          case 'guestbook': return <GuestbookSection key={section} />;
+          case 'guestbook': return <GuestbookSection key={section} entries={guestbookEntries} slug={params.slug} />;
           default: return null;
         }
       })}
