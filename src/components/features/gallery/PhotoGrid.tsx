@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { GalleryPhoto } from '@/lib/hooks/useGallery';
-import { X, Download, Trash2, Pencil } from 'lucide-react';
+import { X, Download, Trash2, Pencil, Eye, EyeOff } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface PhotoGridProps {
@@ -10,10 +10,11 @@ interface PhotoGridProps {
   onDelete?: (photo: GalleryPhoto) => void;
   onUpdateCaption?: (id: string, caption: string) => void;
   onUpdateUploaderName?: (id: string, uploaderName: string) => void;
+  onToggleVisibility?: (id: string, showOnWebsite: boolean) => void;
   isAdmin?: boolean;
 }
 
-export default function PhotoGrid({ photos, onDelete, onUpdateCaption, onUpdateUploaderName, isAdmin = false }: PhotoGridProps) {
+export default function PhotoGrid({ photos, onDelete, onUpdateCaption, onUpdateUploaderName, onToggleVisibility, isAdmin = false }: PhotoGridProps) {
   const [selectedPhoto, setSelectedPhoto] = useState<GalleryPhoto | null>(null);
   const [isEditingCaption, setIsEditingCaption] = useState(false);
   const [isEditingUploader, setIsEditingUploader] = useState(false);
@@ -81,6 +82,16 @@ export default function PhotoGrid({ photos, onDelete, onUpdateCaption, onUpdateU
                 <p className="text-white/80 text-xs">{format(new Date(photo.uploadedAt), 'MMM d, h:mm a')}</p>
               )}
             </div>
+            
+            {isAdmin && onToggleVisibility && (
+              <button 
+                onClick={(e) => { e.stopPropagation(); onToggleVisibility(photo.id, !photo.showOnWebsite); }}
+                className={`absolute top-2 left-2 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm ${photo.showOnWebsite ? 'bg-sage text-white' : 'bg-white/80 text-gray-600 hover:bg-white'}`}
+                title={photo.showOnWebsite ? 'Visible on website (click to hide)' : 'Hidden from website (click to show)'}
+              >
+                {photo.showOnWebsite ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              </button>
+            )}
             
             {isAdmin && onDelete && (
               <button 
@@ -194,18 +205,32 @@ export default function PhotoGrid({ photos, onDelete, onUpdateCaption, onUpdateU
                   </div>
                 )}
               </div>
-              <div className="flex flex-col items-center space-y-2">
-                <a 
-                  href={selectedPhoto.url} 
-                  download
-                  target="_blank"
-                  rel="noreferrer"
-                  className="p-3 bg-white/10 hover:bg-sage text-white rounded-xl transition-colors flex items-center justify-center group"
-                  title="Download photo"
-                >
-                  <Download className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                </a>
-              </div>
+              <div className="flex gap-2">
+                  {isAdmin && onToggleVisibility && (
+                    <button 
+                      onClick={() => {
+                        onToggleVisibility(selectedPhoto.id, !selectedPhoto.showOnWebsite);
+                        setSelectedPhoto({ ...selectedPhoto, showOnWebsite: !selectedPhoto.showOnWebsite });
+                      }}
+                      className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors border ${selectedPhoto.showOnWebsite ? 'bg-sage/10 text-sage border-sage/20 hover:bg-sage/20' : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200'}`}
+                    >
+                      {selectedPhoto.showOnWebsite ? <Eye className="w-4 h-4 mr-2" /> : <EyeOff className="w-4 h-4 mr-2" />}
+                      {selectedPhoto.showOnWebsite ? 'Visible to Public' : 'Hidden from Public'}
+                    </button>
+                  )}
+                  {selectedPhoto.url && (
+                    <a 
+                      href={selectedPhoto.url}
+                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center px-4 py-2 bg-sage text-white rounded-lg font-medium hover:bg-dark-sage transition-colors"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download
+                    </a>
+                  )}
+                </div>
             </div>
           </div>
         </div>

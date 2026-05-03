@@ -103,5 +103,13 @@ export function useGallery(publicWeddingId?: string) {
     }
   };
 
-  return { photos, loading, addPhotoRecord, deletePhoto, updatePhotoCaption, updatePhotoUploaderName, weddingId };
+  const togglePhotoVisibility = async (id: string, showOnWebsite: boolean) => {
+    try {
+      await client.models.GalleryUpload.update({ id, showOnWebsite });
+    } catch (err) {
+      console.error('Failed to update visibility', err);
+    }
+  };
+
+  return { photos, loading, addPhotoRecord, deletePhoto, updatePhotoCaption, updatePhotoUploaderName, togglePhotoVisibility, weddingId };
 }

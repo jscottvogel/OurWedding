@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { toast } from 'sonner';
 
 export default function GalleryPage() {
-  const { photos, loading, deletePhoto, updatePhotoCaption, updatePhotoUploaderName } = useGallery();
+  const { photos, loading, deletePhoto, updatePhotoCaption, updatePhotoUploaderName, togglePhotoVisibility } = useGallery();
   const { weddingId } = useAuth();
 
   const handleExport = async () => {
@@ -65,6 +65,7 @@ export default function GalleryPage() {
           onDelete={deletePhoto}
           onUpdateCaption={updatePhotoCaption}
           onUpdateUploaderName={updatePhotoUploaderName}
+          onToggleVisibility={togglePhotoVisibility}
           isAdmin={true}
         />
       </div>
