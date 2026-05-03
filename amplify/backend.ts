@@ -9,6 +9,7 @@ import { postConfirmation } from './functions/post-confirmation/resource';
 import { askIvy } from './functions/ask-ivy/resource';
 import { removeUser } from './functions/remove-user/resource';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as s3 from 'aws-cdk-lib/aws-s3';
 
 const backend = defineBackend({
   auth,
@@ -20,6 +21,14 @@ const backend = defineBackend({
   postConfirmation,
   askIvy,
   removeUser,
+});
+
+backend.storage.resources.bucket.addCorsRule({
+  allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT, s3.HttpMethods.POST, s3.HttpMethods.DELETE, s3.HttpMethods.HEAD],
+  allowedOrigins: ['*'],
+  allowedHeaders: ['*'],
+  exposedHeaders: ['x-amz-server-side-encryption', 'x-amz-request-id', 'x-amz-id-2', 'ETag'],
+  maxAge: 3000,
 });
 
 backend.askIvy.resources.lambda.addToRolePolicy(
