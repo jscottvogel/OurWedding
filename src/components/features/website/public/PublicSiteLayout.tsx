@@ -16,15 +16,30 @@ export function PublicSiteLayout({ children, siteTitle, logoType, logoKey, enabl
     'guestbook': 'Guestbook'
   };
 
+  const [localLogoType, setLocalLogoType] = React.useState(logoType);
+  const [localLogoKey, setLocalLogoKey] = React.useState(logoKey);
+
+  React.useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'WEBSITE_CONFIG_UPDATE') {
+        const config = event.data.payload;
+        setLocalLogoType(config.siteLogoType);
+        setLocalLogoKey(config.siteLogoKey);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   const navLinks = sectionOrder.filter(s => enabledSections.has(s) && sectionLabels[s] && s !== 'rsvp');
   // Client-side interactive layout shell
   return (
     <div className="public-site-wrapper min-h-screen flex flex-col transition-colors duration-500">
-      <header className="sticky top-0 z-50 bg-[var(--color-bg)]/80 backdrop-blur-lg border-b border-gray-200/50 transition-all duration-300">
+      <header className="relative z-50 bg-[var(--color-bg)] border-b border-gray-200/50 transition-all duration-300">
         <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="font-heading text-2xl font-bold tracking-widest uppercase flex items-center space-x-3" style={{ color: 'var(--color-primary)' }}>
-            {(logoType && logoType !== 'TEXT_ONLY') ? (
-              <SiteLogo type={logoType} customKey={logoKey} className="h-10 w-auto" />
+            {(localLogoType && localLogoType !== 'TEXT_ONLY') ? (
+              <SiteLogo type={localLogoType} customKey={localLogoKey} className="h-10 w-auto" />
             ) : (
               <span>{siteTitle}</span>
             )}
@@ -45,9 +60,9 @@ export function PublicSiteLayout({ children, siteTitle, logoType, logoKey, enabl
       </main>
       
       <footer className="py-12 text-center text-sm opacity-60 flex flex-col items-center">
-        {(logoType && logoType !== 'TEXT_ONLY') ? (
+        {(localLogoType && localLogoType !== 'TEXT_ONLY') ? (
           <div className="flex flex-col items-center space-y-4">
-            <SiteLogo type={logoType} customKey={logoKey} className="w-12 h-12 opacity-80" color="var(--color-primary)" />
+            <SiteLogo type={localLogoType} customKey={localLogoKey} className="w-12 h-12 opacity-80" color="var(--color-primary)" />
             <p>Made with Wedding Steward</p>
           </div>
         ) : (

@@ -3,34 +3,29 @@
 import { useWebsiteConfig } from '@/lib/hooks/useWebsiteConfig';
 import { useWedding } from '@/lib/hooks/useWedding';
 import { useAutoSave } from '@/lib/hooks/useAutoSave';
-import { Loader2, Check, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Check } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { uploadData } from 'aws-amplify/storage';
 
 export default function WebsiteDomainPage() {
   const { config, isLoading: isConfigLoading, updateConfig } = useWebsiteConfig();
   const { wedding, loading: isWeddingLoading } = useWedding();
 
-  const [localCustomDomain, setLocalCustomDomain] = useState('');
   const [localSiteTitle, setLocalSiteTitle] = useState('');
   const [localSubdomain, setLocalSubdomain] = useState('');
-  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   const defaultTitle = wedding ? `${wedding.coupleName1} & ${wedding.coupleName2}'s Wedding` : '';
 
   useEffect(() => {
     if (config) {
-      setLocalCustomDomain(config.customDomain || '');
       setLocalSiteTitle(config.siteTitle || defaultTitle);
       setLocalSubdomain(config.subdomain || '');
     }
   }, [config, defaultTitle]);
 
   const { isSaving, lastSaved } = useAutoSave(
-    { customDomain: localCustomDomain, siteTitle: localSiteTitle, subdomain: localSubdomain },
+    { siteTitle: localSiteTitle, subdomain: localSubdomain },
     async (values) => {
       await updateConfig({
-        customDomain: values.customDomain,
         siteTitle: values.siteTitle,
         subdomain: values.subdomain
       });
@@ -73,16 +68,6 @@ export default function WebsiteDomainPage() {
           </div>
           
           <div className="pt-6 border-t border-light-gray">
-            <label className="block text-sm font-medium text-charcoal mb-2">Custom Domain (Advanced)</label>
-            <p className="text-sm text-mid-gray mb-4">Connect your own domain (e.g., sarahandtom.com) to replace the default link.</p>
-            <input 
-              type="text" 
-              value={localCustomDomain}
-              onChange={(e) => setLocalCustomDomain(e.target.value)}
-              placeholder="www.yourdomain.com"
-              className="w-full border-light-gray rounded-md focus:ring-sage focus:border-sage mb-6" 
-            />
-            
             <h4 className="text-sm font-bold text-charcoal mb-2">URL Forwarding Instructions</h4>
             <p className="text-sm text-mid-gray mb-4">
               To use your custom domain, log in to your domain provider (GoDaddy, Namecheap, etc.) and locate their <strong>Domain Forwarding</strong> or <strong>URL Redirect</strong> settings.
@@ -90,8 +75,8 @@ export default function WebsiteDomainPage() {
             
             <div className="bg-gray-50 border border-light-gray rounded-lg p-4 mb-4">
               <p className="text-sm text-charcoal font-medium mb-1">Set your domain to forward to:</p>
-              <div className="font-mono text-sage text-sm bg-white border border-light-gray p-2 rounded">
-                https://weddingsteward.com/w/{config.subdomain}
+              <div className="font-mono text-sage text-sm bg-white border border-light-gray p-2 rounded break-all">
+                https://weddingsteward.com/w/{localSubdomain || config.subdomain}
               </div>
             </div>
 
@@ -105,6 +90,8 @@ export default function WebsiteDomainPage() {
               </ul>
             </div>
           </div>
+          
+
         </div>
       </div>
       
@@ -137,77 +124,6 @@ export default function WebsiteDomainPage() {
               placeholder={defaultTitle}
               className="w-full border-light-gray rounded-md focus:ring-sage focus:border-sage" 
             />
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white border border-light-gray p-6 rounded-xl shadow-sm">
-        <h3 className="text-lg font-bold text-charcoal mb-4">Branding & Logo</h3>
-        
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-charcoal mb-2">Site Logo</label>
-            <p className="text-sm text-mid-gray mb-4">Choose a logo to display in your header and footer instead of standard text.</p>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-              {[
-                { value: 'TEXT_ONLY', label: 'None (Text Only)' },
-                { value: 'STEWARD', label: 'Wedding Steward' },
-                { value: 'RINGS', label: 'Wedding Rings' },
-                { value: 'CROSS', label: 'Cross' },
-                { value: 'DOVE', label: 'Dove' },
-                { value: 'HEART', label: 'Heart' },
-                { value: 'CUSTOM', label: 'Custom Upload' }
-              ].map(option => (
-                <button
-                  key={option.value}
-                  onClick={() => updateConfig({ siteLogoType: option.value as any })}
-                  className={`p-3 text-sm font-medium rounded-lg border text-center transition-colors ${
-                    (config.siteLogoType || 'STEWARD') === option.value 
-                      ? 'border-sage bg-sage/10 text-sage' 
-                      : 'border-light-gray bg-white text-gray-600 hover:border-sage/50'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-
-            {config.siteLogoType === 'CUSTOM' && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-light-gray">
-                <label className="block text-sm font-medium text-charcoal mb-2">Upload Custom Logo (Transparent PNG or SVG recommended)</label>
-                <div className="flex items-center space-x-4">
-                  <label className="cursor-pointer bg-white border border-light-gray px-4 py-2 rounded-md font-medium text-sm text-charcoal hover:bg-gray-50 flex items-center">
-                    {isUploadingLogo ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ImageIcon className="w-4 h-4 mr-2" />}
-                    {isUploadingLogo ? 'Uploading...' : (config.siteLogoKey ? 'Change Logo' : 'Upload Logo')}
-                    <input 
-                      type="file" 
-                      className="hidden" 
-                      accept="image/*"
-                      disabled={isUploadingLogo}
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        setIsUploadingLogo(true);
-                        try {
-                          const key = `logo/${Date.now()}-${file.name}`;
-                          await uploadData({ path: key, data: file }).result;
-                          await updateConfig({ siteLogoKey: key });
-                        } catch (error) {
-                          console.error('Upload failed', error);
-                          alert('Failed to upload logo');
-                        } finally {
-                          setIsUploadingLogo(false);
-                        }
-                      }}
-                    />
-                  </label>
-                  {config.siteLogoKey && (
-                    <span className="text-xs text-green-600 font-medium">✓ Logo uploaded</span>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
