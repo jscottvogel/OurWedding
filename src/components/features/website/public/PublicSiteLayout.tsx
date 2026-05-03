@@ -11,6 +11,7 @@ export function PublicSiteLayout({ children, siteTitle, logoType, logoKey, enabl
     'events': 'Events',
     'travel': 'Travel',
     'party': 'Wedding Party',
+    'gallery': 'Gallery',
     'registry': 'Registry',
     'faq': 'FAQs',
     'guestbook': 'Guestbook'
