@@ -14,17 +14,19 @@ interface VendorModalProps {
 
 export default function VendorModal({ isOpen, onClose, onSave, initialCategory = '', initialData }: VendorModalProps) {
   const [companyName, setCompanyName] = useState(initialData?.companyName || '');
+  const validCategories = ['Venue', 'Catering', 'Photography', 'Videography', 'Florist', 'Music/Band', 'Attire', 'Hair & Makeup', 'Cake', 'Transport', 'Stationery', 'Planner'];
   const [categoryDropdown, setCategoryDropdown] = useState(() => {
     const cat = initialData?.category || initialCategory;
-    return ['Venue', 'Catering', 'Photography', 'Florist', 'Entertainment', 'Attire'].includes(cat) ? cat : cat ? 'Other' : '';
+    return validCategories.includes(cat) ? cat : cat ? 'Other' : '';
   });
   const [categoryOther, setCategoryOther] = useState(() => {
     const cat = initialData?.category || initialCategory;
-    return !['Venue', 'Catering', 'Photography', 'Florist', 'Entertainment', 'Attire', ''].includes(cat) ? cat : '';
+    return cat && !validCategories.includes(cat) ? cat : '';
   });
   const [contactPerson, setContactPerson] = useState(initialData?.contactPerson || '');
   const [email, setEmail] = useState(initialData?.email || '');
   const [phone, setPhone] = useState(initialData?.phone || '');
+  const [website, setWebsite] = useState(initialData?.website || '');
   const [address, setAddress] = useState(initialData?.address || '');
   const [quotedAmount, setQuotedAmount] = useState(initialData?.quotedAmount?.toString() || '');
   const [saving, setSaving] = useState(false);
@@ -41,6 +43,7 @@ export default function VendorModal({ isOpen, onClose, onSave, initialCategory =
         contactPerson,
         email,
         phone,
+        website,
         address,
         quotedAmount: quotedAmount ? parseFloat(quotedAmount) : undefined,
         contractStatus: 'NOT_STARTED',
@@ -90,9 +93,15 @@ export default function VendorModal({ isOpen, onClose, onSave, initialCategory =
                 <option value="Venue">Venue</option>
                 <option value="Catering">Catering</option>
                 <option value="Photography">Photography</option>
+                <option value="Videography">Videography</option>
                 <option value="Florist">Florist</option>
-                <option value="Entertainment">Entertainment</option>
+                <option value="Music/Band">Music/Band</option>
                 <option value="Attire">Attire</option>
+                <option value="Hair & Makeup">Hair & Makeup</option>
+                <option value="Cake">Cake</option>
+                <option value="Transport">Transport</option>
+                <option value="Stationery">Stationery</option>
+                <option value="Planner">Planner</option>
                 <option value="Other">Other...</option>
               </select>
             </div>
@@ -162,6 +171,16 @@ export default function VendorModal({ isOpen, onClose, onSave, initialCategory =
                 type="tel" 
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                className="w-full border border-light-gray rounded-md p-2 focus:border-sage focus:outline-none"
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium mb-1">Website URL</label>
+              <input 
+                type="url" 
+                placeholder="https://"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
                 className="w-full border border-light-gray rounded-md p-2 focus:border-sage focus:outline-none"
               />
             </div>

@@ -1,8 +1,8 @@
 'use client';
 
-import { Mail, Phone, Globe, MapPin, FileText, Download, Send } from 'lucide-react';
+import { Mail, Phone, Globe, MapPin, FileText, Download, Send, Loader2 } from 'lucide-react';
 import type { Schema } from '../../../../amplify/data/resource';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 interface VendorDetailProps {
   vendor: Schema['Vendor']['type'];
@@ -12,10 +12,51 @@ interface VendorDetailProps {
 export default function VendorDetail({ vendor, onUpdate }: VendorDetailProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [notes, setNotes] = useState(vendor.notes || '');
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSaveNotes = () => {
     onUpdate({ notes });
     setIsEditing(false);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const { uploadData } = await import('aws-amplify/storage');
+      const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+      const key = `vendors/${vendor.id}/${Date.now()}-${safeName}`;
+
+      await uploadData({
+        path: key,
+        data: file
+      });
+
+      await onUpdate({
+        contractFileKey: key,
+        contractStatus: 'SIGNED'
+      });
+    } catch (err) {
+      console.error('Upload failed:', err);
+      alert('Failed to upload contract.');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDownloadContract = async () => {
+    if (!vendor.contractFileKey) return;
+    try {
+      const { getUrl } = await import('aws-amplify/storage');
+      const result = await getUrl({ path: vendor.contractFileKey });
+      window.open(result.url.toString(), '_blank');
+    } catch (err) {
+      console.error('Failed to get download URL:', err);
+    }
   };
 
   return (
@@ -38,11 +79,17 @@ export default function VendorDetail({ vendor, onUpdate }: VendorDetailProps) {
               <p className="text-charcoal">{vendor.phone || 'Not provided'}</p>
             </div>
           </div>
-          <div className="flex items-start">
-            <Globe className="w-5 h-5 text-mid-gray mt-0.5 mr-3" />
-            <div>
+          <div className="flex items-start overflow-hidden">
+            <Globe className="w-5 h-5 text-mid-gray mt-0.5 mr-3 shrink-0" />
+            <div className="min-w-0">
               <p className="text-sm font-medium text-mid-gray">Website</p>
-              <p className="text-charcoal">{vendor.website || 'Not provided'}</p>
+              {vendor.website ? (
+                <a href={vendor.website.startsWith('http') ? vendor.website : `https://${vendor.website}`} target="_blank" rel="noopener noreferrer" className="text-sage hover:text-dark-sage hover:underline truncate block">
+                  {vendor.website.replace(/^https?:\/\//, '')}
+                </a>
+              ) : (
+                <p className="text-charcoal">Not provided</p>
+              )}
             </div>
           </div>
           <div className="flex items-start">
@@ -69,8 +116,20 @@ export default function VendorDetail({ vendor, onUpdate }: VendorDetailProps) {
         </div>
         
         <div className="flex space-x-3">
-          <button className="flex-1 flex items-center justify-center p-2 border border-light-gray rounded-lg hover:bg-light-gray transition-colors">
-            <FileText className="w-4 h-4 mr-2" /> Upload Contract
+          <input 
+            type="file" 
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+            className="hidden"
+            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+          />
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="flex-1 flex items-center justify-center p-2 border border-light-gray rounded-lg hover:bg-light-gray transition-colors disabled:opacity-50"
+          >
+            {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />} 
+            {isUploading ? 'Uploading...' : 'Upload Contract'}
           </button>
           <button className="flex-1 flex items-center justify-center p-2 bg-sage text-white rounded-lg hover:bg-dark-sage transition-colors">
             <Send className="w-4 h-4 mr-2" /> Send via Portal
@@ -81,9 +140,11 @@ export default function VendorDetail({ vendor, onUpdate }: VendorDetailProps) {
           <div className="mt-4 p-3 bg-ivory border border-light-gray rounded-lg flex justify-between items-center">
             <div className="flex items-center">
               <FileText className="w-5 h-5 text-sage mr-3" />
-              <span className="font-medium text-sm">signed_contract.pdf</span>
+              <span className="font-medium text-sm truncate max-w-[200px]" title={vendor.contractFileKey.split('/').pop()?.split('-').slice(1).join('-') || 'Contract'}>
+                {vendor.contractFileKey.split('/').pop()?.split('-').slice(1).join('-') || 'Contract Document'}
+              </span>
             </div>
-            <button className="p-2 text-mid-gray hover:text-sage">
+            <button onClick={handleDownloadContract} className="p-2 text-mid-gray hover:text-sage">
               <Download className="w-5 h-5" />
             </button>
           </div>

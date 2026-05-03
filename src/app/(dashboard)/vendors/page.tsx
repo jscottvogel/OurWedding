@@ -57,17 +57,24 @@ export default function VendorsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {CATEGORIES.map(category => {
-          const vendor = vendors.find(v => v.category === category);
-          return (
-            <VendorCategoryCard 
-              key={category}
-              categoryName={category}
-              vendor={vendor}
-              onAddClick={handleAddClick}
-            />
-          );
-        })}
+        {/* Render all existing vendors */}
+        {vendors.map(vendor => (
+          <VendorCategoryCard 
+            key={vendor.id}
+            categoryName={vendor.category || 'Other'}
+            vendor={vendor}
+            onAddClick={handleAddClick}
+          />
+        ))}
+
+        {/* Render placeholders for categories that don't have ANY vendors yet */}
+        {CATEGORIES.filter(cat => !vendors.some(v => v.category === cat)).map(category => (
+          <VendorCategoryCard 
+            key={category}
+            categoryName={category}
+            onAddClick={handleAddClick}
+          />
+        ))}
       </div>
 
       <VendorModal 
