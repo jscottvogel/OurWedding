@@ -107,10 +107,10 @@ export default function VendorDetail({ vendor, onUpdate }: VendorDetailProps) {
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-display text-sage">Contract Status</h3>
           <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-            vendor.contractStatus === 'SIGNED' ? 'bg-sage/10 text-sage' : 
+            (vendor.contractStatus === 'SIGNED' || vendor.contractFileKey) ? 'bg-sage/10 text-sage' : 
             vendor.contractStatus === 'SENT' ? 'bg-amber-100 text-amber-700' : 'bg-light-gray text-charcoal'
           }`}>
-            {vendor.contractStatus === 'SIGNED' ? 'Signed' : 
+            {(vendor.contractStatus === 'SIGNED' || vendor.contractFileKey) ? 'Signed' : 
              vendor.contractStatus === 'SENT' ? 'Sent for Signature' : 'Not Started'}
           </span>
         </div>
@@ -126,13 +126,10 @@ export default function VendorDetail({ vendor, onUpdate }: VendorDetailProps) {
           <button 
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="flex-1 flex items-center justify-center p-2 border border-light-gray rounded-lg hover:bg-light-gray transition-colors disabled:opacity-50"
+            className="w-full flex items-center justify-center p-2 border border-light-gray rounded-lg hover:bg-light-gray transition-colors disabled:opacity-50"
           >
             {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />} 
             {isUploading ? 'Uploading...' : 'Upload Contract'}
-          </button>
-          <button className="flex-1 flex items-center justify-center p-2 bg-sage text-white rounded-lg hover:bg-dark-sage transition-colors">
-            <Send className="w-4 h-4 mr-2" /> Send via Portal
           </button>
         </div>
         

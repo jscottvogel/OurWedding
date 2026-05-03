@@ -67,10 +67,10 @@ export default function VendorCategoryCard({ categoryName, vendor, onAddClick }:
           <div className="flex justify-between text-sm">
             <span className="text-mid-gray">Contract</span>
             <span className={`font-medium ${
-              vendor.contractStatus === 'SIGNED' ? 'text-sage' : 
+              (vendor.contractStatus === 'SIGNED' || vendor.contractFileKey) ? 'text-sage' : 
               vendor.contractStatus === 'SENT' ? 'text-amber-600' : 'text-red-500'
             }`}>
-              {vendor.contractStatus === 'SIGNED' ? 'Signed' : 
+              {(vendor.contractStatus === 'SIGNED' || vendor.contractFileKey) ? 'Signed' : 
                vendor.contractStatus === 'SENT' ? 'Sent' : 'Pending'}
             </span>
           </div>
