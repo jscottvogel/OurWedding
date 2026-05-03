@@ -30,6 +30,7 @@ export function GalleryCarousel({ photos }: { photos: Schema['GalleryUpload']['t
   };
 
   const animationRef = useRef<number>();
+  const posRef = useRef<number>(0);
 
   useEffect(() => {
     if (photos.length <= 2 || isHovered) {
@@ -40,14 +41,34 @@ export function GalleryCarousel({ photos }: { photos: Schema['GalleryUpload']['t
     const container = scrollRef.current;
     if (!container) return;
 
-    const animate = () => {
-      // If we've scrolled past the first set of photos (half the total scrollable width)
-      // We instantly jump back to 0. Since the content is duplicated, this is invisible.
-      if (container.scrollLeft >= (container.scrollWidth - container.clientWidth) / 2) {
-        container.scrollLeft = 0;
-      } else {
-        container.scrollLeft += 1;
+    let lastTime = performance.now();
+    posRef.current = container.scrollLeft;
+
+    const animate = (time: number) => {
+      const delta = time - lastTime;
+      lastTime = time;
+
+      // Cap delta to prevent massive jumps if tab was inactive
+      if (delta > 0 && delta < 100) {
+        // Move at 40 pixels per second
+        posRef.current += (40 * delta) / 1000;
+
+        // Calculate the exact pixel width of one full original set of photos
+        const firstOriginal = container.children[0] as HTMLElement;
+        const firstDuplicate = container.children[photos.length] as HTMLElement;
+        
+        if (firstOriginal && firstDuplicate) {
+          const originalWidth = firstDuplicate.offsetLeft - firstOriginal.offsetLeft;
+
+          // Seamlessly jump back by exactly one set width when we've scrolled past it
+          if (posRef.current >= originalWidth) {
+            posRef.current -= originalWidth;
+          }
+        }
+
+        container.scrollLeft = posRef.current;
       }
+      
       animationRef.current = requestAnimationFrame(animate);
     };
 
@@ -58,8 +79,10 @@ export function GalleryCarousel({ photos }: { photos: Schema['GalleryUpload']['t
     };
   }, [isHovered, photos.length]);
 
-  // Duplicate photos for infinite scroll effect
-  const displayPhotos = photos.length > 2 ? [...photos, ...photos] : photos;
+  // Duplicate photos 4 times to ensure it can infinite loop even on ultra-wide screens
+  const displayPhotos = photos.length > 2 
+    ? [...photos, ...photos, ...photos, ...photos] 
+    : photos;
 
   return (
     <div 

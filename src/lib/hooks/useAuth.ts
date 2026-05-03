@@ -56,6 +56,32 @@ export function useAuth() {
               console.error("Failed to self-heal user membership:", migrationErr);
             }
           }
+
+          // Resolve pending invitations for newly invited users
+          const userEmail = idTokenPayload?.email as string;
+          if (fetchedMemberRecords.length === 0 && userEmail) {
+            try {
+              const { data: invitations } = await client.models.WeddingMember.list({
+                filter: { profileId: { eq: `INVITE_${userEmail}` } }
+              });
+
+              if (invitations && invitations.length > 0) {
+                fetchedMemberRecords = [];
+                for (const invite of invitations) {
+                  const { data: updatedMember } = await client.models.WeddingMember.update({
+                    id: invite.id,
+                    profileId: currentUser.userId
+                  });
+                  if (updatedMember) {
+                    fetchedMemberRecords.push(updatedMember);
+                  }
+                }
+                setMemberships(fetchedMemberRecords);
+              }
+            } catch (inviteErr) {
+              console.error("Failed to resolve pending invitations:", inviteErr);
+            }
+          }
           
           const localWeddingId = typeof window !== 'undefined' ? localStorage.getItem('weddingId') : null;
           
