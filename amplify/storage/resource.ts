@@ -31,6 +31,10 @@ export const storage = defineStorage({
       allow.groups(['admin', 'planner']).to(['read', 'write', 'delete']),
       allow.authenticated.to(['read', 'write', 'delete']),
       allow.guest.to(['read', 'write'])
+    ],
+    'registry/*': [
+      allow.authenticated.to(['read', 'write', 'delete']),
+      allow.guest.to(['read'])
     ]
   })
 });
