@@ -1,13 +1,19 @@
 'use client';
 
 import { useGuestbook } from '@/lib/hooks/useGuestbook';
+import { useWedding } from '@/lib/hooks/useWedding';
 import { StorageImage } from '@/components/features/website/public/StorageImage';
-import { BookOpen, Check, EyeOff, Trash2, Music } from 'lucide-react';
+import { BookOpen, Check, EyeOff, Trash2, Music, Download, Loader2 } from 'lucide-react';
 import { useState } from 'react';
+import { getUrl } from 'aws-amplify/storage';
+import { GuestbookPDF } from '@/components/features/guestbook/GuestbookPDF';
+import { pdf } from '@react-pdf/renderer';
 
 export default function GuestbookManagementPage() {
   const { entries, loading, toggleApproval, deleteEntry } = useGuestbook();
+  const { wedding } = useWedding();
   const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'APPROVED'>('ALL');
+  const [isExporting, setIsExporting] = useState(false);
 
   if (loading) {
     return <div className="p-8 animate-pulse text-sage">Loading guestbook...</div>;
@@ -18,6 +24,71 @@ export default function GuestbookManagementPage() {
     if (filter === 'APPROVED') return entry.isApproved;
     return true;
   });
+
+  const handleExportPDF = async () => {
+    if (!wedding) return;
+    setIsExporting(true);
+
+    try {
+      // 1. Resolve presigned URLs for the hero image and all entry images
+      let heroImageUrl: string | undefined;
+      if (wedding.heroImageKey) {
+        const urlObj = await getUrl({ path: wedding.heroImageKey });
+        heroImageUrl = urlObj.url.toString();
+      }
+
+      const approvedEntries = entries.filter(e => e.isApproved);
+      const entriesWithUrls = await Promise.all(
+        approvedEntries.map(async (entry) => {
+          let mediaUrl: string | undefined;
+          if (entry.mediaKey) {
+            try {
+              const urlObj = await getUrl({ path: entry.mediaKey });
+              mediaUrl = urlObj.url.toString();
+            } catch (err) {
+              console.error('Failed to resolve URL for', entry.mediaKey);
+            }
+          }
+          return {
+            id: entry.id,
+            guestName: entry.guestName,
+            message: entry.message || undefined,
+            songRequest: entry.songRequest || undefined,
+            mediaUrl
+          };
+        })
+      );
+
+      // 2. Render the PDF
+      const doc = (
+        <GuestbookPDF
+          weddingName={`${wedding.coupleName1} & ${wedding.coupleName2}`}
+          weddingDate={wedding.weddingDate}
+          venueName={wedding.venueName || undefined}
+          heroImageUrl={heroImageUrl}
+          entries={entriesWithUrls}
+        />
+      );
+
+      const blob = await pdf(doc).toBlob();
+      
+      // 3. Trigger download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${wedding.coupleName1}_${wedding.coupleName2}_Guestbook.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+    } catch (error) {
+      console.error('Failed to export PDF', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -50,6 +121,15 @@ export default function GuestbookManagementPage() {
             Approved
           </button>
         </div>
+
+        <button
+          onClick={handleExportPDF}
+          disabled={isExporting || entries.filter(e => e.isApproved).length === 0}
+          className="ml-4 flex items-center bg-dark-sage text-white px-4 py-2 rounded-lg font-medium shadow-sm hover:bg-opacity-90 disabled:opacity-50 transition-colors"
+        >
+          {isExporting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Download className="w-5 h-5 mr-2" />}
+          {isExporting ? 'Generating...' : 'Export PDF'}
+        </button>
       </div>
 
       {filteredEntries.length === 0 ? (
