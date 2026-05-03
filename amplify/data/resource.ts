@@ -81,6 +81,7 @@ const schema = a.schema({
     })
     .secondaryIndexes((index) => [index('weddingId')])
     .authorization((allow) => [
+      allow.publicApiKey().to(['read']),
       allow.authenticated().to(['create', 'read', 'update', 'delete']),
       // vendor role can read their own via a custom filter or auth rule
       allow.groups(['vendor']).to(['read']),
@@ -149,7 +150,7 @@ const schema = a.schema({
     .authorization((allow) => [
       allow.authenticated().to(['create', 'read', 'update', 'delete']),
       allow.guest().to(['create']),
-      allow.publicApiKey().to(['create']),
+      allow.publicApiKey().to(['read', 'create']),
     ]),
 
   Guest: a

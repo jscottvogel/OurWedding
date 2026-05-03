@@ -287,9 +287,15 @@ function RegistryEditor({ weddingId, items }: { weddingId: string, items: Schema
   );
 }
 
-function FaqEditor({ weddingId, items }: { weddingId: string, items: Schema['WebsiteFaq']['type'][] }) {
+function FaqEditor({ weddingId, items: initialItems }: { weddingId: string, items: Schema['WebsiteFaq']['type'][] }) {
+  const [items, setItems] = useState(initialItems);
   const [q, setQ] = useState('');
   const [a, setA] = useState('');
+
+  // Sync with upstream changes
+  useEffect(() => {
+    setItems(initialItems);
+  }, [initialItems]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -299,7 +305,8 @@ function FaqEditor({ weddingId, items }: { weddingId: string, items: Schema['Web
       if (res.errors) {
         console.error('Failed to create FAQ:', res.errors);
         alert('Error adding FAQ: ' + res.errors[0].message);
-      } else {
+      } else if (res.data) {
+        setItems(prev => [...prev, res.data as Schema['WebsiteFaq']['type']]);
         setQ(''); setA('');
       }
     } catch (err: any) {
@@ -318,7 +325,13 @@ function FaqEditor({ weddingId, items }: { weddingId: string, items: Schema['Web
               <p className="font-bold text-sm text-charcoal mb-1">{f.question}</p>
               <p className="text-xs text-mid-gray">{f.answer}</p>
             </div>
-            <button onClick={() => client.models.WebsiteFaq.delete({ id: f.id })} className="text-red-500 hover:text-red-700 flex-shrink-0 mt-1">
+            <button 
+              onClick={() => {
+                client.models.WebsiteFaq.delete({ id: f.id });
+                setItems(prev => prev.filter(item => item.id !== f.id));
+              }} 
+              className="text-red-500 hover:text-red-700 flex-shrink-0 mt-1"
+            >
               <Trash2 className="w-4 h-4" />
             </button>
           </div>

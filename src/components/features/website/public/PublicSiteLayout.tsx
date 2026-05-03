@@ -20,13 +20,14 @@ export function PublicSiteLayout({ children, siteTitle, logoType, logoKey, enabl
   // Client-side interactive layout shell
   return (
     <div className="public-site-wrapper min-h-screen flex flex-col transition-colors duration-500">
-      <header className="fixed top-0 inset-x-0 z-50 bg-[var(--color-bg)]/80 backdrop-blur-lg border-b border-gray-200/50 transition-all duration-300">
+      <header className="sticky top-0 z-50 bg-[var(--color-bg)]/80 backdrop-blur-lg border-b border-gray-200/50 transition-all duration-300">
         <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="font-heading text-2xl font-bold tracking-widest uppercase flex items-center space-x-3" style={{ color: 'var(--color-primary)' }}>
-            {(logoType && logoType !== 'TEXT_ONLY') && (
-              <SiteLogo type={logoType} customKey={logoKey} className="w-8 h-8" />
+            {(logoType && logoType !== 'TEXT_ONLY') ? (
+              <SiteLogo type={logoType} customKey={logoKey} className="h-10 w-auto" />
+            ) : (
+              <span>{siteTitle}</span>
             )}
-            <span>{siteTitle}</span>
           </div>
           <nav className="hidden md:flex space-x-10 text-sm font-medium tracking-wide uppercase items-center">
             {navLinks.map(s => (

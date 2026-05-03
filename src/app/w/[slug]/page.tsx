@@ -41,7 +41,8 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
     { data: registries },
     { data: faqs },
     { data: guests },
-    { data: vendors }
+    { data: vendors },
+    { data: gallery }
   ] = await Promise.all([
     client.models.Wedding.get({ id: weddingId }, { authMode: 'apiKey' }),
     client.models.WebsiteStory.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' }),
@@ -51,7 +52,8 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
     client.models.WebsiteRegistry.list({ filter: { weddingId: { eq: weddingId }, isVisible: { eq: true } }, authMode: 'apiKey' }),
     client.models.WebsiteFaq.list({ filter: { weddingId: { eq: weddingId }, isVisible: { eq: true } }, authMode: 'apiKey' }),
     client.models.Guest.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' }),
-    client.models.Vendor.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' })
+    client.models.Vendor.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' }),
+    client.models.GalleryUpload.list({ filter: { weddingId: { eq: weddingId }, showOnWebsite: { eq: true } }, authMode: 'apiKey' })
   ]);
 
   const story = stories[0];
@@ -86,7 +88,7 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
           case 'rsvp': return <RsvpSection key={section} slug={params.slug} guests={guests} wedding={wedding} />;
           case 'travel': return <TravelSection key={section} travels={travels} />;
           case 'party': return <WeddingPartySection key={section} partyMembers={partyMembers} />;
-          case 'gallery': return <GallerySection key={section} />;
+          case 'gallery': return <GallerySection key={section} photos={gallery} />;
           case 'registry': return <RegistrySection key={section} registries={registries} />;
           case 'faq': return <FaqSection key={section} faqs={faqs} />;
           case 'guestbook': return <GuestbookSection key={section} />;
