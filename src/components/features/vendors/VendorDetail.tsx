@@ -106,13 +106,20 @@ export default function VendorDetail({ vendor, onUpdate }: VendorDetailProps) {
       <div className="bg-white rounded-xl border border-light-gray shadow-sm p-6">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-display text-sage">Contract Status</h3>
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-            (vendor.contractStatus === 'SIGNED' || vendor.contractFileKey) ? 'bg-sage/10 text-sage' : 
-            vendor.contractStatus === 'SENT' ? 'bg-amber-100 text-amber-700' : 'bg-light-gray text-charcoal'
-          }`}>
-            {(vendor.contractStatus === 'SIGNED' || vendor.contractFileKey) ? 'Signed' : 
-             vendor.contractStatus === 'SENT' ? 'Sent for Signature' : 'Not Started'}
-          </span>
+          <select 
+            value={vendor.contractFileKey ? 'SIGNED' : (vendor.contractStatus || 'NOT_STARTED')}
+            onChange={(e) => onUpdate({ contractStatus: e.target.value as any })}
+            disabled={!!vendor.contractFileKey}
+            className={`px-3 py-1 rounded-full text-sm font-medium border-none cursor-pointer focus:ring-2 focus:ring-sage focus:outline-none ${
+              (vendor.contractStatus === 'SIGNED' || vendor.contractFileKey) ? 'bg-sage/10 text-sage' : 
+              vendor.contractStatus === 'SENT' ? 'bg-amber-100 text-amber-700' : 'bg-light-gray text-charcoal'
+            }`}
+            title={vendor.contractFileKey ? "Status is locked to Signed because a contract is uploaded." : "Change contract status"}
+          >
+            <option value="NOT_STARTED">Not Started</option>
+            <option value="SENT">Sent for Signature</option>
+            <option value="SIGNED">Signed</option>
+          </select>
         </div>
         
         <div className="flex space-x-3">
@@ -146,6 +153,38 @@ export default function VendorDetail({ vendor, onUpdate }: VendorDetailProps) {
             </button>
           </div>
         )}
+      </div>
+
+      {/* Payment Status */}
+      <div className="bg-white rounded-xl border border-light-gray shadow-sm p-6">
+        <h3 className="text-lg font-display text-sage mb-4">Payment Status</h3>
+        <div className="space-y-3">
+          <label className="flex items-center space-x-3 cursor-pointer group">
+            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${vendor.depositPaid ? 'bg-sage border-sage' : 'border-mid-gray group-hover:border-sage'}`}>
+              {vendor.depositPaid && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+            </div>
+            <input 
+              type="checkbox" 
+              checked={!!vendor.depositPaid} 
+              onChange={(e) => onUpdate({ depositPaid: e.target.checked })} 
+              className="hidden" 
+            />
+            <span className={`text-sm font-medium ${vendor.depositPaid ? 'text-charcoal' : 'text-mid-gray'}`}>Deposit Paid</span>
+          </label>
+          
+          <label className="flex items-center space-x-3 cursor-pointer group">
+            <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${vendor.balancePaid ? 'bg-sage border-sage' : 'border-mid-gray group-hover:border-sage'}`}>
+              {vendor.balancePaid && <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+            </div>
+            <input 
+              type="checkbox" 
+              checked={!!vendor.balancePaid} 
+              onChange={(e) => onUpdate({ balancePaid: e.target.checked })} 
+              className="hidden" 
+            />
+            <span className={`text-sm font-medium ${vendor.balancePaid ? 'text-charcoal' : 'text-mid-gray'}`}>Balance Paid in Full</span>
+          </label>
+        </div>
       </div>
 
       {/* Notes */}

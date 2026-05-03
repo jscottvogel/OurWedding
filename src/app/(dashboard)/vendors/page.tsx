@@ -27,7 +27,7 @@ export default function VendorsPage() {
   }
 
   // Count signed contracts
-  const signedContracts = vendors.filter(v => v.contractStatus === 'SIGNED').length;
+  const signedContracts = vendors.filter(v => v.contractStatus === 'SIGNED' || !!v.contractFileKey).length;
   const totalVendors = vendors.length;
 
   return (

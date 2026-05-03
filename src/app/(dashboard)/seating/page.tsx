@@ -27,7 +27,7 @@ export default function SeatingPage() {
     return <div className="p-8 animate-pulse text-sage font-medium text-lg">Loading seating chart...</div>;
   }
 
-  const activeGuests = guests.filter(g => g.rsvpStatus !== 'DECLINED');
+  const activeGuests = guests.filter(g => g.rsvpStatus === 'CONFIRMED');
   const seatedGuests = activeGuests.filter(g => g.tableId).length;
 
   return (

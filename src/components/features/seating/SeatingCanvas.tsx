@@ -87,8 +87,8 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
   const [tableName, setTableName] = useState('');
   const [capacity, setCapacity] = useState('8');
 
-  // Filter out declined guests
-  const activeGuests = guests.filter(g => g.rsvpStatus !== 'DECLINED');
+  // Filter to only confirmed guests
+  const activeGuests = guests.filter(g => g.rsvpStatus === 'CONFIRMED');
   const unassignedGuests = activeGuests.filter(g => !g.tableId);
 
   const handleDragStart = (event: any) => {

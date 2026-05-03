@@ -8,7 +8,7 @@ interface StorageImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   fileType?: string | null;
 }
 
-export function StorageImage({ storageKey, ...props }: StorageImageProps) {
+export function StorageImage({ storageKey, fileType, ...props }: StorageImageProps) {
   const [url, setUrl] = useState<string | null>(null);
 
   useEffect(() => {

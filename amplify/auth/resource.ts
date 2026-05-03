@@ -5,13 +5,7 @@ export const auth = defineAuth({
   loginWith: {
     email: true,
   },
-  senders: {
-    email: {
-      fromEmail: 'hello@weddingsteward.com',
-      fromName: 'Wedding Steward',
-      replyTo: 'hello@weddingsteward.com',
-    },
-  },
+
   userAttributes: {
     "custom:role": {
       dataType: "String",
