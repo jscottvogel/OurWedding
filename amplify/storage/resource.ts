@@ -26,6 +26,11 @@ export const storage = defineStorage({
     'logo/*': [
       allow.authenticated.to(['read', 'write', 'delete']),
       allow.guest.to(['read'])
+    ],
+    'guestbook/*': [
+      allow.groups(['admin', 'planner']).to(['read', 'write', 'delete']),
+      allow.authenticated.to(['read', 'write', 'delete']),
+      allow.guest.to(['read', 'write'])
     ]
   })
 });
