@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Image as ImageIcon } from 'lucide-react';
 import { useGallery } from '@/lib/hooks/useGallery';
+import { StorageImage } from '../website/public/StorageImage';
 
 export default function RecentGallery() {
   const { photos, loading } = useGallery();
@@ -42,9 +43,10 @@ export default function RecentGallery() {
           {recentPhotos.map((photo) => (
             <div key={photo.id} className="aspect-square relative group overflow-hidden rounded-lg bg-light-gray">
               {photo.url ? (
-                <img 
-                  src={photo.url} 
-                  alt={'Wedding photo'} 
+                <StorageImage 
+                  storageKey={photo.fileKey}
+                  fileType={photo.fileType}
+                  alt={'Wedding media'} 
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
               ) : (

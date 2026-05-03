@@ -20,8 +20,9 @@ export default function VendorStatus() {
   }
 
   // Group vendors by contract status
-  const bookedVendors = vendors.filter(v => v.contractStatus === 'SIGNED');
-  const researchingVendors = vendors.filter(v => v.contractStatus !== 'SIGNED');
+  const bookedVendors = vendors.filter(v => v.contractStatus === 'SIGNED' || !!v.contractFileKey);
+  const pendingVendors = vendors.filter(v => v.contractStatus === 'SENT' && !v.contractFileKey);
+  const researchingVendors = vendors.filter(v => v.contractStatus !== 'SIGNED' && v.contractStatus !== 'SENT' && !v.contractFileKey);
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-light-gray p-6">
@@ -40,7 +41,7 @@ export default function VendorStatus() {
             {bookedVendors.map((vendor) => (
               <div key={vendor.id} className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-charcoal">{(vendor.category || '').replace('_', ' ')}</p>
+                  <p className="text-sm font-medium text-charcoal capitalize">{(vendor.category || 'Other').toLowerCase().replace('_', ' ')}</p>
                   <p className="text-xs text-mid-gray">{vendor.companyName}</p>
                 </div>
                 <span className="px-2 py-1 bg-sage/10 text-sage text-xs font-medium rounded-full">
@@ -48,10 +49,21 @@ export default function VendorStatus() {
                 </span>
               </div>
             ))}
+            {pendingVendors.map((vendor) => (
+              <div key={vendor.id} className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-charcoal capitalize">{(vendor.category || 'Other').toLowerCase().replace('_', ' ')}</p>
+                  <p className="text-xs text-mid-gray">{vendor.companyName}</p>
+                </div>
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
+                  Pending
+                </span>
+              </div>
+            ))}
             {researchingVendors.map((vendor) => (
               <div key={vendor.id} className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-charcoal">{(vendor.category || '').replace('_', ' ')}</p>
+                  <p className="text-sm font-medium text-charcoal capitalize">{(vendor.category || 'Other').toLowerCase().replace('_', ' ')}</p>
                   <p className="text-xs text-mid-gray">{vendor.companyName}</p>
                 </div>
                 <span className="px-2 py-1 bg-light-gray text-mid-gray text-xs font-medium rounded-full">
