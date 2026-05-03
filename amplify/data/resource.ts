@@ -347,6 +347,7 @@ const schema = a.schema({
       registryName: a.string().required(),
       registryUrl: a.string().required(),
       logoUrl: a.string(),
+      imageKey: a.string(),
       description: a.string(),
       isCashFund: a.boolean().default(false),
       displayOrder: a.integer().default(0),

@@ -253,27 +253,32 @@ function PartyEditor({ weddingId, items }: { weddingId: string, items: Schema['W
 function RegistryEditor({ weddingId, items }: { weddingId: string, items: Schema['WebsiteRegistry']['type'][] }) {
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
+  const [imageKey, setImageKey] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editUrl, setEditUrl] = useState('');
+  const [editImageKey, setEditImageKey] = useState<string | null>(null);
+  const [isEditUploading, setIsEditUploading] = useState(false);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !url) return;
-    await client.models.WebsiteRegistry.create({ weddingId, registryName: name, registryUrl: url, isVisible: true });
-    setName(''); setUrl('');
+    await client.models.WebsiteRegistry.create({ weddingId, registryName: name, registryUrl: url, imageKey, isVisible: true });
+    setName(''); setUrl(''); setImageKey(null);
   };
 
   const startEdit = (r: Schema['WebsiteRegistry']['type']) => {
     setEditingId(r.id);
     setEditName(r.registryName || '');
     setEditUrl(r.registryUrl || '');
+    setEditImageKey(r.imageKey || null);
   };
 
   const handleSaveEdit = async () => {
     if (!editingId || !editName || !editUrl) return;
-    await client.models.WebsiteRegistry.update({ id: editingId, registryName: editName, registryUrl: editUrl });
+    await client.models.WebsiteRegistry.update({ id: editingId, registryName: editName, registryUrl: editUrl, imageKey: editImageKey });
     setEditingId(null);
   };
 
@@ -291,6 +296,33 @@ function RegistryEditor({ weddingId, items }: { weddingId: string, items: Schema
               <div className="flex-1 w-full space-y-2 mr-0 sm:mr-4 mb-3 sm:mb-0">
                 <input type="text" value={editName} onChange={e => setEditName(e.target.value)} placeholder="Store Name" className="w-full text-sm border-light-gray rounded px-3 py-2" />
                 <input type="url" value={editUrl} onChange={e => setEditUrl(e.target.value)} placeholder="URL" className="w-full text-sm border-light-gray rounded px-3 py-2" />
+                <div className="flex items-center space-x-2 pt-1">
+                  <label className={`cursor-pointer text-xs px-3 py-1.5 rounded font-medium border border-sage/30 hover:bg-sage/5 transition-colors flex items-center ${editImageKey ? 'text-sage' : 'text-mid-gray'}`}>
+                    {isEditUploading ? <Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> : <ImageIcon className="w-3 h-3 mr-1.5" />}
+                    {isEditUploading ? 'Uploading...' : (editImageKey ? 'Change Image' : 'Add Preview Image')}
+                    <input 
+                      type="file" className="hidden" accept="image/*" disabled={isEditUploading}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setIsEditUploading(true);
+                        try {
+                          const key = `registry/${Date.now()}-${file.name}`;
+                          await uploadData({ path: key, data: file }).result;
+                          setEditImageKey(key);
+                        } catch (error) {
+                          console.error('Upload failed', error);
+                          alert('Failed to upload image');
+                        } finally {
+                          setIsEditUploading(false);
+                        }
+                      }}
+                    />
+                  </label>
+                  {editImageKey && (
+                    <button onClick={() => setEditImageKey(null)} className="text-xs text-red-500 hover:underline">Remove</button>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="flex-1 pr-4 overflow-hidden">
@@ -321,7 +353,34 @@ function RegistryEditor({ weddingId, items }: { weddingId: string, items: Schema
         <h4 className="text-sm font-bold text-charcoal">Add Registry</h4>
         <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Store Name (e.g. Target, Amazon)" className="w-full text-sm border-light-gray rounded" required />
         <input type="url" value={url} onChange={e => setUrl(e.target.value)} placeholder="Registry Link (URL)" className="w-full text-sm border-light-gray rounded" required />
-        <button type="submit" className="w-full bg-sage text-white py-2 rounded text-sm font-medium"><Plus className="w-4 h-4 inline mr-1" /> Add Registry</button>
+        <div className="flex items-center space-x-2 pb-2">
+          <label className={`cursor-pointer text-sm px-4 py-2 rounded font-medium border border-sage/30 hover:bg-sage/5 transition-colors flex items-center ${imageKey ? 'text-sage' : 'text-mid-gray'}`}>
+            {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ImageIcon className="w-4 h-4 mr-2" />}
+            {isUploading ? 'Uploading...' : (imageKey ? 'Change Image' : 'Add Preview Image')}
+            <input 
+              type="file" className="hidden" accept="image/*" disabled={isUploading}
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setIsUploading(true);
+                try {
+                  const key = `registry/${Date.now()}-${file.name}`;
+                  await uploadData({ path: key, data: file }).result;
+                  setImageKey(key);
+                } catch (error) {
+                  console.error('Upload failed', error);
+                  alert('Failed to upload image');
+                } finally {
+                  setIsUploading(false);
+                }
+              }}
+            />
+          </label>
+          {imageKey && (
+            <button type="button" onClick={() => setImageKey(null)} className="text-sm text-red-500 hover:underline">Remove</button>
+          )}
+        </div>
+        <button type="submit" disabled={isUploading} className="w-full bg-sage text-white py-2 rounded text-sm font-medium disabled:opacity-50"><Plus className="w-4 h-4 inline mr-1" /> Add Registry</button>
       </form>
     </div>
   );

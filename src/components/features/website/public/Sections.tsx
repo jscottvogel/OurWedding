@@ -269,8 +269,15 @@ export function RegistrySection({ registries }: { registries?: Schema['WebsiteRe
         ) : (
           <div className="flex flex-wrap justify-center gap-6">
             {registries.map(r => (
-              <a key={r.id} href={r.registryUrl} target="_blank" rel="noopener noreferrer" className="bg-[var(--color-bg)]/80 backdrop-blur-md px-8 py-4 rounded-xl shadow-sm border border-black/5 hover:shadow-md transition-all hover:-translate-y-1 flex items-center space-x-3">
-                <span className="font-bold" style={{ color: 'var(--color-primary)' }}>{r.registryName}</span>
+              <a key={r.id} href={r.registryUrl} target="_blank" rel="noopener noreferrer" className="bg-[var(--color-bg)]/80 backdrop-blur-md overflow-hidden rounded-xl shadow-sm border border-black/5 hover:shadow-md transition-all hover:-translate-y-1 flex flex-col items-center justify-center w-48 min-h-[120px]">
+                {r.imageKey ? (
+                  <div className="w-full h-32 p-4 bg-white/50 flex items-center justify-center">
+                    <StorageImage storageKey={r.imageKey} className="max-w-full max-h-full object-contain" />
+                  </div>
+                ) : null}
+                <div className={`w-full p-4 text-center ${!r.imageKey ? 'flex-1 flex items-center justify-center' : 'border-t border-black/5 bg-black/5'}`}>
+                  <span className="font-bold text-sm md:text-base" style={{ color: 'var(--color-primary)' }}>{r.registryName}</span>
+                </div>
               </a>
             ))}
           </div>
