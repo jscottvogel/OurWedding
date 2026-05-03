@@ -224,13 +224,16 @@ export function WeddingPartySection({ partyMembers }: { partyMembers?: Schema['W
   );
 }
 
-export function GallerySection({ photos }: { photos?: Schema['GalleryUpload']['type'][] }) {
+import { GalleryShare } from './GalleryShare';
+
+export function GallerySection({ photos, slug }: { photos?: Schema['GalleryUpload']['type'][], slug?: string }) {
   if (!photos || photos.length === 0) {
     return (
       <section id="gallery" className="py-20 bg-transparent">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-4xl font-heading mb-12" style={{ color: 'var(--color-primary)' }}>Gallery</h2>
           <p className="text-center text-charcoal/70 text-lg italic">Photos coming soon!</p>
+          {slug && <GalleryShare slug={slug} />}
         </div>
       </section>
     );
@@ -257,6 +260,12 @@ export function GallerySection({ photos }: { photos?: Schema['GalleryUpload']['t
             </div>
           ))}
         </div>
+        
+        {slug && (
+          <div className="mt-8 px-4">
+            <GalleryShare slug={slug} />
+          </div>
+        )}
       </div>
     </section>
   );

@@ -92,7 +92,7 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
           case 'rsvp': return <RsvpSection key={section} slug={params.slug} guests={guests} wedding={wedding} />;
           case 'travel': return <TravelSection key={section} travels={travels} />;
           case 'party': return <WeddingPartySection key={section} partyMembers={partyMembers} />;
-          case 'gallery': return <GallerySection key={section} photos={gallery} />;
+          case 'gallery': return <GallerySection key={section} photos={gallery} slug={params.slug} />;
           case 'registry': return <RegistrySection key={section} registries={registries} />;
           case 'faq': return <FaqSection key={section} faqs={faqs} />;
           case 'guestbook': return <GuestbookSection key={section} />;
