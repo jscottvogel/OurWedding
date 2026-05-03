@@ -13,7 +13,9 @@ export async function middleware(request: NextRequest) {
     // It's a true custom domain (e.g. sarahandtom.com)
     // You would fetch the DB here to find the matching slug for this domain.
     // For MVP, we rewrite to a placeholder or extract from host if possible.
-    const slug = hostname.split('.')[0]; // naive extraction for MVP
+    // Strip www. if present before extracting the domain slug
+    const cleanHostname = hostname.replace(/^www\./, '');
+    const slug = cleanHostname.split('.')[0]; // naive extraction for MVP
     return NextResponse.rewrite(new URL(`/w/${slug}${url.pathname}`, request.url));
   }
 

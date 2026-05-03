@@ -13,8 +13,14 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     cookies: () => cookieStore,
   });
   
+  const decodedSlug = decodeURIComponent(params.slug);
   const { data: configs } = await client.models.WebsiteConfig.list({
-    filter: { subdomain: { eq: params.slug } },
+    filter: { 
+      or: [
+        { subdomain: { eq: decodedSlug } },
+        { customDomain: { contains: decodedSlug } }
+      ]
+    },
     authMode: 'apiKey'
   });
   const config = configs[0];
@@ -38,8 +44,14 @@ export default async function PublicSiteLayout({
     cookies: () => cookieStore,
   });
 
+  const decodedSlug = decodeURIComponent(params.slug);
   const { data: configs } = await client.models.WebsiteConfig.list({
-    filter: { subdomain: { eq: params.slug } },
+    filter: { 
+      or: [
+        { subdomain: { eq: decodedSlug } },
+        { customDomain: { contains: decodedSlug } }
+      ]
+    },
     authMode: 'apiKey'
   });
   const config = configs[0];

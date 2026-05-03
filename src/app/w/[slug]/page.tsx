@@ -15,8 +15,14 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
     cookies: () => cookieStore,
   });
 
+  const decodedSlug = decodeURIComponent(params.slug);
   const { data: configs } = await client.models.WebsiteConfig.list({
-    filter: { subdomain: { eq: params.slug } },
+    filter: { 
+      or: [
+        { subdomain: { eq: decodedSlug } },
+        { customDomain: { contains: decodedSlug } }
+      ]
+    },
     authMode: 'apiKey'
   });
 
