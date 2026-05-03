@@ -181,6 +181,7 @@ export function useRunSheetProvider() {
       eventTime: item.eventTime ? (item.eventTime.length === 5 ? item.eventTime + ':00' : item.eventTime) : '12:00:00',
       weddingId,
       itemType: 'EVENT',
+      isPublic: item.isPublic || false,
       sortOrder: items.length,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -225,6 +226,7 @@ export function useRunSheetProvider() {
           eventTime: item.eventTime ? (item.eventTime.length === 5 ? item.eventTime + ':00' : item.eventTime) : '12:00:00',
           weddingId,
           itemType: 'EVENT',
+          isPublic: item.isPublic || false,
           sortOrder: currentItems.length,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
@@ -264,7 +266,8 @@ export function useRunSheetProvider() {
           mode: item.mode,
           sortOrder: item.sortOrder,
           weddingId: item.weddingId,
-          itemType: item.itemType
+          itemType: item.itemType,
+          isPublic: item.isPublic || false
         };
 
         if (item.id.startsWith('temp-')) {

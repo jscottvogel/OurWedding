@@ -2,7 +2,7 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Clock, Link as LinkIcon, Trash2, Lock, Unlock } from 'lucide-react';
+import { GripVertical, Clock, Link as LinkIcon, Trash2, Lock, Unlock, Eye, EyeOff } from 'lucide-react';
 import type { CalculatedRunSheetItem } from '@/lib/hooks/useRunSheet';
 
 interface Props {
@@ -136,7 +136,21 @@ export default function RunSheetItemRow({
             title={isConcurrent ? 'Running at the same time as the item above. Click to make sequential.' : 'Running sequentially. Click to run at the same time as the item above.'}
           >
             <LinkIcon className="w-3 h-3" />
-            {isConcurrent ? 'Parallel' : 'Sequential'}
+            {isConcurrent ? 'Parallel' : 'Seq.'}
+          </button>
+          
+          {/* Public Toggle */}
+          <button
+            onClick={() => onUpdate(item.id, { isPublic: !item.isPublic })}
+            className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider rounded-md border transition-all ${
+              item.isPublic 
+                ? 'bg-sage/10 border-sage/30 text-sage hover:bg-sage/20' 
+                : 'bg-white border-light-gray text-charcoal/40 hover:bg-light-gray hover:text-charcoal/70'
+            }`}
+            title={item.isPublic ? 'Visible on public website schedule. Click to hide.' : 'Hidden from public website. Click to make visible.'}
+          >
+            {item.isPublic ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+            {item.isPublic ? 'Public' : 'Private'}
           </button>
         </div>
       </div>
