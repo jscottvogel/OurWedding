@@ -11,8 +11,14 @@ export function GalleryShare({ slug }: { slug: string }) {
   useEffect(() => {
     if (typeof window !== 'undefined' && slug) {
       const isCustomDomain = !window.location.hostname.includes('localhost') && !window.location.hostname.includes('weddingsteward.com');
+      
+      let baseUrl = window.location.origin;
+      if (!isCustomDomain && !window.location.hostname.includes('localhost')) {
+        baseUrl = 'https://weddingsteward.com';
+      }
+      
       const path = isCustomDomain ? '/upload' : `/w/${slug}/upload`;
-      const url = `${window.location.origin}${path}`;
+      const url = `${baseUrl}${path}`;
       setUploadUrl(url);
 
       import('qrcode').then((QRCode) => {
