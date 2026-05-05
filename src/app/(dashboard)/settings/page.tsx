@@ -3,12 +3,14 @@
 import { useAuth } from '@/lib/hooks/useAuth';
 import { signOut } from 'aws-amplify/auth';
 import { useRouter } from 'next/navigation';
-import { LogOut, User, Key, Shield, Users } from 'lucide-react';
+import { LogOut, User, Key, Shield, Users, RefreshCw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../../amplify/data/resource';
 
 const client = generateClient<Schema>();
+import { seedDemoData, clearDemoData } from '@/lib/utils/seedDemoData';
+import { toast } from 'sonner';
 
 export default function SettingsPage() {
   const { user, role, loading, weddingId } = useAuth();
@@ -20,6 +22,26 @@ export default function SettingsPage() {
   const [inviteSuccess, setInviteSuccess] = useState(false);
   const [inviteError, setInviteError] = useState('');
   const [team, setTeam] = useState<{ id: string; email: string; role: string; profileId: string }[]>([]);
+  const [isResettingDemo, setIsResettingDemo] = useState(false);
+  
+  const isDemoAccount = user?.signInDetails?.loginId === 'demo@weddingsteward.com';
+
+  const handleResetDemo = async () => {
+    if (!confirm('Are you sure you want to completely reset the demo data? This will wipe all changes.')) return;
+    setIsResettingDemo(true);
+    toast.info('Resetting Demo Account Data...');
+    try {
+      await clearDemoData();
+      await seedDemoData();
+      toast.success('Demo data has been successfully reset! Refreshing page...');
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to reset demo data');
+    } finally {
+      setIsResettingDemo(false);
+    }
+  };
 
   useEffect(() => {
     if (!weddingId || !user) return;
@@ -279,6 +301,25 @@ export default function SettingsPage() {
             )}
           </div>
         </div>
+
+        {isDemoAccount && (
+          <div className="p-6 bg-sage/5 border-b border-light-gray">
+            <h2 className="text-xl font-medium text-sage mb-4 flex items-center">
+              <RefreshCw className={`w-5 h-5 mr-2 ${isResettingDemo ? 'animate-spin' : ''}`} />
+              Reset Demo Data
+            </h2>
+            <p className="text-sm text-mid-gray mb-4">
+              Since you are logged into the Demo Account, you can reset all data back to the default "perfect" template. This will wipe any changes you have made to guests, budgets, and schedules.
+            </p>
+            <button 
+              onClick={handleResetDemo}
+              disabled={isResettingDemo}
+              className="px-4 py-2 bg-sage text-white rounded font-medium hover:bg-dark-sage transition-colors disabled:opacity-50"
+            >
+              {isResettingDemo ? 'Resetting Data...' : 'Reset Demo Environment'}
+            </button>
+          </div>
+        )}
 
         <div className="p-6 bg-ivory/50">
           <h2 className="text-xl font-medium text-charcoal mb-4 flex items-center text-red-600">
