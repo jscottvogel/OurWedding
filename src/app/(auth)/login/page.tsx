@@ -27,7 +27,13 @@ const theme: Theme = {
     },
     components: {
       authenticator: {
+        container: {
+          width: { value: '100%' },
+          maxWidth: { value: '100%' },
+        },
         router: {
+          width: { value: '100%' },
+          maxWidth: { value: '100%' },
           boxShadow: { value: 'none' },
           borderWidth: { value: '0' },
           backgroundColor: { value: 'transparent' },
@@ -68,27 +74,12 @@ export default function LoginPage() {
   const router = useRouter();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-ivory py-12">
-      <div className="w-full max-w-md p-8 bg-white shadow-xl rounded-2xl border border-light-gray">
+    <div className="flex min-h-screen items-center justify-center bg-ivory py-12 px-4">
+      <div className="w-full max-w-[480px] p-6 sm:p-8 bg-white shadow-xl rounded-2xl border border-light-gray">
         <h1 className="text-3xl font-display text-sage text-center mb-2">Welcome Back</h1>
         <p className="text-center text-mid-gray mb-6">Log in to manage your wedding</p>
         
-        <div className="login-authenticator-wrapper w-full">
-          <style dangerouslySetInnerHTML={{__html: `
-            .login-authenticator-wrapper [data-amplify-authenticator] {
-              width: 100% !important;
-              min-width: 0 !important;
-            }
-            .login-authenticator-wrapper [data-amplify-router] {
-              border: none !important;
-              box-shadow: none !important;
-              background: transparent !important;
-              padding: 0 !important;
-              margin: 0 !important;
-              width: 100% !important;
-              min-width: 0 !important;
-            }
-          `}} />
+        <div className="login-authenticator-wrapper w-full overflow-hidden [&_[data-amplify-authenticator]]:!w-full [&_[data-amplify-authenticator]]:!max-w-full [&_[data-amplify-router]]:!p-0 [&_[data-amplify-router]]:!m-0 [&_[data-amplify-router]]:!border-none [&_[data-amplify-router]]:!shadow-none [&_[data-amplify-router]]:!bg-transparent [&_form]:!w-full [&_form]:!max-w-full">
           <ThemeProvider theme={theme}>
             <Authenticator>
             {({ user }) => {
