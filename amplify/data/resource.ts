@@ -55,7 +55,7 @@ const schema = a.schema({
     .secondaryIndexes((index) => [index('cognitoSub')])
     .authorization((allow) => [
       allow.owner().to(['create', 'read', 'update', 'delete']),
-      allow.groups(['admin']).to(['read']),
+      allow.authenticated().to(['read']),
     ]),
 
   Vendor: a
