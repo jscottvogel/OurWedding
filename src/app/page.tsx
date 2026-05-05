@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { CalendarHeart, Sparkles, CheckCircle2, Users } from 'lucide-react';
+import DemoLoginButton from '@/components/auth/DemoLoginButton';
 
 export default function Home() {
   return (
@@ -36,9 +37,7 @@ export default function Home() {
             <Link href="/signup" className="w-full sm:w-auto bg-sage text-white px-8 py-4 rounded-full text-lg font-medium hover:bg-dark-sage transition-colors shadow-md">
               Create Your Wedding
             </Link>
-            <Link href="/login" className="w-full sm:w-auto bg-white text-charcoal border border-light-gray px-8 py-4 rounded-full text-lg font-medium hover:bg-light-gray transition-colors shadow-sm">
-              View Demo
-            </Link>
+            <DemoLoginButton />
           </div>
         </div>
 
