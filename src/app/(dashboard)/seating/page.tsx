@@ -31,7 +31,7 @@ export default function SeatingPage() {
   const seatedGuests = activeGuests.filter(g => g.tableId).length;
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col">
       <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-6 flex-shrink-0 gap-4">
         <div>
           <h1 className="text-3xl font-display text-sage mb-2">Seating Chart</h1>

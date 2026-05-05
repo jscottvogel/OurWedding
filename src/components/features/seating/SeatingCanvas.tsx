@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Plus, X, Users, Edit2, Trash2, Check } from 'lucide-react';
 import type { Schema } from '../../../../amplify/data/resource';
-import { DndContext, useDroppable, useDraggable, DragOverlay } from '@dnd-kit/core';
+import { DndContext, useDroppable, useDraggable, DragOverlay, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
 
 interface SeatingCanvasProps {
   tables: Schema['SeatingTable']['type'][];
@@ -81,6 +81,20 @@ function DraggableGuest({ guest, isOverlay }: { guest: Schema['Guest']['type'], 
 export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTable, onDeleteTable, onAssignGuest }: SeatingCanvasProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  );
+  
   // Table form state
   const [isAddingTable, setIsAddingTable] = useState(false);
   const [editingTableId, setEditingTableId] = useState<string | null>(null);
@@ -142,8 +156,8 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
   const activeGuestObj = activeId ? guests.find(g => g.id === activeId) : null;
 
   return (
-    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-12rem)] min-h-[600px]">
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-12rem)] lg:min-h-[600px]">
         
         {/* Unassigned Guests Sidebar */}
         <div className="w-full lg:w-72 h-64 lg:h-auto bg-white rounded-xl border border-light-gray shadow-sm flex flex-col flex-shrink-0">
@@ -167,7 +181,7 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
         </div>
 
         {/* Canvas Area */}
-        <div className="flex-1 bg-ivory/30 rounded-xl border border-light-gray border-dashed relative overflow-y-auto p-6">
+        <div className="flex-1 bg-ivory/30 rounded-xl border border-light-gray border-dashed relative lg:overflow-y-auto p-6 min-h-[400px]">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-display text-charcoal text-xl">Floor Plan</h3>
             <button 
