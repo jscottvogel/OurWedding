@@ -146,7 +146,7 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
       <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-12rem)] min-h-[600px]">
         
         {/* Unassigned Guests Sidebar */}
-        <div className="w-full lg:w-72 bg-white rounded-xl border border-light-gray shadow-sm flex flex-col flex-shrink-0">
+        <div className="w-full lg:w-72 h-64 lg:h-auto bg-white rounded-xl border border-light-gray shadow-sm flex flex-col flex-shrink-0">
           <div className="p-4 border-b border-light-gray bg-ivory rounded-t-xl">
             <h3 className="font-display text-sage text-lg flex items-center">
               <Users className="w-5 h-5 mr-2" /> Unassigned
@@ -179,7 +179,7 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
           </div>
 
           {isAddingTable && (
-            <div className="bg-white p-4 rounded-xl border border-sage shadow-sm mb-6 flex items-end space-x-3 animate-in fade-in">
+            <div className="bg-white p-4 rounded-xl border border-sage shadow-sm mb-6 flex flex-col sm:flex-row sm:items-end gap-3 animate-in fade-in">
               <div>
                 <label className="block text-xs font-medium text-mid-gray mb-1">Table Name</label>
                 <input type="text" value={tableName} onChange={e => setTableName(e.target.value)} className="w-40 p-2 border border-light-gray rounded text-sm focus:border-sage focus:outline-none" placeholder="e.g. Table 1" autoFocus />
@@ -196,7 +196,7 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
           )}
 
           {editingTableId && (
-            <div className="bg-white p-4 rounded-xl border border-sage shadow-sm mb-6 flex items-end space-x-3 animate-in fade-in">
+            <div className="bg-white p-4 rounded-xl border border-sage shadow-sm mb-6 flex flex-col sm:flex-row sm:items-end gap-3 animate-in fade-in">
               <div>
                 <label className="block text-xs font-medium text-mid-gray mb-1">Edit Table Name</label>
                 <input type="text" value={tableName} onChange={e => setTableName(e.target.value)} className="w-40 p-2 border border-light-gray rounded text-sm focus:border-sage focus:outline-none" autoFocus />

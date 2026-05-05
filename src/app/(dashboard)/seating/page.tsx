@@ -32,14 +32,14 @@ export default function SeatingPage() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex justify-between items-end mb-6 flex-shrink-0">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-6 flex-shrink-0 gap-4">
         <div>
           <h1 className="text-3xl font-display text-sage mb-2">Seating Chart</h1>
           <p className="text-mid-gray">Drag and drop guests to assign them to tables.</p>
         </div>
         
-        <div className="flex items-center space-x-6">
-          <div className="text-right hidden md:block">
+        <div className="flex items-center justify-between w-full md:w-auto md:space-x-6">
+          <div className="text-left md:text-right">
             <p className="text-sm font-medium text-mid-gray mb-1">Seated Guests</p>
             <p className="text-2xl font-display text-sage leading-none">
               {seatedGuests} <span className="text-base font-body text-mid-gray">/ {activeGuests.length}</span>
