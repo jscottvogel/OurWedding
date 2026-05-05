@@ -100,24 +100,41 @@ export default function LoginPage() {
           </div>
         </div>
         
-        <ThemeProvider theme={theme}>
-          <Authenticator>
-          {({ user }) => {
-            if (user) {
-              setTimeout(() => {
-                router.push('/dashboard');
-              }, 100);
-              
-              return (
-                <div className="text-center text-sage py-8 animate-pulse">
-                  <p className="font-medium">Welcome back! Redirecting to dashboard...</p>
-                </div>
-              );
+        <div className="login-authenticator-wrapper w-full">
+          <style dangerouslySetInnerHTML={{__html: `
+            .login-authenticator-wrapper [data-amplify-authenticator] {
+              width: 100% !important;
+              min-width: 0 !important;
             }
-            return <></>;
-          }}
-          </Authenticator>
-        </ThemeProvider>
+            .login-authenticator-wrapper [data-amplify-router] {
+              border: none !important;
+              box-shadow: none !important;
+              background: transparent !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              width: 100% !important;
+              min-width: 0 !important;
+            }
+          `}} />
+          <ThemeProvider theme={theme}>
+            <Authenticator>
+            {({ user }) => {
+              if (user) {
+                setTimeout(() => {
+                  router.push('/dashboard');
+                }, 100);
+                
+                return (
+                  <div className="text-center text-sage py-8 animate-pulse">
+                    <p className="font-medium">Welcome back! Redirecting to dashboard...</p>
+                  </div>
+                );
+              }
+              return <></>;
+            }}
+            </Authenticator>
+          </ThemeProvider>
+        </div>
       </div>
     </div>
   );
