@@ -1,11 +1,69 @@
 'use client';
 
-import { Authenticator } from '@aws-amplify/ui-react';
+import { Authenticator, ThemeProvider, Theme } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { fetchAuthSession, signIn } from 'aws-amplify/auth';
 import { toast } from 'sonner';
+
+const theme: Theme = {
+  name: 'wedding-steward-theme',
+  tokens: {
+    colors: {
+      brand: {
+        primary: {
+          10: { value: '#D4E6D6' },
+          20: { value: '#D4E6D6' },
+          40: { value: '#6B8F71' },
+          60: { value: '#6B8F71' },
+          80: { value: '#6B8F71' },
+          90: { value: '#4A6B50' },
+          100: { value: '#4A6B50' },
+        },
+      },
+      font: {
+        interactive: { value: '#6B8F71' },
+      },
+    },
+    components: {
+      authenticator: {
+        router: {
+          boxShadow: { value: 'none' },
+          borderWidth: { value: '0' },
+          backgroundColor: { value: 'transparent' },
+        },
+      },
+      tabs: {
+        item: {
+          _active: {
+            color: { value: '#6B8F71' },
+            borderColor: { value: '#6B8F71' },
+          },
+          _hover: {
+            color: { value: '#6B8F71' },
+          },
+        },
+      },
+      button: {
+        primary: {
+          backgroundColor: { value: '#6B8F71' },
+          _hover: { backgroundColor: { value: '#4A6B50' } },
+        },
+        link: {
+          color: { value: '#6B8F71' },
+          _hover: { backgroundColor: { value: 'transparent' }, color: { value: '#4A6B50' } },
+        },
+      },
+      fieldcontrol: {
+        _focus: {
+          boxShadow: { value: '0 0 0 1px #6B8F71' },
+          borderColor: { value: '#6B8F71' },
+        },
+      },
+    },
+  },
+};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -42,7 +100,8 @@ export default function LoginPage() {
           </div>
         </div>
         
-        <Authenticator>
+        <ThemeProvider theme={theme}>
+          <Authenticator>
           {({ user }) => {
             if (user) {
               setTimeout(() => {
@@ -57,7 +116,8 @@ export default function LoginPage() {
             }
             return <></>;
           }}
-        </Authenticator>
+          </Authenticator>
+        </ThemeProvider>
       </div>
     </div>
   );
