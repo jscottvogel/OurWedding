@@ -1,10 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   Home, CheckSquare, Users, FileText, 
-  DollarSign, Map, Image as ImageIcon, QrCode, Globe, Settings, LogOut, BookOpen
+  DollarSign, Map, Image as ImageIcon, QrCode, Globe, Settings, LogOut, BookOpen, Menu, X
 } from 'lucide-react';
 import { signOut } from 'aws-amplify/auth';
 import { useRouter } from 'next/navigation';
@@ -31,6 +32,7 @@ export default function Sidebar() {
   const router = useRouter();
   const { memberships, weddingId, setActiveWeddingId } = useAuth();
   const { wedding } = useWedding();
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
     await signOut();
@@ -38,7 +40,24 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="w-64 bg-white border-r border-light-gray h-full flex flex-col">
+    <>
+      <div className="md:hidden flex items-center justify-between p-4 bg-white border-b border-light-gray z-40 shrink-0">
+        <h1 className="text-xl font-display text-sage font-bold">Wedding Steward</h1>
+        <button onClick={() => setIsOpen(!isOpen)} className="text-charcoal hover:text-sage transition-colors">
+          {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
+      </div>
+
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden" 
+          onClick={() => setIsOpen(false)} 
+        />
+      )}
+
+      <div className={`fixed inset-y-0 left-0 transform ${
+        isOpen ? 'translate-x-0' : '-translate-x-full'
+      } md:relative md:translate-x-0 transition duration-200 ease-in-out z-50 w-64 bg-white md:border-r border-light-gray h-full flex flex-col shadow-xl md:shadow-none`}>
       <div className="p-6 pb-2 border-b border-light-gray">
         <h1 className="text-2xl font-display text-sage font-bold mb-2">Wedding Steward</h1>
         {memberships.length > 0 && (
@@ -70,13 +89,14 @@ export default function Sidebar() {
               <li key={item.href}>
                 <Link 
                   href={item.href}
+                  onClick={() => setIsOpen(false)}
                   className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
                     isActive 
                       ? 'bg-sage text-white' 
                       : 'text-mid-gray hover:bg-light-sage hover:text-dark-sage'
                   }`}
                 >
-                  <Icon className="w-5 h-5 mr-3" />
+                  <Icon className="w-5 h-5 mr-3 shrink-0" />
                   <span className="font-medium">{item.label}</span>
                 </Link>
               </li>
@@ -94,6 +114,7 @@ export default function Sidebar() {
           <span className="font-medium">Sign Out</span>
         </button>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

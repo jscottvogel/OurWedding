@@ -9,11 +9,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <AuthGuard allowedRoles={['admin', 'planner']}>
       <RunSheetProvider>
-        <div className="flex h-screen bg-ivory overflow-hidden">
+        <div className="flex flex-col md:flex-row h-screen bg-ivory overflow-hidden">
           <Sidebar />
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto relative">
             <CoupleHero />
-            <main className="p-8 max-w-7xl mx-auto">
+            <main className="p-4 md:p-8 max-w-7xl mx-auto">
               {children}
             </main>
           </div>

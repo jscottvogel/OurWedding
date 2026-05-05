@@ -101,7 +101,7 @@ export function OurStorySection({ story }: { story?: Schema['WebsiteStory']['typ
     <section id="story" className="py-24 bg-transparent">
       <div className="max-w-5xl mx-auto px-4">
         <div className="text-center mb-16">
-          <h2 className="text-5xl font-heading mb-4" style={{ color: 'var(--color-primary)' }}>Our Story</h2>
+          <h2 className="text-4xl md:text-5xl font-heading mb-4" style={{ color: 'var(--color-primary)' }}>Our Story</h2>
           <div className="w-24 h-1 mx-auto bg-[var(--color-accent)] opacity-50 rounded" />
         </div>
         <div className={`flex flex-col ${hasImage ? 'md:flex-row items-center gap-12' : 'max-w-3xl mx-auto items-center text-center'}`}>
@@ -131,7 +131,7 @@ export function EventsSection({ events }: { events?: Schema['RunSheetItem']['typ
   return (
     <section id="events" className="py-20 bg-transparent">
       <div className="max-w-4xl mx-auto px-4">
-        <h2 className="text-4xl font-heading text-center mb-12" style={{ color: 'var(--color-primary)' }}>Schedule of Events</h2>
+        <h2 className="text-3xl md:text-4xl font-heading text-center mb-12" style={{ color: 'var(--color-primary)' }}>Schedule of Events</h2>
         {sortedEvents.length === 0 ? (
           <p className="text-center text-charcoal/70 text-lg">Event details are being finalized. Please check back later!</p>
         ) : (
@@ -169,7 +169,7 @@ export function TravelSection({ travels }: { travels?: Schema['WebsiteTravel']['
   return (
     <section id="travel" className="py-20 bg-transparent">
       <div className="max-w-4xl mx-auto px-4">
-        <h2 className="text-4xl font-heading text-center mb-12" style={{ color: 'var(--color-primary)' }}>Travel & Accommodations</h2>
+        <h2 className="text-3xl md:text-4xl font-heading text-center mb-12" style={{ color: 'var(--color-primary)' }}>Travel & Accommodations</h2>
         {!travels || travels.length === 0 ? (
           <p className="text-center text-charcoal/70 text-lg">We are finalizing travel recommendations. Please check back later!</p>
         ) : (
@@ -197,11 +197,11 @@ export function WeddingPartySection({ partyMembers }: { partyMembers?: Schema['W
   return (
     <section id="party" className="py-20 bg-transparent">
       <div className="max-w-6xl mx-auto px-4">
-        <h2 className="text-4xl font-heading text-center mb-12" style={{ color: 'var(--color-primary)' }}>Wedding Party</h2>
+        <h2 className="text-3xl md:text-4xl font-heading text-center mb-12" style={{ color: 'var(--color-primary)' }}>Wedding Party</h2>
         {!partyMembers || partyMembers.length === 0 ? (
           <p className="text-center text-charcoal/70 text-lg">We are finalizing our wedding party details. Please check back later!</p>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {partyMembers.map(member => (
               <div key={member.id} className="space-y-4">
                 <div className="w-32 h-32 mx-auto rounded-full bg-[var(--color-bg)]/50 overflow-hidden shadow-inner border-4 border-[var(--color-bg)]/80">
@@ -233,7 +233,7 @@ export function GallerySection({ photos, slug }: { photos?: Schema['GalleryUploa
     return (
       <section id="gallery" className="py-20 bg-transparent">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-4xl font-heading mb-12" style={{ color: 'var(--color-primary)' }}>Gallery</h2>
+          <h2 className="text-3xl md:text-4xl font-heading mb-12" style={{ color: 'var(--color-primary)' }}>Gallery</h2>
           <p className="text-center text-charcoal/70 text-lg italic">Photos coming soon!</p>
           {slug && <GalleryShare slug={slug} />}
         </div>
@@ -244,7 +244,7 @@ export function GallerySection({ photos, slug }: { photos?: Schema['GalleryUploa
   return (
     <section id="gallery" className="py-20 bg-transparent overflow-hidden">
       <div className="max-w-6xl mx-auto px-4 text-center">
-        <h2 className="text-4xl font-heading mb-12" style={{ color: 'var(--color-primary)' }}>Gallery</h2>
+        <h2 className="text-3xl md:text-4xl font-heading mb-12" style={{ color: 'var(--color-primary)' }}>Gallery</h2>
         
         <GalleryCarousel photos={photos} />
         
@@ -262,7 +262,7 @@ export function RegistrySection({ registries }: { registries?: Schema['WebsiteRe
   return (
     <section id="registry" className="py-20 bg-transparent">
       <div className="max-w-4xl mx-auto px-4 text-center">
-        <h2 className="text-4xl font-heading mb-12" style={{ color: 'var(--color-primary)' }}>Registry</h2>
+        <h2 className="text-3xl md:text-4xl font-heading mb-12" style={{ color: 'var(--color-primary)' }}>Registry</h2>
         <p className="text-lg text-charcoal/70 mb-8 max-w-2xl mx-auto">Your presence at our wedding is the greatest gift of all. However, should you wish to help us celebrate with a gift, we are registered at the following stores.</p>
         {!registries || registries.length === 0 ? (
           <p className="text-center text-charcoal/70 italic">Registry links coming soon!</p>
@@ -292,7 +292,7 @@ export function FaqSection({ faqs }: { faqs?: Schema['WebsiteFaq']['type'][] }) 
   return (
     <section id="faq" className="py-20 bg-transparent">
       <div className="max-w-3xl mx-auto px-4">
-        <h2 className="text-4xl font-heading text-center mb-12" style={{ color: 'var(--color-primary)' }}>FAQs</h2>
+        <h2 className="text-3xl md:text-4xl font-heading text-center mb-12" style={{ color: 'var(--color-primary)' }}>FAQs</h2>
         {sortedFaqs.length === 0 ? (
           <p className="text-center text-charcoal/70 text-lg">More details coming soon!</p>
         ) : (
@@ -317,7 +317,7 @@ export function GuestbookSection({ entries, slug }: { entries?: Schema['WebsiteG
     <section id="guestbook" className="py-20 bg-transparent">
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-heading mb-4" style={{ color: 'var(--color-primary)' }}>Guestbook</h2>
+          <h2 className="text-3xl md:text-4xl font-heading mb-4" style={{ color: 'var(--color-primary)' }}>Guestbook</h2>
           <p className="text-lg text-charcoal/70 mb-6 max-w-2xl mx-auto">Leave a note, share a memory, or request a song for the dance floor!</p>
           
           {slug && (

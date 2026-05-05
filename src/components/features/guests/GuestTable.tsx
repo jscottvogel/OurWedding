@@ -93,7 +93,7 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
       </div>
 
       <div className="flex-1 overflow-auto">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full min-w-[800px] text-left border-collapse">
           <thead className="sticky top-0 bg-white z-10 shadow-sm">
             <tr className="border-b border-light-gray text-xs font-medium text-mid-gray uppercase tracking-wider">
               <th className="p-4 w-[15%]">First Name</th>

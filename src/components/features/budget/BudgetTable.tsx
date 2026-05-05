@@ -79,7 +79,7 @@ export default function BudgetTable({ items, onAdd, onUpdate, onDelete }: Budget
       </div>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full min-w-[600px] text-left border-collapse">
           <thead>
             <tr className="bg-ivory border-b border-light-gray text-sm font-medium text-mid-gray uppercase tracking-wider">
               <th className="p-4 w-1/4">Category</th>

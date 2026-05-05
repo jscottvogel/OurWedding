@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import type { Schema } from '../../../../../amplify/data/resource';
 import { SiteLogo } from './SiteLogo';
+import { Menu, X } from 'lucide-react';
 
 export function PublicSiteLayout({ children, siteTitle, logoType, logoKey, enabledSections, sectionOrder }: { children: React.ReactNode, siteTitle: string, logoType?: string | null, logoKey?: string | null, enabledSections: Set<string>, sectionOrder: string[] }) {
   const sectionLabels: Record<string, string> = {
@@ -19,6 +20,7 @@ export function PublicSiteLayout({ children, siteTitle, logoType, logoKey, enabl
 
   const [localLogoType, setLocalLogoType] = React.useState(logoType);
   const [localLogoKey, setLocalLogoKey] = React.useState(logoKey);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   React.useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -53,7 +55,41 @@ export function PublicSiteLayout({ children, siteTitle, logoType, logoKey, enabl
               <a href="#rsvp" className="px-6 py-2 rounded-full text-white transition-all hover:shadow-lg" style={{ backgroundColor: 'var(--color-primary)' }}>RSVP</a>
             )}
           </nav>
+          <button 
+            className="md:hidden p-2 rounded-md hover:bg-black/5 transition-colors"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            style={{ color: 'var(--color-primary)' }}
+          >
+            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
         </div>
+        
+        {/* Mobile Menu Dropdown */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden absolute top-20 left-0 w-full bg-[var(--color-bg)] border-b border-gray-200/50 shadow-lg py-4 px-6 flex flex-col space-y-4 z-40">
+            {navLinks.map(s => (
+              <a 
+                key={s} 
+                href={`#${s}`} 
+                className="text-sm font-medium tracking-wide uppercase hover:opacity-60 transition-opacity block py-2" 
+                style={{ color: 'var(--color-primary)' }}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                {sectionLabels[s]}
+              </a>
+            ))}
+            {enabledSections.has('rsvp') && (
+              <a 
+                href="#rsvp" 
+                className="block text-center px-6 py-3 rounded-full text-white transition-all hover:shadow-lg text-sm font-medium tracking-wide uppercase w-full mt-2" 
+                style={{ backgroundColor: 'var(--color-primary)' }}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                RSVP
+              </a>
+            )}
+          </div>
+        )}
       </header>
       
       <main className="flex-1">

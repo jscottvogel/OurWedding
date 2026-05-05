@@ -61,7 +61,7 @@ export default function VendorModal({ isOpen, onClose, onSave, initialCategory =
 
   return (
     <div className="fixed inset-0 bg-charcoal/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl overflow-hidden">
+      <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex justify-between items-center p-6 border-b border-light-gray">
           <h2 className="text-xl font-display text-sage">{initialData ? 'Edit Vendor' : 'Add New Vendor'}</h2>
           <button onClick={onClose} className="text-mid-gray hover:text-charcoal">
@@ -69,7 +69,7 @@ export default function VendorModal({ isOpen, onClose, onSave, initialCategory =
           </button>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 sm:col-span-1">
               <label className="block text-sm font-medium mb-1">Company Name *</label>
