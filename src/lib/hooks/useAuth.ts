@@ -55,10 +55,28 @@ export function useAuth() {
             } catch (migrationErr) {
               console.error("Failed to self-heal user membership:", migrationErr);
             }
+            }
+          }
+
+          // Self-heal demo account membership
+          const userEmail = idTokenPayload?.email as string;
+          if (fetchedMemberRecords.length === 0 && userEmail === 'demo@weddingsteward.com') {
+            try {
+              const { data: newDemoMember } = await client.models.WeddingMember.create({
+                profileId: currentUser.userId,
+                weddingId: 'demo-wedding-123',
+                role: 'admin'
+              });
+              if (newDemoMember) {
+                fetchedMemberRecords = [newDemoMember];
+                setMemberships(fetchedMemberRecords);
+              }
+            } catch (demoErr) {
+              console.error("Failed to self-heal demo membership:", demoErr);
+            }
           }
 
           // Resolve pending invitations for newly invited users
-          const userEmail = idTokenPayload?.email as string;
           if (fetchedMemberRecords.length === 0 && userEmail) {
             try {
               const { data: invitations } = await client.models.WeddingMember.list({
