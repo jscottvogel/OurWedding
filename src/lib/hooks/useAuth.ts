@@ -55,7 +55,6 @@ export function useAuth() {
             } catch (migrationErr) {
               console.error("Failed to self-heal user membership:", migrationErr);
             }
-            }
           }
 
           // Self-heal demo account membership
