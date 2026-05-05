@@ -27,16 +27,12 @@ const theme: Theme = {
     },
     components: {
       authenticator: {
-        container: {
-          width: { value: '100%' },
-          maxWidth: { value: '100%' },
-        },
         router: {
-          width: { value: '100%' },
-          maxWidth: { value: '100%' },
-          boxShadow: { value: 'none' },
-          borderWidth: { value: '0' },
-          backgroundColor: { value: 'transparent' },
+          boxShadow: { value: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)' },
+          borderWidth: { value: '1px' },
+          borderColor: { value: '#E5E7EB' },
+          backgroundColor: { value: '#FFFFFF' },
+          borderRadius: { value: '1rem' },
         },
       },
       tabs: {
@@ -70,35 +66,41 @@ const theme: Theme = {
   },
 };
 
+const components = {
+  Header() {
+    return (
+      <div className="text-center pt-10 pb-4 px-8">
+        <h1 className="text-3xl font-display text-sage mb-2">Welcome Back</h1>
+        <p className="text-mid-gray">Log in to manage your wedding</p>
+      </div>
+    );
+  },
+};
+
 export default function LoginPage() {
   const router = useRouter();
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-ivory py-12 px-4">
-      <div className="w-full max-w-[480px] p-6 sm:p-8 bg-white shadow-xl rounded-2xl border border-light-gray">
-        <h1 className="text-3xl font-display text-sage text-center mb-2">Welcome Back</h1>
-        <p className="text-center text-mid-gray mb-6">Log in to manage your wedding</p>
-        
-        <div className="login-authenticator-wrapper w-full overflow-hidden [&_[data-amplify-authenticator]]:!w-full [&_[data-amplify-authenticator]]:!max-w-full [&_[data-amplify-router]]:!p-0 [&_[data-amplify-router]]:!m-0 [&_[data-amplify-router]]:!border-none [&_[data-amplify-router]]:!shadow-none [&_[data-amplify-router]]:!bg-transparent [&_form]:!w-full [&_form]:!max-w-full">
-          <ThemeProvider theme={theme}>
-            <Authenticator>
-            {({ user }) => {
-              if (user) {
-                setTimeout(() => {
-                  router.push('/dashboard');
-                }, 100);
-                
-                return (
-                  <div className="text-center text-sage py-8 animate-pulse">
-                    <p className="font-medium">Welcome back! Redirecting to dashboard...</p>
-                  </div>
-                );
-              }
-              return <></>;
-            }}
-            </Authenticator>
-          </ThemeProvider>
-        </div>
+      <div className="w-full max-w-[480px]">
+        <ThemeProvider theme={theme}>
+          <Authenticator components={components}>
+          {({ user }) => {
+            if (user) {
+              setTimeout(() => {
+                router.push('/dashboard');
+              }, 100);
+              
+              return (
+                <div className="text-center text-sage py-8 animate-pulse">
+                  <p className="font-medium">Welcome back! Redirecting to dashboard...</p>
+                </div>
+              );
+            }
+            return <></>;
+          }}
+          </Authenticator>
+        </ThemeProvider>
       </div>
     </div>
   );
