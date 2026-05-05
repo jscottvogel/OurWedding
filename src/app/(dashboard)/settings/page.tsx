@@ -130,17 +130,22 @@ export default function SettingsPage() {
     if (!confirm(`Are you sure you want to completely remove ${member.email} and revoke their access?`)) return;
     
     try {
-      // Remove from Cognito
-      const { errors } = await client.mutations.removeUser({
-        email: member.email
-      });
-      if (errors) throw new Error(errors[0].message);
+      if (member.email !== 'Unknown') {
+        // Remove from Cognito
+        const { errors } = await client.mutations.removeUser({
+          email: member.email
+        });
+        if (errors) {
+          console.warn("Cognito removal failed, but proceeding to remove database access record:", errors[0].message);
+        }
+      }
       
       // Remove from UI table
       await client.models.WeddingMember.delete({ id: member.id });
+      toast.success('User removed successfully');
     } catch (err: any) {
       console.error("Failed to remove user:", err);
-      alert(`Failed to remove user: ${err.message}`);
+      toast.error(`Failed to remove user: ${err.message}`);
     }
   };
 
