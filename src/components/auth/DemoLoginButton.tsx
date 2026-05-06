@@ -1,6 +1,6 @@
 'use client';
 
-import { signIn } from 'aws-amplify/auth';
+import { signIn, signOut } from 'aws-amplify/auth';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -13,13 +13,14 @@ export default function DemoLoginButton() {
     setIsLoggingIn(true);
     try {
       toast.info('Logging into Demo Account...');
+      try { await signOut(); } catch (e) { /* ignore */ }
       await signIn({ username: 'demo@weddingsteward.com', password: 'DemoPassword123!' });
       setTimeout(() => {
         router.push('/dashboard');
       }, 500);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      toast.error('Failed to access demo account');
+      toast.error(`Failed to access demo account: ${e.message || 'Unknown error'}`);
       setIsLoggingIn(false);
     }
   };
