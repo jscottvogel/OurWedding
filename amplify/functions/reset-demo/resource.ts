@@ -5,5 +5,5 @@ export const resetDemo = defineFunction({
   entry: './handler.ts',
   timeoutSeconds: 60,
   // Run every night at midnight UTC
-  schedule: 'cron(0 0 * * ? *)'
+  schedule: 'every day'
 });
