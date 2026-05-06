@@ -3,6 +3,7 @@ import { sendEmail } from '../functions/send-email/resource';
 import { pdfExport } from '../functions/pdf-export/resource';
 import { askIvy } from '../functions/ask-ivy/resource';
 import { removeUser } from '../functions/remove-user/resource';
+import { resetDemo } from '../functions/reset-demo/resource';
 
 const schema = a.schema({
   Wedding: a
@@ -447,7 +448,9 @@ const schema = a.schema({
     .returns(a.string())
     .authorization((allow) => [allow.authenticated()])
     .handler(a.handler.function(askIvy)),
-});
+}).authorization((allow) => [
+  allow.resource(resetDemo)
+]);
 
 export type Schema = ClientSchema<typeof schema>;
 

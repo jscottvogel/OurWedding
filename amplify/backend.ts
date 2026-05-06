@@ -74,11 +74,3 @@ backend.removeUser.resources.lambda.addToRolePolicy(
 
 backend.removeUser.addEnvironment('USER_POOL_ID', backend.auth.resources.userPool.userPoolId);
 
-// @ts-ignore - graphqlUrl exists but type might be missing
-backend.resetDemo.addEnvironment('AMPLIFY_DATA_GRAPHQL_ENDPOINT', backend.data.resources.graphqlApi.graphqlUrl);
-backend.resetDemo.resources.lambda.addToRolePolicy(
-  new iam.PolicyStatement({
-    actions: ['appsync:GraphQL'],
-    resources: [`${backend.data.resources.graphqlApi.arn}/*`],
-  })
-);

@@ -121,13 +121,13 @@ export const handler = async () => {
   for (const g of guestsToCreate) await client.models.Guest.create(g);
 
   const budgetItemsToCreate = [
-    { weddingId: DEMO_WEDDING_ID, expenseName: 'Venue Rental', category: 'Venue', estimatedCost: 12000, actualCost: 12000 },
-    { weddingId: DEMO_WEDDING_ID, expenseName: 'Catering (100 pax)', category: 'Food & Beverage', estimatedCost: 8000, actualCost: 8500 },
-    { weddingId: DEMO_WEDDING_ID, expenseName: 'Photography Package', category: 'Photography', estimatedCost: 4000, actualCost: 3500 },
-    { weddingId: DEMO_WEDDING_ID, expenseName: 'Live Band', category: 'Entertainment', estimatedCost: 4500, actualCost: 4000 },
-    { weddingId: DEMO_WEDDING_ID, expenseName: 'Floral Arrangements', category: 'Decor', estimatedCost: 3000, actualCost: 2800 },
-    { weddingId: DEMO_WEDDING_ID, expenseName: 'Wedding Dress', category: 'Attire', estimatedCost: 2500, actualCost: 2900 },
-    { weddingId: DEMO_WEDDING_ID, expenseName: 'Invitations & Postage', category: 'Stationery', estimatedCost: 800, actualCost: 750 },
+    { weddingId: DEMO_WEDDING_ID, description: 'Venue Rental', category: 'Venue', estimatedCost: 12000, actualCost: 12000 },
+    { weddingId: DEMO_WEDDING_ID, description: 'Catering (100 pax)', category: 'Food & Beverage', estimatedCost: 8000, actualCost: 8500 },
+    { weddingId: DEMO_WEDDING_ID, description: 'Photography Package', category: 'Photography', estimatedCost: 4000, actualCost: 3500 },
+    { weddingId: DEMO_WEDDING_ID, description: 'Live Band', category: 'Entertainment', estimatedCost: 4500, actualCost: 4000 },
+    { weddingId: DEMO_WEDDING_ID, description: 'Floral Arrangements', category: 'Decor', estimatedCost: 3000, actualCost: 2800 },
+    { weddingId: DEMO_WEDDING_ID, description: 'Wedding Dress', category: 'Attire', estimatedCost: 2500, actualCost: 2900 },
+    { weddingId: DEMO_WEDDING_ID, description: 'Invitations & Postage', category: 'Stationery', estimatedCost: 800, actualCost: 750 },
   ];
   for (const b of budgetItemsToCreate) await client.models.BudgetItem.create(b);
 
