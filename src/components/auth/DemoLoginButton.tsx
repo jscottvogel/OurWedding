@@ -27,11 +27,10 @@ export default function DemoLoginButton() {
   return (
     <button 
       onClick={handleDemoLogin}
-      disabled={true}
-      title="Demo coming soon!"
-      className="w-full sm:w-auto bg-white text-charcoal border border-light-gray px-8 py-4 rounded-full text-lg font-medium shadow-sm opacity-50 cursor-not-allowed"
+      disabled={isLoggingIn}
+      className="w-full sm:w-auto bg-white text-charcoal border border-light-gray px-8 py-4 rounded-full text-lg font-medium shadow-sm hover:bg-off-white hover:border-gold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      View Demo
+      {isLoggingIn ? 'Logging in...' : 'View Demo'}
     </button>
   );
 }
