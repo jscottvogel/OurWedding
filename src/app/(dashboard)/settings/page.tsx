@@ -119,7 +119,7 @@ export default function SettingsPage() {
   const handleSignOut = async () => {
     try {
       await signOut();
-      router.push('/login');
+      window.location.href = '/';
     } catch (error) {
       console.error('Error signing out:', error);
     }

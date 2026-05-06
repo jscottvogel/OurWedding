@@ -36,7 +36,7 @@ export default function Sidebar() {
 
   const handleLogout = async () => {
     await signOut();
-    router.push('/login');
+    window.location.href = '/';
   };
 
   return (

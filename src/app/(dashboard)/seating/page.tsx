@@ -28,7 +28,8 @@ export default function SeatingPage() {
   }
 
   const activeGuests = guests.filter(g => g.rsvpStatus === 'CONFIRMED');
-  const seatedGuests = activeGuests.filter(g => g.tableId).length;
+  const totalSeatsNeeded = activeGuests.reduce((sum, g) => sum + (g.attendingCount || 1), 0);
+  const seatedGuests = activeGuests.filter(g => g.tableId).reduce((sum, g) => sum + (g.attendingCount || 1), 0);
 
   return (
     <div className="flex flex-col">
@@ -42,7 +43,7 @@ export default function SeatingPage() {
           <div className="text-left md:text-right">
             <p className="text-sm font-medium text-mid-gray mb-1">Seated Guests</p>
             <p className="text-2xl font-display text-sage leading-none">
-              {seatedGuests} <span className="text-base font-body text-mid-gray">/ {activeGuests.length}</span>
+              {seatedGuests} <span className="text-base font-body text-mid-gray">/ {totalSeatsNeeded}</span>
             </p>
           </div>
           <button 

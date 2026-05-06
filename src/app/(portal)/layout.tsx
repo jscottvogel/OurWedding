@@ -21,7 +21,10 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
             </div>
             
             <button 
-              onClick={() => signOut()}
+              onClick={async () => {
+                await signOut();
+                window.location.href = '/';
+              }}
               className="text-mid-gray hover:text-charcoal flex items-center text-sm font-medium transition-colors"
             >
               <LogOut className="w-4 h-4 mr-1.5" /> Sign Out

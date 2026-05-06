@@ -20,6 +20,8 @@ function TableNode({ table, assignedGuests, onEdit, onDelete }: { table: Schema[
     id: table.id,
   });
 
+  const seatedCount = assignedGuests.reduce((sum, g) => sum + (g.attendingCount || 1), 0);
+
   return (
     <div 
       ref={setNodeRef}
@@ -30,7 +32,7 @@ function TableNode({ table, assignedGuests, onEdit, onDelete }: { table: Schema[
       <div className="flex justify-between items-center mb-3 border-b border-light-gray pb-2">
         <div>
           <h4 className="font-display text-sage">{table.tableName}</h4>
-          <p className="text-xs text-mid-gray">{assignedGuests.length} / {table.seatCount} seated</p>
+          <p className="text-xs text-mid-gray">{seatedCount} / {table.seatCount} seated</p>
         </div>
         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
           <button onClick={onEdit} className="p-1 text-mid-gray hover:text-sage"><Edit2 className="w-3.5 h-3.5" /></button>
@@ -74,6 +76,11 @@ function DraggableGuest({ guest, isOverlay }: { guest: Schema['Guest']['type'], 
       }`}
     >
       {guest.firstName} {guest.lastName}
+      {(guest.attendingCount && guest.attendingCount > 1) && (
+        <span className="ml-1.5 px-1.5 py-0.5 rounded-md bg-black/10 text-xs font-semibold">
+          +{guest.attendingCount - 1}
+        </span>
+      )}
     </div>
   );
 }
@@ -104,6 +111,7 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
   // Filter to only confirmed guests
   const activeGuests = guests.filter(g => g.rsvpStatus === 'CONFIRMED');
   const unassignedGuests = activeGuests.filter(g => !g.tableId);
+  const unassignedSeatsNeeded = unassignedGuests.reduce((sum, g) => sum + (g.attendingCount || 1), 0);
 
   const handleDragStart = (event: any) => {
     setActiveId(event.active.id);
@@ -119,12 +127,15 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
       } else {
         // Check capacity
         const table = tables.find(t => t.id === over.id);
-        const assignedCount = guests.filter(g => g.tableId === over.id && g.id !== active.id).length;
+        const assignedGuests = guests.filter(g => g.tableId === over.id && g.id !== active.id);
+        const assignedCount = assignedGuests.reduce((sum, g) => sum + (g.attendingCount || 1), 0);
+        const activeGuest = guests.find(g => g.id === active.id);
+        const incomingCount = activeGuest?.attendingCount || 1;
         
-        if (table && assignedCount < (table.seatCount || 0)) {
+        if (table && (assignedCount + incomingCount) <= (table.seatCount || 0)) {
           onAssignGuest(active.id, over.id);
         } else {
-          alert('Table is at full capacity!');
+          alert('Table does not have enough capacity for this group!');
         }
       }
     }
@@ -165,7 +176,7 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
             <h3 className="font-display text-sage text-lg flex items-center">
               <Users className="w-5 h-5 mr-2" /> Unassigned
             </h3>
-            <p className="text-xs text-mid-gray mt-1">{unassignedGuests.length} guests to seat</p>
+            <p className="text-xs text-mid-gray mt-1">{unassignedSeatsNeeded} seats needed</p>
           </div>
           
           <UnassignedDroppable>

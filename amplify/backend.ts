@@ -8,6 +8,7 @@ import { sendEmail } from './functions/send-email/resource';
 import { postConfirmation } from './functions/post-confirmation/resource';
 import { askIvy } from './functions/ask-ivy/resource';
 import { removeUser } from './functions/remove-user/resource';
+import { resetDemo } from './functions/reset-demo/resource';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 
@@ -21,6 +22,7 @@ const backend = defineBackend({
   postConfirmation,
   askIvy,
   removeUser,
+  resetDemo,
 });
 
 const bucket = backend.storage.resources.bucket as s3.Bucket;
@@ -71,3 +73,11 @@ backend.removeUser.resources.lambda.addToRolePolicy(
 );
 
 backend.removeUser.addEnvironment('USER_POOL_ID', backend.auth.resources.userPool.userPoolId);
+
+backend.resetDemo.addEnvironment('AMPLIFY_DATA_GRAPHQL_ENDPOINT', backend.data.resources.graphqlApi.graphqlUrl);
+backend.resetDemo.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    actions: ['appsync:GraphQL'],
+    resources: [`${backend.data.resources.graphqlApi.arn}/*`],
+  })
+);
