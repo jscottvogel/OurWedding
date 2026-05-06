@@ -161,8 +161,8 @@ export default function IvyChat() {
         vendors: vendors.map(v => ({ id: v.id, name: v.companyName, category: v.category, status: v.contractStatus })),
         runsheet: runsheet.map((r: any) => ({ id: r.id, title: r.title, time: r.eventTime })),
         gallery: photos.map(p => ({ id: p.id, uploader: p.uploaderName, caption: p.caption || '' })),
-        guests: guests.map(g => ({ id: g.id, firstName: g.firstName, lastName: g.lastName, rsvpStatus: g.rsvpStatus, partyId: g.partyId, mealChoice: g.mealChoice, dietaryRestrictions: g.dietaryRestrictions })),
-        budget: budgetItems.map(b => ({ id: b.id, expenseName: b.expenseName, amount: b.amount, category: b.category, isPaid: b.isPaid })),
+        guests: guests.map(g => ({ id: g.id, firstName: g.firstName, lastName: g.lastName, rsvpStatus: g.rsvpStatus, attendingCount: g.attendingCount, mealChoice: g.mealChoice, dietaryRestrictions: [g.dietaryVegetarian ? 'Vegetarian' : '', g.dietaryVegan ? 'Vegan' : '', g.dietaryGlutenFree ? 'GF' : '', g.dietaryNutFree ? 'Nut-Free' : ''].filter(Boolean).join(', ') })),
+        budget: budgetItems.map(b => ({ id: b.id, description: b.description, estimatedCost: b.estimatedCost, category: b.category, actualCost: b.actualCost })),
         guestbook: guestbookEntries.map(e => ({ id: e.id, guestName: e.guestName, message: e.message, isApproved: e.isApproved })),
         website: {
           ...website,
@@ -286,8 +286,7 @@ export default function IvyChat() {
               lastName: toolCall.input.lastName,
               email: toolCall.input.email,
               rsvpStatus: toolCall.input.rsvpStatus || 'PENDING',
-              partyId: toolCall.input.partyId,
-              isPlusOne: false
+              attendingCount: toolCall.input.attendingCount || 1
             });
             lastActionMessage = `I've added ${toolCall.input.firstName} to your guest list!`;
             addedCount++;
@@ -299,14 +298,12 @@ export default function IvyChat() {
             lastActionMessage = "I've removed that guest from the list!";
           } else if (toolCall.name === 'add_budget_item') {
             await addBudgetItem({
-              expenseName: toolCall.input.expenseName,
-              amount: toolCall.input.amount,
+              description: toolCall.input.expenseName || toolCall.input.description,
+              estimatedCost: toolCall.input.amount || toolCall.input.estimatedCost,
               category: toolCall.input.category as any,
-              isPaid: toolCall.input.isPaid || false,
-              dueDate: toolCall.input.dueDate,
               notes: toolCall.input.notes
             });
-            lastActionMessage = `I've added the ${toolCall.input.expenseName} expense to your budget!`;
+            lastActionMessage = `I've added the expense to your budget!`;
             addedCount++;
           } else if (toolCall.name === 'update_budget_item') {
             await updateBudgetItem(toolCall.input.id, toolCall.input.updates);

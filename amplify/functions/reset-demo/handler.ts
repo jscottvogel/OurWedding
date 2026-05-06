@@ -1,14 +1,13 @@
 import { Amplify } from 'aws-amplify';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../data/resource';
-import { env } from '$amplify/env/reset-demo';
 
 Amplify.configure(
   {
     API: {
       GraphQL: {
-        endpoint: env.AMPLIFY_DATA_GRAPHQL_ENDPOINT,
-        region: env.AWS_REGION,
+        endpoint: process.env.AMPLIFY_DATA_GRAPHQL_ENDPOINT as string,
+        region: process.env.AWS_REGION,
         defaultAuthMode: 'iam',
       },
     },
@@ -38,46 +37,46 @@ export const handler = async () => {
   // 1. Clear old data
   let nextToken: string | null | undefined = null;
   do {
-    const res = await client.models.Guest.list({
+    const guestRes: any = await client.models.Guest.list({
       filter: { weddingId: { eq: DEMO_WEDDING_ID } },
       nextToken,
       limit: 100,
     });
-    for (const g of res.data) await client.models.Guest.delete({ id: g.id });
-    nextToken = res.nextToken;
+    for (const g of guestRes.data) await client.models.Guest.delete({ id: g.id });
+    nextToken = guestRes.nextToken;
   } while (nextToken);
 
   nextToken = null;
   do {
-    const res = await client.models.Vendor.list({
+    const vendorRes: any = await client.models.Vendor.list({
       filter: { weddingId: { eq: DEMO_WEDDING_ID } },
       nextToken,
       limit: 100,
     });
-    for (const v of res.data) await client.models.Vendor.delete({ id: v.id });
-    nextToken = res.nextToken;
+    for (const v of vendorRes.data) await client.models.Vendor.delete({ id: v.id });
+    nextToken = vendorRes.nextToken;
   } while (nextToken);
 
   nextToken = null;
   do {
-    const res = await client.models.BudgetItem.list({
+    const budgetRes: any = await client.models.BudgetItem.list({
       filter: { weddingId: { eq: DEMO_WEDDING_ID } },
       nextToken,
       limit: 100,
     });
-    for (const b of res.data) await client.models.BudgetItem.delete({ id: b.id });
-    nextToken = res.nextToken;
+    for (const b of budgetRes.data) await client.models.BudgetItem.delete({ id: b.id });
+    nextToken = budgetRes.nextToken;
   } while (nextToken);
 
   nextToken = null;
   do {
-    const res = await client.models.RunSheetItem.list({
+    const runSheetRes: any = await client.models.RunSheetItem.list({
       filter: { weddingId: { eq: DEMO_WEDDING_ID } },
       nextToken,
       limit: 100,
     });
-    for (const r of res.data) await client.models.RunSheetItem.delete({ id: r.id });
-    nextToken = res.nextToken;
+    for (const r of runSheetRes.data) await client.models.RunSheetItem.delete({ id: r.id });
+    nextToken = runSheetRes.nextToken;
   } while (nextToken);
 
   console.log('Old demo data cleared.');

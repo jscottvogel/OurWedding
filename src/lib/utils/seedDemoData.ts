@@ -1,5 +1,5 @@
 import { generateClient } from 'aws-amplify/data';
-import type { Schema } from '../../../../amplify/data/resource';
+import type { Schema } from '../../../amplify/data/resource';
 
 const client = generateClient<Schema>();
 
@@ -11,7 +11,7 @@ export async function clearDemoData() {
   // Clear Guests
   let nextToken: string | null | undefined = null;
   do {
-    const res = await client.models.Guest.list({
+    const res: any = await client.models.Guest.list({
       filter: { weddingId: { eq: DEMO_WEDDING_ID } },
       nextToken,
       limit: 100
@@ -23,7 +23,7 @@ export async function clearDemoData() {
   // Clear Vendors
   nextToken = null;
   do {
-    const res = await client.models.Vendor.list({
+    const res: any = await client.models.Vendor.list({
       filter: { weddingId: { eq: DEMO_WEDDING_ID } },
       nextToken,
       limit: 100
@@ -35,7 +35,7 @@ export async function clearDemoData() {
   // Clear Budget
   nextToken = null;
   do {
-    const res = await client.models.BudgetItem.list({
+    const res: any = await client.models.BudgetItem.list({
       filter: { weddingId: { eq: DEMO_WEDDING_ID } },
       nextToken,
       limit: 100
@@ -47,7 +47,7 @@ export async function clearDemoData() {
   // Clear RunSheet
   nextToken = null;
   do {
-    const res = await client.models.RunSheetItem.list({
+    const res: any = await client.models.RunSheetItem.list({
       filter: { weddingId: { eq: DEMO_WEDDING_ID } },
       nextToken,
       limit: 100

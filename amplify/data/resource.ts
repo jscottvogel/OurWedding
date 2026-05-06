@@ -30,7 +30,7 @@ const schema = a.schema({
       allow.groups(['vendor']).to(['read']),
       allow.guest().to(['read']),
       allow.publicApiKey().to(['read']),
-      allow.iam(),
+
     ]),
 
   WeddingMember: a
@@ -86,7 +86,7 @@ const schema = a.schema({
       allow.authenticated().to(['create', 'read', 'update', 'delete']),
       // vendor role can read their own via a custom filter or auth rule
       allow.groups(['vendor']).to(['read']),
-      allow.iam(),
+
     ]),
 
   ChecklistItem: a
@@ -135,7 +135,7 @@ const schema = a.schema({
       allow.groups(['vendor']).to(['read']),
       allow.guest().to(['read']),
       allow.publicApiKey().to(['read']),
-      allow.iam(),
+
     ]),
 
   GalleryUpload: a
@@ -183,7 +183,7 @@ const schema = a.schema({
       allow.authenticated().to(['create', 'read', 'update', 'delete']),
       allow.guest().to(['create', 'read', 'update']),
       allow.publicApiKey().to(['create', 'read', 'update']),
-      allow.iam(),
+
     ]),
 
   SeatingTable: a
@@ -211,7 +211,7 @@ const schema = a.schema({
     .secondaryIndexes((index) => [index('weddingId')])
     .authorization((allow) => [
       allow.authenticated().to(['create', 'read', 'update', 'delete']),
-      allow.iam(),
+
     ]),
 
   MoodBoard: a

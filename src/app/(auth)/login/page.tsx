@@ -32,7 +32,6 @@ const theme: Theme = {
           borderWidth: { value: '1px' },
           borderColor: { value: '#E5E7EB' },
           backgroundColor: { value: '#FFFFFF' },
-          borderRadius: { value: '1rem' },
         },
       },
       tabs: {
