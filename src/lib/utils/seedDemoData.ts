@@ -67,6 +67,7 @@ export async function seedDemoData() {
   
   if (!existingWedding.data) {
     await client.models.Wedding.create({
+      id: DEMO_WEDDING_ID,
       slug: 'emily-and-michael',
       coupleName1: 'Emily',
       coupleName2: 'Michael',
