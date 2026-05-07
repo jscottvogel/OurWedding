@@ -110,7 +110,8 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
 
   // Filter to only confirmed guests
   const activeGuests = guests.filter(g => g.rsvpStatus === 'CONFIRMED');
-  const unassignedGuests = activeGuests.filter(g => !g.tableId);
+  const tableIds = new Set(tables.map(t => t.id));
+  const unassignedGuests = activeGuests.filter(g => !g.tableId || !tableIds.has(g.tableId));
   const unassignedSeatsNeeded = unassignedGuests.reduce((sum, g) => sum + (g.attendingCount || 1), 0);
 
   const handleDragStart = (event: any) => {
