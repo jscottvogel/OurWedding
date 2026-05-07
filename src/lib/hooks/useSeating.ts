@@ -77,10 +77,22 @@ export function useSeating() {
   };
 
   const deleteTable = async (id: string) => {
-    // Optimistic UI update
-    setTables(prev => prev.filter(t => t.id !== id));
+    // Find guests currently at this table
+    const orphanedGuests = guests.filter(g => g.tableId === id);
 
-    await client.models.SeatingTable.delete({ id });
+    // Optimistic UI updates
+    setTables(prev => prev.filter(t => t.id !== id));
+    if (orphanedGuests.length > 0) {
+      setGuests(prev => prev.map(g => g.tableId === id ? { ...g, tableId: undefined } : g));
+    }
+
+    // Update backend
+    const promises: Promise<any>[] = orphanedGuests.map(g => 
+      client.models.Guest.update({ id: g.id, tableId: null })
+    );
+    promises.push(client.models.SeatingTable.delete({ id }));
+    
+    await Promise.all(promises);
   };
   
   const assignGuestToTable = async (guestId: string, tableId: string | null) => {
