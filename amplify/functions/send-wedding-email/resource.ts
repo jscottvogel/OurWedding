@@ -2,6 +2,7 @@ import { defineFunction } from '@aws-amplify/backend';
 
 export const sendWeddingEmail = defineFunction({
   name: 'send-wedding-email',
+  resourceGroupName: 'data',
   entry: './handler.ts',
   timeoutSeconds: 30,
   memoryMB: 512,
