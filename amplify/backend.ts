@@ -9,6 +9,7 @@ import { postConfirmation } from './functions/post-confirmation/resource';
 import { askIvy } from './functions/ask-ivy/resource';
 import { removeUser } from './functions/remove-user/resource';
 import { resetDemo } from './functions/reset-demo/resource';
+import { sendWeddingEmail } from './functions/send-wedding-email/resource';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 
@@ -23,6 +24,7 @@ const backend = defineBackend({
   askIvy,
   removeUser,
   resetDemo,
+  sendWeddingEmail,
 });
 
 const bucket = backend.storage.resources.bucket as s3.Bucket;
@@ -73,4 +75,39 @@ backend.removeUser.resources.lambda.addToRolePolicy(
 );
 
 backend.removeUser.addEnvironment('USER_POOL_ID', backend.auth.resources.userPool.userPoolId);
+
+backend.sendWeddingEmail.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    actions: [
+      'ses:SendEmail',
+      'ses:SendBulkTemplatedEmail'
+    ],
+    resources: ['*'], // For SES, typically '*' is needed unless specifically scoped to identities
+  })
+);
+
+// Grant DynamoDB access
+backend.sendWeddingEmail.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    actions: [
+      'dynamodb:GetItem',
+      'dynamodb:PutItem',
+      'dynamodb:UpdateItem',
+      'dynamodb:Query',
+      'dynamodb:Scan'
+    ],
+    resources: [
+      backend.data.resources.tables['Wedding'].tableArn,
+      backend.data.resources.tables['EmailCampaign'].tableArn,
+      backend.data.resources.tables['EmailSendRecord'].tableArn,
+      backend.data.resources.tables['Wedding'].tableArn + '/index/*',
+      backend.data.resources.tables['EmailCampaign'].tableArn + '/index/*',
+      backend.data.resources.tables['EmailSendRecord'].tableArn + '/index/*'
+    ],
+  })
+);
+
+backend.sendWeddingEmail.addEnvironment('TABLE_WEDDING', backend.data.resources.tables['Wedding'].tableName);
+backend.sendWeddingEmail.addEnvironment('TABLE_EMAIL_CAMPAIGN', backend.data.resources.tables['EmailCampaign'].tableName);
+backend.sendWeddingEmail.addEnvironment('TABLE_EMAIL_SEND_RECORD', backend.data.resources.tables['EmailSendRecord'].tableName);
 

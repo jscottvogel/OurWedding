@@ -4,8 +4,15 @@ import { pdfExport } from '../functions/pdf-export/resource';
 import { askIvy } from '../functions/ask-ivy/resource';
 import { removeUser } from '../functions/remove-user/resource';
 import { resetDemo } from '../functions/reset-demo/resource';
+import { sendWeddingEmail } from '../functions/send-wedding-email/resource';
 
 const schema = a.schema({
+  SendEmailResult: a.customType({
+    campaignId: a.id(),
+    sentCount: a.integer(),
+    failedCount: a.integer(),
+    errors: a.string().array(),
+  }),
   Wedding: a
     .model({
       slug: a.string().required(),
@@ -448,6 +455,59 @@ const schema = a.schema({
     .returns(a.string())
     .authorization((allow) => [allow.authenticated()])
     .handler(a.handler.function(askIvy)),
+
+  EmailCampaign: a
+    .model({
+      weddingId: a.string().required(),
+      emailType: a.enum(['save_the_date', 'invitation', 'rsvp_reminder', 'event_reminder_1', 'event_reminder_2', 'thank_you']),
+      subjectLine: a.string(),
+      paletteKey: a.enum(['classic', 'sage', 'navy', 'dusty_rose']),
+      personalNote: a.string(),
+      customContent: a.string(),
+      scheduledAt: a.datetime(),
+      sentAt: a.datetime(),
+      status: a.enum(['draft', 'sent', 'scheduled', 'failed']),
+      sentCount: a.integer().default(0),
+      failedCount: a.integer().default(0),
+    })
+    .secondaryIndexes((index) => [index('weddingId')])
+    .authorization((allow) => [
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
+    ]),
+
+  EmailSendRecord: a
+    .model({
+      campaignId: a.string().required(),
+      weddingId: a.string().required(),
+      guestId: a.string(),
+      recipientEmail: a.string().required(),
+      recipientName: a.string(),
+      status: a.enum(['queued', 'sent', 'failed', 'bounced', 'opened']),
+      sesMessageId: a.string(),
+      sentAt: a.datetime(),
+      errorMessage: a.string(),
+    })
+    .secondaryIndexes((index) => [index('campaignId'), index('weddingId')])
+    .authorization((allow) => [
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
+    ]),
+
+  sendWeddingEmail: a
+    .mutation()
+    .arguments({
+      campaignId: a.id().required(),
+      recipientEmails: a.string().array(),
+      guestIds: a.id().array(),
+      emailType: a.string().required(),
+      subjectLine: a.string().required(),
+      paletteKey: a.string().required(),
+      personalNote: a.string(),
+      customContent: a.string(),
+      isTest: a.boolean(),
+    })
+    .returns(a.ref('SendEmailResult'))
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(sendWeddingEmail)),
 }).authorization((allow) => [
   allow.resource(resetDemo)
 ]);

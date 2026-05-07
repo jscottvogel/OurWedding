@@ -21,6 +21,7 @@ const navItems = [
   { href: '/guests', label: 'Guests', icon: Users },
   { href: '/seating', label: 'Seating Chart', icon: Map },
   { href: '/website', label: 'Website Studio', icon: Globe },
+  { href: '/email-studio', label: 'Email Studio', icon: FileText },
   { href: '/gallery', label: 'Gallery', icon: ImageIcon },
   { href: '/guestbook', label: 'Guestbook', icon: BookOpen },
   { href: '/qr-code', label: 'QR Code', icon: QrCode },
