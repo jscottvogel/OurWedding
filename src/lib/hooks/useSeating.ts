@@ -48,6 +48,18 @@ export function useSeating() {
 
   const addTable = async (table: Omit<Schema['SeatingTable']['type'], 'id' | 'createdAt' | 'updatedAt' | 'weddingId'>) => {
     if (!weddingId) return;
+    
+    // Optimistic UI update
+    const tempId = `temp-${Date.now()}`;
+    const newTable = { 
+      ...table, 
+      id: tempId, 
+      weddingId, 
+      createdAt: new Date().toISOString(), 
+      updatedAt: new Date().toISOString() 
+    } as Schema['SeatingTable']['type'];
+    setTables(prev => [...prev, newTable]);
+
     return await client.models.SeatingTable.create({
       ...table,
       weddingId
@@ -55,6 +67,9 @@ export function useSeating() {
   };
 
   const updateTable = async (id: string, updates: Partial<Schema['SeatingTable']['type']>) => {
+    // Optimistic UI update
+    setTables(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+
     return await client.models.SeatingTable.update({
       id,
       ...updates
@@ -62,13 +77,19 @@ export function useSeating() {
   };
 
   const deleteTable = async (id: string) => {
+    // Optimistic UI update
+    setTables(prev => prev.filter(t => t.id !== id));
+
     await client.models.SeatingTable.delete({ id });
   };
   
   const assignGuestToTable = async (guestId: string, tableId: string | null) => {
+    // Optimistic UI update
+    setGuests(prev => prev.map(g => g.id === guestId ? { ...g, tableId: tableId } : g));
+
     return await client.models.Guest.update({
       id: guestId,
-      tableId: tableId === null ? undefined : tableId
+      tableId: tableId === null ? null : tableId
     });
   };
 
