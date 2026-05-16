@@ -37,20 +37,31 @@ export function useVendors() {
 
   const addVendor = async (vendor: Omit<Schema['Vendor']['type'], 'id' | 'createdAt' | 'updatedAt' | 'weddingId'>) => {
     if (!weddingId) return;
-    await client.models.Vendor.create({
+    const { data } = await client.models.Vendor.create({
       ...vendor,
       weddingId
     });
+    if (data) {
+      setVendors(prev => [...prev, data]);
+    }
   };
 
   const updateVendor = async (id: string, updates: Partial<Schema['Vendor']['type']>) => {
-    await client.models.Vendor.update({
+    // Optimistic update
+    setVendors(prev => prev.map(v => v.id === id ? { ...v, ...updates } : v));
+    
+    const { data } = await client.models.Vendor.update({
       id,
       ...updates
     });
+    if (data) {
+      // Re-sync with server response if needed
+      setVendors(prev => prev.map(v => v.id === id ? data : v));
+    }
   };
 
   const deleteVendor = async (id: string) => {
+    setVendors(prev => prev.filter(v => v.id !== id));
     await client.models.Vendor.delete({ id });
   };
 

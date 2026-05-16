@@ -97,7 +97,7 @@ export default function RunSheetItemRow({
             {item.isFixed && <Lock className="w-3 h-3 text-sage shrink-0" />}
             <input
               type="time"
-              value={item.scheduledStartTime}
+              value={item.scheduledStartTime || ''}
               onChange={(e) => onUpdate(item.id, { eventTime: e.target.value, isFixed: true })}
               className={`w-[4.5rem] font-mono text-xs bg-transparent border-none p-0 focus:ring-0 [&::-webkit-calendar-picker-indicator]:hidden ${item.isFixed ? 'text-sage font-bold' : 'text-charcoal/50'}`}
               title={item.isFixed ? 'Fixed start time' : 'Auto-calculated start time (edit to fix)'}
@@ -111,18 +111,43 @@ export default function RunSheetItemRow({
                 <Unlock className="w-3 h-3" />
               </button>
             )}
+            
+            <span className="text-mid-gray mx-1">-</span>
+            
+            <input
+              type="time"
+              value={(() => {
+                if (!item.scheduledStartTime) return '';
+                const [h, m] = item.scheduledStartTime.split(':').map(Number);
+                const d = new Date();
+                d.setHours(h, m + (item.durationMinutes || 0));
+                return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+              })()}
+              onChange={(e) => {
+                const newEndTime = e.target.value;
+                if (!item.scheduledStartTime || !newEndTime) return;
+                const [startH, startM] = item.scheduledStartTime.split(':').map(Number);
+                const [endH, endM] = newEndTime.split(':').map(Number);
+                let duration = (endH * 60 + endM) - (startH * 60 + startM);
+                if (duration < 0) duration += 24 * 60; // Handle midnight crossing
+                onUpdate(item.id, { durationMinutes: duration });
+              }}
+              className="w-[4.5rem] font-mono text-xs text-charcoal/50 bg-transparent border-none p-0 focus:ring-0 [&::-webkit-calendar-picker-indicator]:hidden"
+              title="End time (updates duration)"
+            />
           </div>
           
-          <div className="flex items-center bg-white border border-light-gray rounded-md px-2 py-1 shadow-sm">
+          <div className="flex items-center bg-white border border-light-gray rounded-md px-2 py-1 shadow-sm hidden sm:flex">
             <Clock className="w-3 h-3 text-charcoal/40 mr-1.5" />
             <input
               type="number"
               min="0"
               value={item.durationMinutes || 0}
               onChange={(e) => onUpdate(item.id, { durationMinutes: parseInt(e.target.value) || 0 })}
-              className="w-10 text-center bg-transparent border-none p-0 text-charcoal focus:ring-0 text-sm"
+              className="w-10 text-center bg-transparent border-none p-0 text-charcoal focus:ring-0 text-xs"
+              title="Duration in minutes"
             />
-            <span className="text-charcoal/50 ml-1 text-xs mr-2">min</span>
+            <span className="text-charcoal/50 ml-1 text-[10px] mr-1">min</span>
           </div>
 
           {/* Explicit Parallel Toggle */}

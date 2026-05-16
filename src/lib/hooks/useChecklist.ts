@@ -37,20 +37,30 @@ export function useChecklist() {
 
   const addTask = async (task: Omit<Schema['ChecklistItem']['type'], 'id' | 'createdAt' | 'updatedAt' | 'weddingId'>) => {
     if (!weddingId) return;
-    await client.models.ChecklistItem.create({
+    const { data } = await client.models.ChecklistItem.create({
       ...task,
       weddingId
     });
+    if (data) {
+      setTasks(prev => [...prev, data].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)));
+    }
   };
 
   const updateTask = async (id: string, updates: Partial<Schema['ChecklistItem']['type']>) => {
-    await client.models.ChecklistItem.update({
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)));
+    
+    const { data } = await client.models.ChecklistItem.update({
       id,
       ...updates
     });
+    
+    if (data) {
+      setTasks(prev => prev.map(t => t.id === id ? data : t).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)));
+    }
   };
 
   const deleteTask = async (id: string) => {
+    setTasks(prev => prev.filter(t => t.id !== id));
     await client.models.ChecklistItem.delete({ id });
   };
 
