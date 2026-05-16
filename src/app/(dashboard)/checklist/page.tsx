@@ -6,9 +6,10 @@ import ChecklistCategory from '@/components/features/checklist/ChecklistCategory
 import type { Schema } from '../../../../amplify/data/resource';
 import { useWedding } from '@/lib/hooks/useWedding';
 import { generateDefaultChecklist } from '@/lib/utils/defaultChecklist';
-import { Sparkles, AlertCircle } from 'lucide-react';
+import { Sparkles, AlertCircle, Download, List, Kanban } from 'lucide-react';
 import { generateClient } from 'aws-amplify/data';
 import { toast } from 'sonner';
+import ChecklistTimeline from '@/components/features/checklist/ChecklistTimeline';
 
 const CATEGORY_LABELS: Record<string, string> = {
   TWELVE_MONTHS: '12+ Months Before',
@@ -33,6 +34,38 @@ export default function ChecklistPage() {
   const { tasks, loading, addTask, updateTask, deleteTask } = useChecklist();
   const [hideCompleted, setHideCompleted] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list');
+
+  const handleExportCSV = () => {
+    if (tasks.length === 0) {
+      toast.error('No tasks to export.');
+      return;
+    }
+
+    const headers = ['Title', 'Category', 'Due Date', 'Status', 'Notes'];
+    const csvContent = [
+      headers.join(','),
+      ...tasks.map(t => {
+        const title = `"${(t.title || '').replace(/"/g, '""')}"`;
+        const category = CATEGORY_LABELS[t.category as string] || t.category;
+        const dueDate = t.dueDate || '';
+        const status = t.isCompleted ? 'Completed' : 'Pending';
+        const notes = `"${(t.notes || '').replace(/"/g, '""')}"`;
+        return `${title},${category},${dueDate},${status},${notes}`;
+      })
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'wedding_checklist.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Checklist exported successfully!');
+  };
 
   const handleGenerateIvyPlan = async () => {
     if (!wedding) return;
@@ -109,15 +142,43 @@ export default function ChecklistPage() {
           <p className="text-mid-gray">Stay on track with your planning tasks.</p>
         </div>
         
-        <label className="flex items-center space-x-2 cursor-pointer text-sm font-medium text-charcoal">
-          <input 
-            type="checkbox" 
-            checked={hideCompleted}
-            onChange={(e) => setHideCompleted(e.target.checked)}
-            className="rounded text-sage focus:ring-sage"
-          />
-          <span>Hide Completed</span>
-        </label>
+        <div className="flex items-center space-x-6">
+          <button 
+            onClick={handleExportCSV}
+            className="flex items-center space-x-2 text-sm font-medium text-sage hover:text-dark-sage transition-colors"
+            title="Export to Spreadsheet (CSV)"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export CSV</span>
+          </button>
+
+          <div className="flex bg-light-gray rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'list' ? 'bg-white text-sage shadow-sm' : 'text-mid-gray hover:text-charcoal'}`}
+            >
+              <List className="w-4 h-4" />
+              <span>List</span>
+            </button>
+            <button
+              onClick={() => setViewMode('timeline')}
+              className={`flex items-center space-x-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === 'timeline' ? 'bg-white text-sage shadow-sm' : 'text-mid-gray hover:text-charcoal'}`}
+            >
+              <Kanban className="w-4 h-4" />
+              <span>Timeline</span>
+            </button>
+          </div>
+
+          <label className="flex items-center space-x-2 cursor-pointer text-sm font-medium text-charcoal">
+            <input 
+              type="checkbox" 
+              checked={hideCompleted}
+              onChange={(e) => setHideCompleted(e.target.checked)}
+              className="rounded text-sage focus:ring-sage"
+            />
+            <span>Hide Completed</span>
+          </label>
+        </div>
       </div>
 
       <div className="bg-white p-6 rounded-xl border border-light-gray shadow-sm mb-8 flex items-center">
@@ -148,6 +209,11 @@ export default function ChecklistPage() {
             {isGenerating ? 'Generating Timeline...' : 'Auto-Generate Ivy Plan'}
           </button>
         </div>
+      ) : viewMode === 'timeline' ? (
+        <ChecklistTimeline 
+          tasks={filteredTasks} 
+          onToggleTask={(id, isCompleted) => updateTask(id, { isCompleted, completedAt: isCompleted ? new Date().toISOString() : null })} 
+        />
       ) : (
         <div className="space-y-6">
           {CATEGORY_ORDER.map(catKey => {
