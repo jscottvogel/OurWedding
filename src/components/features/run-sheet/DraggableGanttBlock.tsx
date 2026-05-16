@@ -19,6 +19,7 @@ interface Props {
   hoveredItemId: string | null;
   setHoveredItemId: (id: string | null) => void;
   onUpdateItem: (id: string, updates: Partial<CalculatedRunSheetItem>) => void;
+  onEditItem: (item: CalculatedRunSheetItem) => void;
   PIXELS_PER_MINUTE: number;
   diffMinutes: (end: string, start: string) => number;
   addMinutes: (time: string, mins: number) => string;
@@ -32,6 +33,7 @@ export default function DraggableGanttBlock({
   hoveredItemId,
   setHoveredItemId,
   onUpdateItem,
+  onEditItem,
   PIXELS_PER_MINUTE,
   diffMinutes,
   addMinutes
@@ -176,25 +178,43 @@ export default function DraggableGanttBlock({
             key={item.id}
             onMouseEnter={() => !isDragging && !isResizingId && setHoveredItemId(item.id)}
             onMouseLeave={() => !isDragging && !isResizingId && setHoveredItemId(null)}
-            className={`relative rounded-r-md p-2 overflow-hidden cursor-grab active:cursor-grabbing origin-left select-none ${bgClass} ${isResizingId === item.id ? 'z-50 ring-2 ring-sage' : ''}`}
+            className={`relative rounded-r-md p-2 overflow-hidden cursor-grab active:cursor-grabbing origin-left select-none group/block ${bgClass} ${isResizingId === item.id ? 'z-50 ring-2 ring-sage' : ''}`}
             style={{ width: `${displayWidth}px`, height: '60px' }}
             title={!isDragging && !isResizingId ? `${item.title} (${item.durationMinutes} min)` : ''}
           >
-            <div className="text-sm font-semibold truncate leading-tight pointer-events-none">
+            {/* Move Grip (Left Edge) */}
+            <div className="absolute top-0 left-0 bottom-0 w-4 flex flex-col items-center justify-center gap-[2px] opacity-20 group-hover/block:opacity-50">
+              <div className="w-[2px] h-[2px] bg-charcoal rounded-full" />
+              <div className="w-[2px] h-[2px] bg-charcoal rounded-full" />
+              <div className="w-[2px] h-[2px] bg-charcoal rounded-full" />
+            </div>
+            
+            <div className="text-sm font-semibold truncate leading-tight pointer-events-none pl-3">
               {item.title}
             </div>
             {displayWidth > 50 && (
-              <div className={`text-xs mt-1 truncate pointer-events-none ${isHovered && !isOver ? 'text-white/80' : 'text-charcoal/50'}`}>
+              <div className={`text-xs mt-1 truncate pointer-events-none pl-3 ${isHovered && !isOver ? 'text-white/80' : 'text-charcoal/50'}`}>
                 {isResizingId === item.id ? `${snappedMins} min` : `${item.durationMinutes} min`}
               </div>
             )}
             
-            {/* Resize Handle */}
-            <div 
-              className="resize-handle absolute top-0 right-0 w-3 h-full cursor-col-resize hover:bg-black/10 flex items-center justify-center group/handle"
-              onMouseDown={(e) => handleResizeStart(e, item.id, item.durationMinutes || 0)}
+            {/* Edit Button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); onEditItem(item); }}
+              className={`absolute top-2 right-4 p-1.5 bg-white text-charcoal rounded shadow-sm opacity-0 group-hover/block:opacity-100 transition-opacity hover:bg-sage hover:text-white z-40 ${isDragging || isResizingId ? 'hidden' : ''}`}
+              title="Edit Event"
             >
-              <div className="w-1 h-4 bg-charcoal/20 group-hover/handle:bg-charcoal/50 rounded-full" />
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+            </button>
+
+            {/* Resize Handle (Right Edge) */}
+            <div 
+              className="resize-handle absolute top-0 right-0 w-4 h-full cursor-col-resize hover:bg-black/10 flex flex-col items-center justify-center gap-[2px] bg-charcoal/5 border-l border-white/50"
+              onMouseDown={(e) => handleResizeStart(e, item.id, item.durationMinutes || 0)}
+              title="Drag to resize duration"
+            >
+              <div className="w-[2px] h-[3px] bg-charcoal/40 rounded-full" />
+              <div className="w-[2px] h-[3px] bg-charcoal/40 rounded-full" />
             </div>
           </div>
         );

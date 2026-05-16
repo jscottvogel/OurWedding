@@ -1,11 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useRunSheet } from '@/lib/hooks/useRunSheet';
-import RunSheetList from './RunSheetList';
 import TimelinePreview from './TimelinePreview';
-import IvyChat from '@/components/features/ai/IvyChat';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus, AlertTriangle } from 'lucide-react';
 
 export default function RunSheetSplitView() {
   const {
@@ -22,42 +19,7 @@ export default function RunSheetSplitView() {
     addItem,
     updateItem,
     deleteItem,
-    reorderItems
   } = useRunSheet();
-
-  const [activeTab, setActiveTab] = useState<'list' | 'timeline'>('list');
-  const [hoveredItemId, setHoveredItemId] = useState<string | null>(null);
-  const [leftWidth, setLeftWidth] = useState(55);
-  const [isDragging, setIsDragging] = useState(false);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
-      const newWidth = (e.clientX / window.innerWidth) * 100;
-      if (newWidth >= 20 && newWidth <= 80) {
-        setLeftWidth(newWidth);
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    if (isDragging) {
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    } else {
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging]);
 
   if (loading) {
     return (
@@ -95,74 +57,66 @@ export default function RunSheetSplitView() {
         </div>
       )}
 
-      {/* Mobile Tabs */}
-      <div className="md:hidden flex border-b border-light-gray mb-4">
+      {/* Top Controls Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-xl border border-light-gray shadow-sm mb-4 gap-4">
+        
+        {/* Global Bounds Editors */}
+        <div className="flex items-center gap-4 text-sm font-medium text-charcoal">
+          {startItem && (
+            <div className="flex items-center gap-2 bg-sage/10 px-3 py-1.5 rounded-lg border border-sage/20">
+              <span className="text-sage whitespace-nowrap">Day Starts:</span>
+              <input
+                type="time"
+                value={startItem.eventTime}
+                onChange={(e) => updateItem(startItem.id, { eventTime: e.target.value })}
+                className="bg-transparent border-none p-0 focus:ring-0 font-mono text-sage font-bold [&::-webkit-calendar-picker-indicator]:hidden cursor-pointer"
+              />
+            </div>
+          )}
+          
+          {endItem && (
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${isOverSchedule ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-charcoal/5 border-charcoal/10'}`}>
+              <span className="whitespace-nowrap">Day Ends:</span>
+              <input
+                type="time"
+                value={endItem.eventTime}
+                onChange={(e) => updateItem(endItem.id, { eventTime: e.target.value })}
+                className="bg-transparent border-none p-0 focus:ring-0 font-mono font-bold [&::-webkit-calendar-picker-indicator]:hidden cursor-pointer"
+              />
+              {isOverSchedule && (
+                <span title={`Over schedule by ${overScheduleByMins} minutes`} className="ml-1 flex items-center">
+                  <AlertTriangle className="w-4 h-4 text-rose-500" />
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
         <button
-          className={`flex-1 py-3 text-sm font-medium ${activeTab === 'list' ? 'border-b-2 border-sage text-sage' : 'text-charcoal/60'}`}
-          onClick={() => setActiveTab('list')}
+          onClick={() => addItem({ title: 'New Event', durationMinutes: 15 })}
+          className="flex items-center gap-2 px-4 py-2 bg-sage text-white rounded-lg hover:bg-dark-sage transition-colors font-medium shadow-sm w-full sm:w-auto justify-center"
         >
-          Run Sheet
-        </button>
-        <button
-          className={`flex-1 py-3 text-sm font-medium ${activeTab === 'timeline' ? 'border-b-2 border-sage text-sage' : 'text-charcoal/60'}`}
-          onClick={() => setActiveTab('timeline')}
-        >
-          Timeline
+          <Plus className="w-4 h-4" />
+          Add Event
         </button>
       </div>
 
-      <div 
-        className="flex flex-1 overflow-hidden" 
-        style={{ '--left-width': `${leftWidth}%`, '--right-width': `${100 - leftWidth}%` } as React.CSSProperties}
-      >
-        {/* Left Panel - List */}
-        <div className={`w-full md:w-[var(--left-width)] flex flex-col pr-0 md:pr-4 ${activeTab === 'list' ? 'block' : 'hidden md:flex'}`}>
-          <div className="flex-1 min-h-0 pb-2">
-            <RunSheetList
-              startItem={startItem}
-              endItem={endItem}
-              items={items}
-              isOverSchedule={isOverSchedule}
-              overScheduleByMins={overScheduleByMins}
-              onAddItem={addItem}
-              onUpdateItem={updateItem}
-              onDeleteItem={deleteItem}
-              onReorderItems={reorderItems}
-              hoveredItemId={hoveredItemId}
-              setHoveredItemId={setHoveredItemId}
-            />
-          </div>
-        </div>
-
-        {/* Resizer */}
-        <div 
-          className="hidden md:flex w-4 -ml-2 -mr-2 z-10 cursor-col-resize hover:bg-sage/10 active:bg-sage/20 transition-colors items-center justify-center group select-none"
-          onMouseDown={() => setIsDragging(true)}
-        >
-          <div className={`h-12 w-1 rounded-full transition-colors ${isDragging ? 'bg-sage' : 'bg-light-gray group-hover:bg-sage/50'}`} />
-        </div>
-
-        {/* Right Panel - Timeline */}
-        <div className={`w-full md:w-[var(--right-width)] flex flex-col pl-0 md:pl-4 ${activeTab === 'timeline' ? 'block' : 'hidden md:flex'}`}>
-          <div className="flex-1 overflow-y-auto pb-24">
-            <TimelinePreview
-              startItem={startItem}
-              endItem={endItem}
-              items={items}
-              isOverSchedule={isOverSchedule}
-              overScheduleByMins={overScheduleByMins}
-              hoveredItemId={hoveredItemId}
-              setHoveredItemId={setHoveredItemId}
-              onUpdateItem={updateItem}
-            />
-          </div>
+      {/* Full Width Gantt Chart */}
+      <div className="flex-1 w-full flex flex-col bg-white rounded-xl border border-light-gray overflow-hidden">
+        <div className="flex-1 overflow-y-auto pb-8">
+          <TimelinePreview
+            startItem={startItem}
+            endItem={endItem}
+            items={items}
+            isOverSchedule={isOverSchedule}
+            overScheduleByMins={overScheduleByMins}
+            hoveredItemId={null}
+            setHoveredItemId={() => {}}
+            onUpdateItem={updateItem}
+            onDeleteItem={deleteItem}
+          />
         </div>
       </div>
-      
-      {/* Ivy Chat is absolutely positioned via its own component, but we include it here or let it be global */}
-      {/* IvyChat is already included globally in the dashboard layout, so we don't strictly need it here, but user asked for "Ask Ivy" button maybe? 
-          Actually Ivy Chat has a floating button. I can add a custom trigger button here if needed, but IvyChat handles itself.
-      */}
     </div>
   );
 }

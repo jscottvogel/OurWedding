@@ -1,9 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { CalculatedRunSheetItem } from '@/lib/hooks/useRunSheet';
 import type { Schema } from '../../../../amplify/data/resource';
 import DraggableGanttBlock from './DraggableGanttBlock';
+import RunSheetItemModal from './RunSheetItemModal';
 
 interface Props {
   startItem: Schema['RunSheetItem']['type'] | null;
@@ -14,6 +15,7 @@ interface Props {
   hoveredItemId: string | null;
   setHoveredItemId: (id: string | null) => void;
   onUpdateItem: (id: string, updates: Partial<CalculatedRunSheetItem>) => void;
+  onDeleteItem: (id: string) => void;
 }
 
 interface TimelineGroup {
@@ -47,9 +49,12 @@ export default function TimelinePreview({
   overScheduleByMins,
   hoveredItemId,
   setHoveredItemId,
-  onUpdateItem
+  onUpdateItem,
+  onDeleteItem
 }: Props) {
   
+  const [editingItem, setEditingItem] = useState<CalculatedRunSheetItem | null>(null);
+
   const startTargetTime = startItem?.eventTime || '14:00';
   const endTargetTime = endItem?.eventTime || '23:00';
   
@@ -175,12 +180,21 @@ export default function TimelinePreview({
             hoveredItemId={hoveredItemId}
             setHoveredItemId={setHoveredItemId}
             onUpdateItem={onUpdateItem}
+            onEditItem={setEditingItem}
             PIXELS_PER_MINUTE={PIXELS_PER_MINUTE}
             diffMinutes={diffMinutes}
             addMinutes={addMinutes}
           />
         ))}
       </div>
+
+      <RunSheetItemModal
+        isOpen={!!editingItem}
+        onClose={() => setEditingItem(null)}
+        item={editingItem}
+        onUpdate={onUpdateItem}
+        onDelete={onDeleteItem}
+      />
     </div>
   );
 }
