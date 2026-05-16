@@ -7,10 +7,7 @@ import { useAuth } from './useAuth';
 
 const client = generateClient<Schema>();
 
-export type RunSheetItemMode = 'sequential' | 'concurrent';
-
 export type CalculatedRunSheetItem = Schema['RunSheetItem']['type'] & {
-  mode: RunSheetItemMode;
   scheduledStartTime: string;
   scheduledEndTime: string;
 };
@@ -53,8 +50,6 @@ export function useRunSheetProvider() {
 
     for (let i = 0; i < events.length; i++) {
       const event = events[i];
-      const mode = (event.mode as RunSheetItemMode) || 'sequential';
-      
       let scheduledStartTime;
 
       if (event.isFixed && event.eventTime) {
@@ -63,29 +58,18 @@ export function useRunSheetProvider() {
         blockStartTime = scheduledStartTime;
         blockEndTime = addMinutes(scheduledStartTime, event.durationMinutes || 0);
       } else {
-        if (mode === 'sequential' || i === 0) {
-          scheduledStartTime = blockEndTime;
-          blockStartTime = scheduledStartTime;
-        } else {
-          scheduledStartTime = blockStartTime;
-        }
+        scheduledStartTime = blockEndTime;
+        blockStartTime = scheduledStartTime;
       }
 
       const scheduledEndTime = addMinutes(scheduledStartTime, event.durationMinutes || 0);
 
       if (!event.isFixed) {
-        if (mode === 'sequential' || i === 0) {
-          blockEndTime = scheduledEndTime;
-        } else {
-          if (diffMinutes(scheduledEndTime, blockEndTime) > 0) {
-            blockEndTime = scheduledEndTime;
-          }
-        }
+        blockEndTime = scheduledEndTime;
       }
 
       calculatedItems.push({
         ...event,
-        mode,
         sortOrder: i, // Force sort order calculation
         scheduledStartTime,
         scheduledEndTime
@@ -165,6 +149,16 @@ export function useRunSheetProvider() {
     setIsOverSchedule(isOver);
     setOverScheduleByMins(overMins);
   }, [items, startItem, endItem]);
+
+  // Auto-save effect
+  useEffect(() => {
+    if (hasUnsavedChanges && !isSaving) {
+      const timeoutId = setTimeout(() => {
+        saveChanges();
+      }, 1500); // 1.5s debounce
+      return () => clearTimeout(timeoutId);
+    }
+  }, [hasUnsavedChanges, isSaving, items, startItem, endItem]);
 
   const applyLocalUpdate = (newEvents: CalculatedRunSheetItem[]) => {
     const { calculatedItems } = calculateSchedule(newEvents, startItem, endItem);
@@ -273,8 +267,8 @@ export function useRunSheetProvider() {
       }
 
       const allItemsToSave = [...items];
-      if (startItem) allItemsToSave.push({ ...startItem, scheduledStartTime: startItem.eventTime, mode: 'sequential' } as CalculatedRunSheetItem);
-      if (endItem) allItemsToSave.push({ ...endItem, scheduledStartTime: endItem.eventTime, mode: 'sequential' } as CalculatedRunSheetItem);
+      if (startItem) allItemsToSave.push({ ...startItem, scheduledStartTime: startItem.eventTime } as CalculatedRunSheetItem);
+      if (endItem) allItemsToSave.push({ ...endItem, scheduledStartTime: endItem.eventTime } as CalculatedRunSheetItem);
 
       for (const item of allItemsToSave) {
         const payload = {
@@ -283,7 +277,6 @@ export function useRunSheetProvider() {
           eventTime: item.scheduledStartTime || item.eventTime, // Use exactly what we calculated
           durationMinutes: item.durationMinutes,
           isFixed: item.isFixed,
-          mode: item.mode,
           sortOrder: item.sortOrder,
           weddingId: item.weddingId,
           itemType: item.itemType,

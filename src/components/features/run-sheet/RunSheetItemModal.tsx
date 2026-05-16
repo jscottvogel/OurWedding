@@ -17,7 +17,6 @@ export default function RunSheetItemModal({ isOpen, onClose, item, onUpdate, onD
   const [durationMinutes, setDurationMinutes] = useState(0);
   const [eventTime, setEventTime] = useState('');
   const [isFixed, setIsFixed] = useState(false);
-  const [mode, setMode] = useState<'sequential' | 'concurrent'>('sequential');
   const [isPublic, setIsPublic] = useState(false);
 
   useEffect(() => {
@@ -26,7 +25,6 @@ export default function RunSheetItemModal({ isOpen, onClose, item, onUpdate, onD
       setDurationMinutes(item.durationMinutes || 0);
       setEventTime(item.scheduledStartTime || '');
       setIsFixed(!!item.isFixed);
-      setMode(item.mode || 'sequential');
       setIsPublic(!!item.isPublic);
     }
   }, [item, isOpen]);
@@ -42,7 +40,6 @@ export default function RunSheetItemModal({ isOpen, onClose, item, onUpdate, onD
       durationMinutes,
       eventTime: isFixed ? formattedTime : undefined,
       isFixed,
-      mode,
       isPublic
     });
     onClose();
@@ -136,20 +133,7 @@ export default function RunSheetItemModal({ isOpen, onClose, item, onUpdate, onD
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4 pt-2">
-            <button
-              type="button"
-              onClick={() => setMode(mode === 'sequential' ? 'concurrent' : 'sequential')}
-              className={`flex items-center justify-center gap-2 px-3 py-2.5 text-sm font-semibold rounded-lg border transition-all ${
-                mode === 'concurrent' 
-                  ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
-                  : 'bg-white border-light-gray text-mid-gray hover:text-charcoal hover:bg-light-gray'
-              }`}
-            >
-              <LinkIcon className="w-4 h-4" />
-              {mode === 'concurrent' ? 'Parallel' : 'Sequential'}
-            </button>
-            
+          <div className="grid grid-cols-1 gap-4 pt-2">
             <button
               type="button"
               onClick={() => setIsPublic(!isPublic)}

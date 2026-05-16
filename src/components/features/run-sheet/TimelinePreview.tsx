@@ -60,6 +60,7 @@ export default function TimelinePreview({
 }: Props) {
   const startTargetTime = startItem?.eventTime || '14:00';
   const endTargetTime = endItem?.eventTime || '23:00';
+  const PIXELS_PER_MINUTE = 6; // 1 hour = 360px width
   
   const milestones = useMemo(() => {
     const arr = [
@@ -76,19 +77,13 @@ export default function TimelinePreview({
     const grouped: TimelineGroup[] = [];
     
     for (const item of eventItems) {
-      if (item.mode !== 'concurrent' || grouped.length === 0) {
-        grouped.push({
-          id: item.id,
-          startTime: item.scheduledStartTime,
-          durationMinutes: item.durationMinutes || 0,
-          items: [item],
-          isOverTarget: isOverSchedule && item.scheduledStartTime >= endTargetTime
-        });
-      } else {
-        const lastGroup = grouped[grouped.length - 1];
-        lastGroup.items.push(item);
-        lastGroup.durationMinutes = Math.max(lastGroup.durationMinutes, item.durationMinutes || 0);
-      }
+      grouped.push({
+        id: item.id,
+        startTime: item.scheduledStartTime,
+        durationMinutes: item.durationMinutes || 0,
+        items: [item],
+        isOverTarget: isOverSchedule && item.scheduledStartTime >= endTargetTime
+      });
     }
 
     const sortedGroups = [...grouped].sort((a, b) => a.startTime.localeCompare(b.startTime));
@@ -120,8 +115,6 @@ export default function TimelinePreview({
 
     return sortedGroups;
   }, [eventItems, isOverSchedule, endTargetTime, startTargetTime]);
-
-  const PIXELS_PER_MINUTE = 6; // 1 hour = 360px width
 
   // Calculate total timeline bounds
   let timelineEnd = endTargetTime;

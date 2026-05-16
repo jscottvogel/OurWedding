@@ -161,8 +161,6 @@ export default function DraggableGanttBlock({
         let bgClass = 'bg-white border-l-4 border-l-charcoal/30 border-y border-y-light-gray border-r border-r-light-gray shadow-sm text-charcoal hover:border-l-charcoal/50';
         if (isOver) {
            bgClass = 'bg-rose-50 border-l-4 border-l-rose-500 border-y border-y-rose-200 border-r border-r-rose-200 text-rose-900 shadow-sm';
-        } else if (group.items.length > 1) {
-           bgClass = 'bg-indigo-50/50 border-l-4 border-l-indigo-400 border-y border-y-indigo-100 border-r border-r-indigo-100 text-indigo-900 shadow-sm hover:border-l-indigo-600';
         }
         
         if (isHovered) {

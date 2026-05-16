@@ -41,37 +41,15 @@ export default function RunSheetSplitView() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
-      {hasUnsavedChanges && (
-        <div className="bg-sage/10 border border-sage/30 rounded-xl mb-4 p-3 px-4 flex justify-between items-center shadow-sm">
-          <span className="text-sm font-medium text-sage-dark flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-sage animate-pulse" />
-            You have unsaved changes
-          </span>
-          <div className="flex gap-4">
-            <button 
-              onClick={discardChanges} 
-              disabled={isSaving}
-              className="text-sm font-medium text-mid-gray hover:text-charcoal transition-colors disabled:opacity-50"
-            >
-              Discard
-            </button>
-            <button 
-              onClick={saveChanges} 
-              disabled={isSaving} 
-              className="text-sm font-medium bg-sage text-white px-4 py-1.5 rounded-full hover:bg-sage-dark transition-all flex items-center gap-2 disabled:opacity-70 shadow-sm"
-            >
-              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-              {isSaving ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Top Controls Bar */}
       <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-xl border border-light-gray shadow-sm mb-4 gap-4">
         
         <div className="flex items-center gap-4 text-sm font-medium text-charcoal flex-1">
           <h2 className="text-xl font-display text-sage">Timeline</h2>
+          <div className={`flex items-center gap-2 text-xs text-mid-gray transition-opacity duration-300 ${isSaving ? 'opacity-100' : 'opacity-0'}`}>
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Saving...
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
