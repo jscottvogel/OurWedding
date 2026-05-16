@@ -10,10 +10,17 @@ foreach ($region in $REGIONS) {
     Write-Host ""
     Write-Host "######## REGION: $region ########"
 
-    # OpenSearch
+    # OpenSearch Domains
     $result = aws opensearch list-domain-names --region $region --profile $PROFILE_NAME 2>$null | ConvertFrom-Json
     if ($result.DomainNames.Count -gt 0) {
         Write-Host "  [OPENSEARCH] $($result.DomainNames.Count) domain(s): $($result.DomainNames.DomainName -join ', ')"
+    }
+
+    # OpenSearch Serverless
+    $result = aws opensearchserverless list-collections --region $region --profile $PROFILE_NAME 2>$null | ConvertFrom-Json
+    if ($result.collectionSummaries.Count -gt 0) {
+        $names = $result.collectionSummaries | ForEach-Object { "$($_.name) [$($_.status)]" }
+        Write-Host "  [OPENSEARCH SERVERLESS] $($result.collectionSummaries.Count) collection(s): $($names -join ', ')"
     }
 
     # ElastiCache
@@ -75,6 +82,13 @@ foreach ($region in $REGIONS) {
     $result = aws redshift describe-clusters --region $region --profile $PROFILE_NAME 2>$null | ConvertFrom-Json
     if ($result.Clusters.Count -gt 0) {
         Write-Host "  [REDSHIFT] $($result.Clusters.Count) cluster(s): $($result.Clusters.ClusterIdentifier -join ', ')"
+    }
+
+    # Bedrock Knowledge Bases
+    $result = aws bedrock-agent list-knowledge-bases --region $region --profile $PROFILE_NAME 2>$null | ConvertFrom-Json
+    if ($result.knowledgeBaseSummaries.Count -gt 0) {
+        $names = $result.knowledgeBaseSummaries | ForEach-Object { "$($_.name) [$($_.status)]" }
+        Write-Host "  [BEDROCK KNOWLEDGE BASE] $($result.knowledgeBaseSummaries.Count) knowledge base(s): $($names -join ', ')"
     }
 }
 
