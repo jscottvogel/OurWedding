@@ -149,7 +149,7 @@ export default function DraggableGanttBlock({
     >
       {/* Tooltip-like Start Time Label */}
       <div className={`absolute bottom-full mb-1 left-0 font-mono text-xs font-medium text-sage bg-white/90 px-1 rounded shadow-sm z-30 transition-opacity ${isDragging ? 'opacity-100 ring-2 ring-sage' : 'opacity-0 group-hover:opacity-100'}`}>
-        {isDragging ? currentHoverTime : group.startTime}
+        {isDragging ? currentHoverTime.slice(0, 5) : group.startTime.slice(0, 5)}
       </div>
 
       {group.items.map((item) => {

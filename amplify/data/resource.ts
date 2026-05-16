@@ -131,7 +131,7 @@ const schema = a.schema({
       notes: a.string(),
       assignedVendorIds: a.string().array(),
       sortOrder: a.integer(),
-      itemType: a.enum(['START', 'END', 'EVENT']),
+      itemType: a.enum(['START', 'END', 'EVENT', 'MILESTONE']),
       mode: a.string(),
       isFixed: a.boolean(),
       isPublic: a.boolean().default(false),

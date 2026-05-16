@@ -60,45 +60,27 @@ export default function RunSheetSplitView() {
       {/* Top Controls Bar */}
       <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-xl border border-light-gray shadow-sm mb-4 gap-4">
         
-        {/* Global Bounds Editors */}
-        <div className="flex items-center gap-4 text-sm font-medium text-charcoal">
-          {startItem && (
-            <div className="flex items-center gap-2 bg-sage/10 px-3 py-1.5 rounded-lg border border-sage/20">
-              <span className="text-sage whitespace-nowrap">Day Starts:</span>
-              <input
-                type="time"
-                value={startItem.eventTime}
-                onChange={(e) => updateItem(startItem.id, { eventTime: e.target.value })}
-                className="bg-transparent border-none p-0 focus:ring-0 font-mono text-sage font-bold [&::-webkit-calendar-picker-indicator]:hidden cursor-pointer"
-              />
-            </div>
-          )}
-          
-          {endItem && (
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${isOverSchedule ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-charcoal/5 border-charcoal/10'}`}>
-              <span className="whitespace-nowrap">Day Ends:</span>
-              <input
-                type="time"
-                value={endItem.eventTime}
-                onChange={(e) => updateItem(endItem.id, { eventTime: e.target.value })}
-                className="bg-transparent border-none p-0 focus:ring-0 font-mono font-bold [&::-webkit-calendar-picker-indicator]:hidden cursor-pointer"
-              />
-              {isOverSchedule && (
-                <span title={`Over schedule by ${overScheduleByMins} minutes`} className="ml-1 flex items-center">
-                  <AlertTriangle className="w-4 h-4 text-rose-500" />
-                </span>
-              )}
-            </div>
-          )}
+        <div className="flex items-center gap-4 text-sm font-medium text-charcoal flex-1">
+          <h2 className="text-xl font-display text-sage">Timeline</h2>
         </div>
 
-        <button
-          onClick={() => addItem({ title: 'New Event', durationMinutes: 15 })}
-          className="flex items-center gap-2 px-4 py-2 bg-sage text-white rounded-lg hover:bg-dark-sage transition-colors font-medium shadow-sm w-full sm:w-auto justify-center"
-        >
-          <Plus className="w-4 h-4" />
-          Add Event
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => addItem({ title: 'New Milestone', durationMinutes: 0, itemType: 'MILESTONE' })}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-light-gray text-charcoal rounded-lg hover:bg-light-gray transition-colors font-medium shadow-sm w-full sm:w-auto justify-center"
+          >
+            <Plus className="w-4 h-4 text-mid-gray" />
+            Add Milestone
+          </button>
+          
+          <button
+            onClick={() => addItem({ title: 'New Event', durationMinutes: 15 })}
+            className="flex items-center gap-2 px-4 py-2 bg-sage text-white rounded-lg hover:bg-dark-sage transition-colors font-medium shadow-sm w-full sm:w-auto justify-center"
+          >
+            <Plus className="w-4 h-4" />
+            Add Event
+          </button>
+        </div>
       </div>
 
       {/* Full Width Gantt Chart */}

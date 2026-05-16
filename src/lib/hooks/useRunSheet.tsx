@@ -139,7 +139,7 @@ export function useRunSheetProvider() {
 
         setDbItems(incomingDbItems);
 
-        const events = incomingDbItems.filter(i => i.itemType === 'EVENT' || !i.itemType);
+        const events = incomingDbItems.filter(i => i.itemType === 'EVENT' || i.itemType === 'MILESTONE' || !i.itemType);
         events.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
         const { calculatedItems, isOver, overMins } = calculateSchedule(events, currentStart, currentEnd);
@@ -180,7 +180,7 @@ export function useRunSheetProvider() {
       title: item.title || 'New Event',
       eventTime: item.eventTime ? (item.eventTime.length === 5 ? item.eventTime + ':00' : item.eventTime) : '12:00:00',
       weddingId,
-      itemType: 'EVENT',
+      itemType: item.itemType || 'EVENT',
       isPublic: item.isPublic || false,
       sortOrder: items.length,
       createdAt: new Date().toISOString(),
@@ -195,6 +195,22 @@ export function useRunSheetProvider() {
   };
 
   const updateItem = async (id: string, updates: Partial<Schema['RunSheetItem']['type']>) => {
+    if (startItem?.id === id) {
+      const newStart = { ...startItem, ...updates } as Schema['RunSheetItem']['type'];
+      setStartItem(newStart);
+      const { calculatedItems } = calculateSchedule(items, newStart, endItem);
+      setItems(calculatedItems);
+      setHasUnsavedChanges(true);
+      return;
+    }
+    if (endItem?.id === id) {
+      const newEnd = { ...endItem, ...updates } as Schema['RunSheetItem']['type'];
+      setEndItem(newEnd);
+      const { calculatedItems } = calculateSchedule(items, startItem, newEnd);
+      setItems(calculatedItems);
+      setHasUnsavedChanges(true);
+      return;
+    }
     applyLocalUpdate(items.map(item => item.id === id ? { ...item, ...updates } as CalculatedRunSheetItem : item));
   };
 
@@ -225,7 +241,7 @@ export function useRunSheetProvider() {
           title: item.title || 'New Event',
           eventTime: item.eventTime ? (item.eventTime.length === 5 ? item.eventTime + ':00' : item.eventTime) : '12:00:00',
           weddingId,
-          itemType: 'EVENT',
+          itemType: item.itemType || 'EVENT',
           isPublic: item.isPublic || false,
           sortOrder: currentItems.length,
           createdAt: new Date().toISOString(),
@@ -248,7 +264,7 @@ export function useRunSheetProvider() {
     try {
       const promises: Promise<any>[] = [];
 
-      const dbEvents = dbItems.filter(i => i.itemType === 'EVENT');
+      const dbEvents = dbItems.filter(i => i.itemType === 'EVENT' || i.itemType === 'MILESTONE');
       const localIds = new Set(items.map(i => i.id));
       
       const toDelete = dbEvents.filter(db => !localIds.has(db.id));
@@ -256,11 +272,15 @@ export function useRunSheetProvider() {
         promises.push(client.models.RunSheetItem.delete({ id: item.id }));
       }
 
-      for (const item of items) {
+      const allItemsToSave = [...items];
+      if (startItem) allItemsToSave.push({ ...startItem, scheduledStartTime: startItem.eventTime, mode: 'sequential' } as CalculatedRunSheetItem);
+      if (endItem) allItemsToSave.push({ ...endItem, scheduledStartTime: endItem.eventTime, mode: 'sequential' } as CalculatedRunSheetItem);
+
+      for (const item of allItemsToSave) {
         const payload = {
           title: item.title,
           description: item.description,
-          eventTime: item.scheduledStartTime, // Use exactly what we calculated
+          eventTime: item.scheduledStartTime || item.eventTime, // Use exactly what we calculated
           durationMinutes: item.durationMinutes,
           isFixed: item.isFixed,
           mode: item.mode,
@@ -287,7 +307,7 @@ export function useRunSheetProvider() {
   };
 
   const discardChanges = () => {
-    const events = dbItems.filter(i => i.itemType === 'EVENT' || !i.itemType);
+    const events = dbItems.filter(i => i.itemType === 'EVENT' || i.itemType === 'MILESTONE' || !i.itemType);
     events.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
     const { calculatedItems, isOver, overMins } = calculateSchedule(events, startItem, endItem);
 

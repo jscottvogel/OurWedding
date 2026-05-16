@@ -34,11 +34,11 @@ const diffMinutes = (endStr: string, startStr: string): number => {
 };
 
 const addMinutes = (timeStr: string, mins: number): string => {
-  if (!timeStr) return '00:00';
+  if (!timeStr) return '00:00:00';
   const [hours, minutes] = timeStr.split(':').map(Number);
   const date = new Date(2000, 0, 1, hours, minutes);
   date.setMinutes(date.getMinutes() + mins);
-  return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+  return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:00`;
 };
 
 export default function TimelinePreview({
@@ -58,10 +58,21 @@ export default function TimelinePreview({
   const startTargetTime = startItem?.eventTime || '14:00';
   const endTargetTime = endItem?.eventTime || '23:00';
   
+  const milestones = useMemo(() => {
+    const arr = [
+      startItem ? { ...startItem, durationMinutes: 0 } as CalculatedRunSheetItem : null,
+      endItem ? { ...endItem, durationMinutes: 0 } as CalculatedRunSheetItem : null,
+      ...items.filter(i => i.itemType === 'MILESTONE')
+    ].filter(Boolean) as CalculatedRunSheetItem[];
+    return arr;
+  }, [startItem, endItem, items]);
+
+  const eventItems = useMemo(() => items.filter(i => i.itemType === 'EVENT' || !i.itemType), [items]);
+  
   const groups = useMemo(() => {
     const grouped: TimelineGroup[] = [];
     
-    for (const item of items) {
+    for (const item of eventItems) {
       if (item.mode !== 'concurrent' || grouped.length === 0) {
         grouped.push({
           id: item.id,
@@ -77,7 +88,7 @@ export default function TimelinePreview({
       }
     }
     return grouped;
-  }, [items, isOverSchedule, endTargetTime]);
+  }, [eventItems, isOverSchedule, endTargetTime]);
 
   const PIXELS_PER_MINUTE = 6; // 1 hour = 360px width
 
@@ -140,34 +151,36 @@ export default function TimelinePreview({
           </div>
         ))}
 
-        {/* Start Node */}
-        {startItem && (
-          <div className="absolute top-0 h-full z-10" style={{ left: '0px' }}>
-             <div className="absolute -top-[5px] left-0 -translate-x-1/2 w-2 h-2 rounded-full bg-sage ring-4 ring-white" />
-             <div className="absolute bottom-full mb-3 font-mono text-xs font-bold text-sage bg-[#FAFAFA] px-1 -translate-x-1/2 whitespace-nowrap">
-              {startTargetTime}
-            </div>
-          </div>
-        )}
-
-        {/* End Target Line */}
-        {endItem && (
-          <div 
-            className="absolute top-0 h-full z-10"
-            style={{ left: `${endLineLeft}px` }}
-          >
-            <div className="absolute top-0 left-0 h-full border-l-2 border-charcoal/40" />
-            <div className="absolute -top-[5px] left-0 -translate-x-1/2 w-2 h-2 rounded-full bg-charcoal ring-4 ring-white" />
-            <div className="absolute bottom-full mb-3 font-mono text-xs font-bold text-charcoal bg-[#FAFAFA] px-1 -translate-x-1/2 whitespace-nowrap">
-              {endTargetTime}
-            </div>
-            {isOverSchedule && (
-              <div className="absolute left-2 top-4 bg-rose-100 text-rose-700 text-xs font-bold px-2 py-1 rounded shadow-sm whitespace-nowrap">
-                +{overScheduleByMins} min OVER
+        {/* Milestones */}
+        {milestones.map(milestone => {
+          const time = milestone.scheduledStartTime || milestone.eventTime;
+          const left = diffMinutes(time, startTargetTime) * PIXELS_PER_MINUTE;
+          const isOver = isOverSchedule && milestone.itemType === 'END';
+          
+          return (
+            <div 
+              key={milestone.id}
+              className="absolute top-0 h-full z-30 group/milestone cursor-pointer"
+              style={{ left: `${left}px` }}
+              onClick={() => setEditingItem(milestone)}
+            >
+              <div className={`absolute top-0 left-0 h-full border-l-2 ${milestone.itemType === 'END' ? 'border-charcoal/40' : 'border-sage/40'}`} />
+              <div className={`absolute -top-[5px] left-0 -translate-x-1/2 w-3 h-3 rotate-45 ring-4 ring-white shadow-sm transition-transform group-hover/milestone:scale-125 ${milestone.itemType === 'END' ? 'bg-charcoal' : 'bg-sage'}`} />
+              
+              <div className={`absolute bottom-full mb-3 font-mono text-xs font-bold px-2 py-0.5 rounded shadow-sm -translate-x-1/2 whitespace-nowrap transition-all group-hover/milestone:-translate-y-1 ${milestone.itemType === 'END' ? 'text-charcoal bg-white border border-charcoal/20' : 'text-sage bg-white border border-sage/20'}`}>
+                <div className="text-[10px] uppercase opacity-70 tracking-wider mb-[1px] text-center">{milestone.title}</div>
+                <div className="text-center">{time.slice(0, 5)}</div>
               </div>
-            )}
-          </div>
-        )}
+
+              {/* Over schedule warning for END */}
+              {isOver && (
+                <div className="absolute left-3 top-4 bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-1 rounded shadow-sm whitespace-nowrap">
+                  +{overScheduleByMins} min OVER
+                </div>
+              )}
+            </div>
+          );
+        })}
 
         {/* Absolutely Positioned Groups (The Gantt Blocks) */}
         {groups.map((group) => (

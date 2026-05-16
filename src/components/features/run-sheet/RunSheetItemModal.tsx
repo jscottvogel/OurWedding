@@ -35,10 +35,12 @@ export default function RunSheetItemModal({ isOpen, onClose, item, onUpdate, onD
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    const formattedTime = eventTime.length === 5 ? `${eventTime}:00` : eventTime;
+    
     onUpdate(item.id, {
       title,
       durationMinutes,
-      eventTime: isFixed ? eventTime : undefined,
+      eventTime: isFixed ? formattedTime : undefined,
       isFixed,
       mode,
       isPublic
@@ -54,11 +56,16 @@ export default function RunSheetItemModal({ isOpen, onClose, item, onUpdate, onD
     return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
   };
 
+  const isMilestone = item.itemType === 'MILESTONE' || item.itemType === 'START' || item.itemType === 'END';
+  const isProtected = item.itemType === 'START' || item.itemType === 'END';
+
   return (
     <div className="fixed inset-0 bg-charcoal/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
       <div className="bg-white rounded-2xl w-full max-w-md shadow-xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
         <div className="flex justify-between items-center p-5 border-b border-light-gray bg-sage/5">
-          <h2 className="text-xl font-display text-sage">Edit Event</h2>
+          <h2 className="text-xl font-display text-sage">
+            {isMilestone ? 'Edit Milestone' : 'Edit Event'}
+          </h2>
           <button onClick={onClose} className="text-mid-gray hover:text-charcoal transition-colors">
             <X className="w-5 h-5" />
           </button>
@@ -67,21 +74,23 @@ export default function RunSheetItemModal({ isOpen, onClose, item, onUpdate, onD
         <form onSubmit={handleSave} className="p-6 space-y-5">
           
           <div>
-            <label className="block text-sm font-medium text-charcoal mb-1.5">Event Title</label>
+            <label className="block text-sm font-medium text-charcoal mb-1.5">
+              {isMilestone ? 'Milestone Title' : 'Event Title'}
+            </label>
             <input 
               required 
               type="text" 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full border border-light-gray rounded-lg p-2.5 focus:border-sage focus:ring-1 focus:ring-sage focus:outline-none"
-              placeholder="E.g., Cake Cutting"
+              placeholder={isMilestone ? "E.g., Photographer Arrives" : "E.g., Cake Cutting"}
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className={`grid ${isMilestone ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
             <div>
               <label className="block text-sm font-medium text-charcoal mb-1.5 flex items-center gap-1.5">
-                <Clock className="w-4 h-4 text-mid-gray" /> Start Time
+                <Clock className="w-4 h-4 text-mid-gray" /> Time
               </label>
               <div className="flex items-center gap-2">
                 <input 
@@ -91,35 +100,41 @@ export default function RunSheetItemModal({ isOpen, onClose, item, onUpdate, onD
                     setEventTime(e.target.value);
                     setIsFixed(true);
                   }}
-                  className={`w-full border rounded-lg p-2.5 focus:border-sage focus:outline-none font-mono text-sm ${isFixed ? 'border-sage/50 bg-sage/5 text-sage' : 'border-light-gray text-charcoal'}`}
+                  className={`w-full border rounded-lg p-2.5 focus:border-sage focus:outline-none font-mono text-sm ${isFixed || isMilestone ? 'border-sage/50 bg-sage/5 text-sage' : 'border-light-gray text-charcoal'}`}
                 />
-                <button
-                  type="button"
-                  onClick={() => setIsFixed(!isFixed)}
-                  className={`p-2.5 border rounded-lg transition-colors ${isFixed ? 'bg-sage/10 border-sage/30 text-sage hover:bg-rose-50 hover:text-rose-500 hover:border-rose-200' : 'border-light-gray text-mid-gray hover:text-charcoal hover:bg-light-gray'}`}
-                  title={isFixed ? "Time is locked. Click to unlock." : "Time is auto-calculated. Click to lock."}
-                >
-                  {isFixed ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
-                </button>
+                {!isMilestone && (
+                  <button
+                    type="button"
+                    onClick={() => setIsFixed(!isFixed)}
+                    className={`p-2.5 border rounded-lg transition-colors ${isFixed ? 'bg-sage/10 border-sage/30 text-sage hover:bg-rose-50 hover:text-rose-500 hover:border-rose-200' : 'border-light-gray text-mid-gray hover:text-charcoal hover:bg-light-gray'}`}
+                    title={isFixed ? "Time is locked. Click to unlock." : "Time is auto-calculated. Click to lock."}
+                  >
+                    {isFixed ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                  </button>
+                )}
               </div>
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-charcoal mb-1.5">Duration (mins)</label>
-              <input 
-                type="number" 
-                min="0"
-                value={durationMinutes}
-                onChange={(e) => setDurationMinutes(parseInt(e.target.value) || 0)}
-                className="w-full border border-light-gray rounded-lg p-2.5 focus:border-sage focus:outline-none font-mono text-sm"
-              />
-            </div>
+            {!isMilestone && (
+              <div>
+                <label className="block text-sm font-medium text-charcoal mb-1.5">Duration (mins)</label>
+                <input 
+                  type="number" 
+                  min="0"
+                  value={durationMinutes}
+                  onChange={(e) => setDurationMinutes(parseInt(e.target.value) || 0)}
+                  className="w-full border border-light-gray rounded-lg p-2.5 focus:border-sage focus:outline-none font-mono text-sm"
+                />
+              </div>
+            )}
           </div>
 
-          <div className="text-xs text-mid-gray bg-light-gray/50 p-2 rounded-lg flex items-center justify-between">
-            <span>Calculated End Time:</span>
-            <span className="font-mono font-medium text-charcoal">{calculateEndTime()}</span>
-          </div>
+          {!isMilestone && (
+            <div className="text-xs text-mid-gray bg-light-gray/50 p-2 rounded-lg flex items-center justify-between">
+              <span>Calculated End Time:</span>
+              <span className="font-mono font-medium text-charcoal">{calculateEndTime()}</span>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4 pt-2">
             <button
@@ -149,20 +164,22 @@ export default function RunSheetItemModal({ isOpen, onClose, item, onUpdate, onD
             </button>
           </div>
 
-          <div className="flex justify-between items-center pt-4 border-t border-light-gray mt-2">
-            <button
-              type="button"
-              onClick={() => {
-                if (confirm('Are you sure you want to delete this event?')) {
-                  onDelete(item.id);
-                  onClose();
-                }
-              }}
-              className="p-2 text-charcoal/40 hover:text-rose-500 hover:bg-rose-50 rounded-md transition-colors"
-              title="Delete Event"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
+          <div className={`flex ${isProtected ? 'justify-end' : 'justify-between'} items-center pt-4 border-t border-light-gray mt-2`}>
+            {!isProtected && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm('Are you sure you want to delete this?')) {
+                    onDelete(item.id);
+                    onClose();
+                  }
+                }}
+                className="p-2 text-charcoal/40 hover:text-rose-500 hover:bg-rose-50 rounded-md transition-colors"
+                title="Delete"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            )}
             
             <div className="flex gap-3">
               <button 
