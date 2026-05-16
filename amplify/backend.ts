@@ -111,3 +111,33 @@ backend.sendWeddingEmail.addEnvironment('TABLE_WEDDING', backend.data.resources.
 backend.sendWeddingEmail.addEnvironment('TABLE_EMAIL_CAMPAIGN', backend.data.resources.tables['EmailCampaign'].tableName);
 backend.sendWeddingEmail.addEnvironment('TABLE_EMAIL_SEND_RECORD', backend.data.resources.tables['EmailSendRecord'].tableName);
 
+// Grant DynamoDB access for resetDemo
+backend.resetDemo.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    actions: [
+      'dynamodb:GetItem',
+      'dynamodb:PutItem',
+      'dynamodb:DeleteItem',
+      'dynamodb:Query',
+      'dynamodb:Scan'
+    ],
+    resources: [
+      backend.data.resources.tables['Wedding'].tableArn,
+      backend.data.resources.tables['Guest'].tableArn,
+      backend.data.resources.tables['Vendor'].tableArn,
+      backend.data.resources.tables['BudgetItem'].tableArn,
+      backend.data.resources.tables['RunSheetItem'].tableArn,
+      backend.data.resources.tables['Wedding'].tableArn + '/index/*',
+      backend.data.resources.tables['Guest'].tableArn + '/index/*',
+      backend.data.resources.tables['Vendor'].tableArn + '/index/*',
+      backend.data.resources.tables['BudgetItem'].tableArn + '/index/*',
+      backend.data.resources.tables['RunSheetItem'].tableArn + '/index/*'
+    ],
+  })
+);
+
+backend.resetDemo.addEnvironment('TABLE_WEDDING', backend.data.resources.tables['Wedding'].tableName);
+backend.resetDemo.addEnvironment('TABLE_GUEST', backend.data.resources.tables['Guest'].tableName);
+backend.resetDemo.addEnvironment('TABLE_VENDOR', backend.data.resources.tables['Vendor'].tableName);
+backend.resetDemo.addEnvironment('TABLE_BUDGET_ITEM', backend.data.resources.tables['BudgetItem'].tableName);
+backend.resetDemo.addEnvironment('TABLE_RUN_SHEET_ITEM', backend.data.resources.tables['RunSheetItem'].tableName);
