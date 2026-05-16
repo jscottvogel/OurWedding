@@ -178,18 +178,18 @@ export default function DraggableGanttBlock({
             key={item.id}
             onMouseEnter={() => !isDragging && !isResizingId && setHoveredItemId(item.id)}
             onMouseLeave={() => !isDragging && !isResizingId && setHoveredItemId(null)}
-            className={`relative rounded-r-md p-2 overflow-hidden cursor-grab active:cursor-grabbing origin-left select-none group/block ${bgClass} ${isResizingId === item.id ? 'z-50 ring-2 ring-sage' : ''}`}
+            className={`relative rounded-r-md p-2 overflow-visible cursor-grab active:cursor-grabbing origin-left select-none group/block ${bgClass} ${isResizingId === item.id ? 'z-50 ring-2 ring-sage' : ''}`}
             style={{ width: `${displayWidth}px`, height: '60px' }}
             title={!isDragging && !isResizingId ? `${item.title} (${item.durationMinutes} min)` : ''}
           >
             {/* Move Grip (Left Edge) */}
-            <div className="absolute top-0 left-0 bottom-0 w-4 flex flex-col items-center justify-center gap-[2px] opacity-20 group-hover/block:opacity-50">
+            <div className="absolute top-0 left-0 bottom-0 w-4 flex flex-col items-center justify-center gap-[2px] opacity-20 group-hover/block:opacity-50 z-20">
               <div className="w-[2px] h-[2px] bg-charcoal rounded-full" />
               <div className="w-[2px] h-[2px] bg-charcoal rounded-full" />
               <div className="w-[2px] h-[2px] bg-charcoal rounded-full" />
             </div>
             
-            <div className="text-sm font-semibold truncate leading-tight pointer-events-none pl-3">
+            <div className="text-sm font-semibold whitespace-nowrap leading-tight pointer-events-none pl-3 relative z-10 drop-shadow-md">
               {item.title}
             </div>
             {displayWidth > 50 && (
