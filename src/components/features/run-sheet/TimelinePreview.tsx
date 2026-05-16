@@ -109,7 +109,7 @@ export default function TimelinePreview({
 
   const eventItems = useMemo(() => items.filter(i => i.itemType === 'EVENT' || !i.itemType), [items]);
   
-  const groups = useMemo(() => {
+  const { groups, maxTop } = useMemo(() => {
     const grouped: TimelineGroup[] = [];
     
     for (const item of eventItems) {
@@ -123,6 +123,8 @@ export default function TimelinePreview({
     }
 
     const sortedGroups = [...grouped].sort((a, b) => a.startTime.localeCompare(b.startTime));
+    
+    let maxTop = 0;
     
     // 2D Bounding Box packing to avoid overlaps
     for (let i = 0; i < sortedGroups.length; i++) {
@@ -147,9 +149,10 @@ export default function TimelinePreview({
         }
       }
       g.top = top;
+      maxTop = Math.max(maxTop, top + (g.items.length * 68 + 24));
     }
 
-    return sortedGroups;
+    return { groups: sortedGroups, maxTop };
   }, [eventItems, isOverSchedule, endTargetTime, startTargetTime]);
 
   // Calculate total timeline bounds
@@ -197,23 +200,32 @@ export default function TimelinePreview({
       
       <div 
         className="relative h-full mt-8"
-        style={{ width: `${totalWidth}px`, minHeight: '100%' }}
+        style={{ width: `${totalWidth}px`, minHeight: `${Math.max(250, maxTop + 150)}px` }}
       >
-        {/* Horizontal Timeline Axis Line */}
-        <div className="absolute top-0 left-0 right-0 border-t-2 border-light-gray z-0" />
+        {/* Sticky Timeline Header */}
+        <div className="sticky top-0 z-40 bg-[#FAFAFA] pt-8 pb-4 -mt-8" style={{ width: '100%' }}>
+          {/* Horizontal Timeline Axis Line */}
+          <div className="absolute bottom-0 left-0 right-0 border-t-2 border-light-gray" />
+          
+          {/* Time Labels */}
+          {gridMarkers.map((marker, idx) => marker.showLabel && (
+            <div 
+              key={`label-${idx}`}
+              className={`absolute bottom-2 font-mono -translate-x-1/2 ${marker.isHour ? 'text-xs text-charcoal/50 font-medium' : 'text-[10px] text-charcoal/30'}`}
+              style={{ left: `${marker.left}px` }}
+            >
+              {marker.label}
+            </div>
+          ))}
+        </div>
         
         {/* Vertical Grid Lines */}
         {gridMarkers.map((marker, idx) => (
           <div 
-            key={idx} 
+            key={`grid-${idx}`}
             className="absolute top-0 h-full flex flex-col items-center z-0"
             style={{ left: `${marker.left}px` }}
           >
-            {marker.showLabel && (
-              <div className={`absolute bottom-full mb-3 font-mono -translate-x-1/2 ${marker.isHour ? 'text-xs text-charcoal/50 font-medium' : 'text-[10px] text-charcoal/30'}`}>
-                {marker.label}
-              </div>
-            )}
             <div className={`h-full border-l ${marker.isHour ? 'border-light-gray border-dashed' : 'border-light-gray/30 border-dotted'}`} />
           </div>
         ))}
