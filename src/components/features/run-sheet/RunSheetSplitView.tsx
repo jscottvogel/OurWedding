@@ -73,21 +73,19 @@ export default function RunSheetSplitView() {
 
       {/* Full Width Gantt Chart */}
       <div className="flex-1 w-full flex flex-col bg-white rounded-xl border border-light-gray overflow-hidden">
-        <div className="flex-1 overflow-y-auto pb-8">
-          <TimelinePreview
-            startItem={startItem}
-            endItem={endItem}
-            items={items}
-            isOverSchedule={isOverSchedule}
-            overScheduleByMins={overScheduleByMins}
-            hoveredItemId={null}
-            setHoveredItemId={() => {}}
-            editingItem={editingItem}
-            setEditingItem={setEditingItem}
-            onUpdateItem={updateItem}
-            onDeleteItem={deleteItem}
-          />
-        </div>
+        <TimelinePreview
+          startItem={startItem}
+          endItem={endItem}
+          items={items}
+          isOverSchedule={isOverSchedule}
+          overScheduleByMins={overScheduleByMins}
+          hoveredItemId={null}
+          setHoveredItemId={() => {}}
+          editingItem={editingItem}
+          setEditingItem={setEditingItem}
+          onUpdateItem={updateItem}
+          onDeleteItem={deleteItem}
+        />
       </div>
     </div>
   );

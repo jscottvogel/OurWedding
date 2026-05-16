@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef } from 'react';
 import type { CalculatedRunSheetItem } from '@/lib/hooks/useRunSheet';
 import type { Schema } from '../../../../amplify/data/resource';
 import DraggableGanttBlock from './DraggableGanttBlock';
@@ -58,6 +58,42 @@ export default function TimelinePreview({
   onUpdateItem,
   onDeleteItem
 }: Props) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isPanning, setIsPanning] = useState(false);
+  const startPanRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
+
+  const handlePanStart = (e: React.MouseEvent) => {
+    // Only pan if we didn't click inside an event block or milestone (they have their own drag logic)
+    if ((e.target as HTMLElement).closest('.group') || (e.target as HTMLElement).closest('.group\\/milestone')) {
+      return;
+    }
+    
+    setIsPanning(true);
+    if (scrollContainerRef.current) {
+      startPanRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        scrollLeft: scrollContainerRef.current.scrollLeft,
+        scrollTop: scrollContainerRef.current.scrollTop
+      };
+    }
+  };
+
+  const handlePanMove = (e: React.MouseEvent) => {
+    if (!isPanning || !scrollContainerRef.current) return;
+    e.preventDefault();
+    
+    const dx = e.clientX - startPanRef.current.x;
+    const dy = e.clientY - startPanRef.current.y;
+    
+    scrollContainerRef.current.scrollLeft = startPanRef.current.scrollLeft - dx;
+    scrollContainerRef.current.scrollTop = startPanRef.current.scrollTop - dy;
+  };
+
+  const handlePanEnd = () => {
+    setIsPanning(false);
+  };
+
   const startTargetTime = startItem?.eventTime || '14:00';
   const endTargetTime = endItem?.eventTime || '23:00';
   const PIXELS_PER_MINUTE = 6; // 1 hour = 360px width
@@ -150,11 +186,18 @@ export default function TimelinePreview({
   const endLineLeft = diffMinutes(endTargetTime, startTargetTime) * PIXELS_PER_MINUTE;
 
   return (
-    <div className="flex w-full h-full bg-[#FAFAFA] relative overflow-x-auto overflow-y-hidden pt-12 pb-6 px-4 md:px-8">
+    <div 
+      ref={scrollContainerRef}
+      className={`flex-1 w-full h-full bg-[#FAFAFA] relative overflow-auto pt-12 pb-24 px-4 md:px-8 select-none ${isPanning ? 'cursor-grabbing' : 'cursor-grab'}`}
+      onMouseDown={handlePanStart}
+      onMouseMove={handlePanMove}
+      onMouseUp={handlePanEnd}
+      onMouseLeave={handlePanEnd}
+    >
       
       <div 
         className="relative h-full mt-8"
-        style={{ width: `${totalWidth}px`, minHeight: '250px' }}
+        style={{ width: `${totalWidth}px`, minHeight: '100%' }}
       >
         {/* Horizontal Timeline Axis Line */}
         <div className="absolute top-0 left-0 right-0 border-t-2 border-light-gray z-0" />
