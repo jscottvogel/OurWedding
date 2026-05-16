@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import type { CalculatedRunSheetItem } from '@/lib/hooks/useRunSheet';
 import type { Schema } from '../../../../amplify/data/resource';
+import DraggableGanttBlock from './DraggableGanttBlock';
 
 interface Props {
   startItem: Schema['RunSheetItem']['type'] | null;
@@ -12,6 +13,7 @@ interface Props {
   overScheduleByMins: number;
   hoveredItemId: string | null;
   setHoveredItemId: (id: string | null) => void;
+  onUpdateItem: (id: string, updates: Partial<CalculatedRunSheetItem>) => void;
 }
 
 interface TimelineGroup {
@@ -44,7 +46,8 @@ export default function TimelinePreview({
   isOverSchedule,
   overScheduleByMins,
   hoveredItemId,
-  setHoveredItemId
+  setHoveredItemId,
+  onUpdateItem
 }: Props) {
   
   const startTargetTime = startItem?.eventTime || '14:00';
@@ -162,62 +165,21 @@ export default function TimelinePreview({
         )}
 
         {/* Absolutely Positioned Groups (The Gantt Blocks) */}
-        {groups.map((group) => {
-          const left = diffMinutes(group.startTime, startTargetTime) * PIXELS_PER_MINUTE;
-          
-          return (
-            <div 
-              key={group.id}
-              className="absolute pt-4 flex flex-col items-start gap-2 z-20 group"
-              style={{ left: `${left}px` }}
-            >
-              {/* Tooltip-like Start Time Label */}
-              <div className="absolute bottom-full mb-1 left-0 font-mono text-xs font-medium text-sage opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 px-1 rounded shadow-sm z-30">
-                {group.startTime}
-              </div>
-
-              {group.items.map((item, index) => {
-                const isHovered = hoveredItemId === item.id;
-                const isOver = isOverSchedule && item.scheduledStartTime >= endTargetTime;
-                
-                let bgClass = 'bg-white border-l-4 border-l-charcoal/30 border-y border-y-light-gray border-r border-r-light-gray shadow-sm text-charcoal hover:border-l-charcoal/50';
-                if (isOver) {
-                   bgClass = 'bg-rose-50 border-l-4 border-l-rose-500 border-y border-y-rose-200 border-r border-r-rose-200 text-rose-900 shadow-sm';
-                } else if (group.items.length > 1) {
-                   bgClass = 'bg-indigo-50/50 border-l-4 border-l-indigo-400 border-y border-y-indigo-100 border-r border-r-indigo-100 text-indigo-900 shadow-sm hover:border-l-indigo-600';
-                }
-                
-                if (isHovered) {
-                  bgClass = isOver ? 'bg-rose-100 border-rose-500 text-rose-900 shadow-md ring-1 ring-rose-500' : 'bg-sage border-sage text-white shadow-md ring-1 ring-sage z-30';
-                }
-
-                const itemWidth = (item.durationMinutes || 0) * PIXELS_PER_MINUTE;
-                // Minimum width of 40px so extremely short events are still clickable/readable
-                const displayWidth = Math.max(itemWidth, 40);
-
-                return (
-                  <div
-                    key={item.id}
-                    onMouseEnter={() => setHoveredItemId(item.id)}
-                    onMouseLeave={() => setHoveredItemId(null)}
-                    className={`rounded-r-md p-2 overflow-hidden cursor-default transition-all duration-200 origin-left ${bgClass}`}
-                    style={{ width: `${displayWidth}px`, height: '60px' }}
-                    title={`${item.title} (${item.durationMinutes} min)`}
-                  >
-                    <div className="text-sm font-semibold truncate leading-tight">
-                      {item.title}
-                    </div>
-                    {displayWidth > 50 && (
-                      <div className={`text-xs mt-1 truncate ${isHovered && !isOver ? 'text-white/80' : 'text-charcoal/50'}`}>
-                        {item.durationMinutes} min
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })}
+        {groups.map((group) => (
+          <DraggableGanttBlock 
+            key={group.id}
+            group={group}
+            startTargetTime={startTargetTime}
+            endTargetTime={endTargetTime}
+            isOverSchedule={isOverSchedule}
+            hoveredItemId={hoveredItemId}
+            setHoveredItemId={setHoveredItemId}
+            onUpdateItem={onUpdateItem}
+            PIXELS_PER_MINUTE={PIXELS_PER_MINUTE}
+            diffMinutes={diffMinutes}
+            addMinutes={addMinutes}
+          />
+        ))}
       </div>
     </div>
   );

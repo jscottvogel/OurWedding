@@ -153,6 +153,7 @@ export default function RunSheetSplitView() {
               overScheduleByMins={overScheduleByMins}
               hoveredItemId={hoveredItemId}
               setHoveredItemId={setHoveredItemId}
+              onUpdateItem={updateItem}
             />
           </div>
         </div>
