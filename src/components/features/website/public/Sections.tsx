@@ -258,6 +258,29 @@ export function GallerySection({ photos, slug }: { photos?: Schema['GalleryUploa
   );
 }
 
+const REGISTRY_LOGOS: Record<string, string> = {
+  'amazon': 'https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg',
+  'target': 'https://upload.wikimedia.org/wikipedia/commons/9/9a/Target_logo.svg',
+  'crate & barrel': 'https://upload.wikimedia.org/wikipedia/commons/1/1a/Crate_and_Barrel_logo.svg',
+  'crate and barrel': 'https://upload.wikimedia.org/wikipedia/commons/1/1a/Crate_and_Barrel_logo.svg',
+  'bed bath & beyond': 'https://upload.wikimedia.org/wikipedia/commons/f/f7/Bed_Bath_%26_Beyond_logo.svg',
+  'macys': 'https://upload.wikimedia.org/wikipedia/commons/f/fc/Macy%27s_logo.svg',
+  "macy's": 'https://upload.wikimedia.org/wikipedia/commons/f/fc/Macy%27s_logo.svg',
+  'pottery barn': 'https://upload.wikimedia.org/wikipedia/commons/8/87/Pottery_Barn_logo.svg',
+  'williams sonoma': 'https://upload.wikimedia.org/wikipedia/commons/1/13/Williams-Sonoma_logo.svg',
+  'wayfair': 'https://upload.wikimedia.org/wikipedia/commons/a/a4/Wayfair_logo.svg',
+  'zola': 'https://upload.wikimedia.org/wikipedia/commons/e/e0/Zola_logo.svg',
+  'the knot': 'https://upload.wikimedia.org/wikipedia/commons/e/e6/The_Knot_logo.png'
+};
+
+function getFallbackLogo(name: string) {
+  const normalized = name.toLowerCase().trim();
+  for (const [key, url] of Object.entries(REGISTRY_LOGOS)) {
+    if (normalized.includes(key)) return url;
+  }
+  return null;
+}
+
 export function RegistrySection({ registries }: { registries?: Schema['WebsiteRegistry']['type'][] }) {
   return (
     <section id="registry" className="py-20 bg-transparent">
@@ -268,18 +291,30 @@ export function RegistrySection({ registries }: { registries?: Schema['WebsiteRe
           <p className="text-center text-charcoal/70 italic">Registry links coming soon!</p>
         ) : (
           <div className="flex flex-wrap justify-center gap-6">
-            {registries.map(r => (
-              <a key={r.id} href={r.registryUrl} target="_blank" rel="noopener noreferrer" className="bg-[var(--color-bg)]/80 backdrop-blur-md overflow-hidden rounded-xl shadow-sm border border-black/5 hover:shadow-md transition-all hover:-translate-y-1 flex flex-col items-center justify-center w-48 min-h-[120px]">
-                {r.imageKey ? (
-                  <div className="w-full h-32 p-4 bg-white/50 flex items-center justify-center">
-                    <StorageImage storageKey={r.imageKey} className="max-w-full max-h-full object-contain" />
-                  </div>
-                ) : null}
-                <div className={`w-full p-4 text-center ${!r.imageKey ? 'flex-1 flex items-center justify-center' : 'border-t border-black/5 bg-black/5'}`}>
-                  <span className="font-bold text-sm md:text-base" style={{ color: 'var(--color-primary)' }}>{r.registryName}</span>
-                </div>
-              </a>
-            ))}
+            {registries.map(r => {
+              const fallbackUrl = getFallbackLogo(r.registryName);
+              const hasImage = r.imageKey || fallbackUrl;
+              
+              return (
+                <a key={r.id} href={r.registryUrl} target="_blank" rel="noopener noreferrer" className="bg-white overflow-hidden rounded-xl shadow-sm border border-black/5 hover:shadow-md transition-all hover:-translate-y-1 flex flex-col items-center justify-center w-48 min-h-[120px]">
+                  {r.imageKey ? (
+                    <div className="w-full h-32 p-4 flex items-center justify-center">
+                      <StorageImage storageKey={r.imageKey} className="max-w-full max-h-full object-contain" />
+                    </div>
+                  ) : fallbackUrl ? (
+                    <div className="w-full h-32 p-6 flex items-center justify-center">
+                      <img src={fallbackUrl} alt={r.registryName} className="max-w-full max-h-full object-contain opacity-90" />
+                    </div>
+                  ) : null}
+                  
+                  {!hasImage && (
+                    <div className="w-full p-4 flex-1 flex items-center justify-center text-center">
+                      <span className="font-bold text-sm md:text-base" style={{ color: 'var(--color-primary)' }}>{r.registryName}</span>
+                    </div>
+                  )}
+                </a>
+              );
+            })}
           </div>
         )}
       </div>
