@@ -63,6 +63,7 @@ export default function DraggableGanttBlock({
     // Only drag with left click, and don't drag if we clicked the resize handle
     if (e.button !== 0) return;
     if ((e.target as HTMLElement).closest('.resize-handle')) return;
+    if ((e.target as HTMLElement).closest('.edit-button')) return;
     
     e.preventDefault();
     setIsDragging(true);
@@ -201,7 +202,7 @@ export default function DraggableGanttBlock({
             {/* Edit Button */}
             <button
               onClick={(e) => { e.stopPropagation(); onEditItem(item); }}
-              className={`absolute top-2 right-4 p-1.5 bg-white text-charcoal rounded shadow-sm opacity-0 group-hover/block:opacity-100 transition-opacity hover:bg-sage hover:text-white z-40 ${isDragging || isResizingId ? 'hidden' : ''}`}
+              className={`edit-button absolute top-2 right-4 p-1.5 bg-white text-charcoal rounded shadow-sm opacity-0 group-hover/block:opacity-100 transition-opacity hover:bg-sage hover:text-white z-40 ${isDragging || isResizingId ? 'hidden' : ''}`}
               title="Edit Event"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
