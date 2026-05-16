@@ -9,6 +9,7 @@ interface TimelineGroup {
   durationMinutes: number;
   items: CalculatedRunSheetItem[];
   isOverTarget: boolean;
+  top?: number;
 }
 
 interface Props {
@@ -144,8 +145,8 @@ export default function DraggableGanttBlock({
   return (
     <div 
       ref={containerRef}
-      className={`absolute pt-4 flex flex-col items-start gap-2 z-20 group ${isDragging ? 'z-50' : ''}`}
-      style={{ left: `${displayLeft}px` }}
+      className={`absolute flex flex-col items-start gap-2 z-20 group ${isDragging ? 'z-50' : ''}`}
+      style={{ left: `${displayLeft}px`, top: `${group.top}px`, transition: isDragging ? 'none' : 'top 0.3s ease-out' }}
       onMouseDown={handleDragStart}
     >
       {/* Tooltip-like Start Time Label */}

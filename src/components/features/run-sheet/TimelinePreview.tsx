@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import type { CalculatedRunSheetItem } from '@/lib/hooks/useRunSheet';
 import type { Schema } from '../../../../amplify/data/resource';
 import DraggableGanttBlock from './DraggableGanttBlock';
+import DraggableMilestone from './DraggableMilestone';
 import RunSheetItemModal from './RunSheetItemModal';
 
 interface Props {
@@ -14,6 +15,8 @@ interface Props {
   overScheduleByMins: number;
   hoveredItemId: string | null;
   setHoveredItemId: (id: string | null) => void;
+  editingItem: CalculatedRunSheetItem | null;
+  setEditingItem: (item: CalculatedRunSheetItem | null) => void;
   onUpdateItem: (id: string, updates: Partial<CalculatedRunSheetItem>) => void;
   onDeleteItem: (id: string) => void;
 }
@@ -24,6 +27,7 @@ interface TimelineGroup {
   durationMinutes: number;
   items: CalculatedRunSheetItem[];
   isOverTarget: boolean;
+  top?: number;
 }
 
 const diffMinutes = (endStr: string, startStr: string): number => {
@@ -49,12 +53,11 @@ export default function TimelinePreview({
   overScheduleByMins,
   hoveredItemId,
   setHoveredItemId,
+  editingItem,
+  setEditingItem,
   onUpdateItem,
   onDeleteItem
 }: Props) {
-  
-  const [editingItem, setEditingItem] = useState<CalculatedRunSheetItem | null>(null);
-
   const startTargetTime = startItem?.eventTime || '14:00';
   const endTargetTime = endItem?.eventTime || '23:00';
   
@@ -87,8 +90,36 @@ export default function TimelinePreview({
         lastGroup.durationMinutes = Math.max(lastGroup.durationMinutes, item.durationMinutes || 0);
       }
     }
-    return grouped;
-  }, [eventItems, isOverSchedule, endTargetTime]);
+
+    const sortedGroups = [...grouped].sort((a, b) => a.startTime.localeCompare(b.startTime));
+    
+    // 2D Bounding Box packing to avoid overlaps
+    for (let i = 0; i < sortedGroups.length; i++) {
+      const g = sortedGroups[i];
+      const gStart = diffMinutes(g.startTime, startTargetTime) * PIXELS_PER_MINUTE;
+      const gEnd = gStart + Math.max(g.durationMinutes * PIXELS_PER_MINUTE, 40); // min 40px width
+      
+      let top = 16; // Default starting top (pt-4)
+      
+      for (let j = 0; j < i; j++) {
+        const prev = sortedGroups[j];
+        const pStart = diffMinutes(prev.startTime, startTargetTime) * PIXELS_PER_MINUTE;
+        const pEnd = pStart + Math.max(prev.durationMinutes * PIXELS_PER_MINUTE, 40);
+        // Calculate the bottom edge of the previous group (top + height of its items + gap)
+        const pBottom = prev.top! + (prev.items.length * 68 + 24) + 16; 
+        
+        // Check horizontal overlap (with a small 8px buffer)
+        if (!(gEnd + 8 <= pStart || gStart - 8 >= pEnd)) {
+          if (top < pBottom) {
+            top = pBottom;
+          }
+        }
+      }
+      g.top = top;
+    }
+
+    return sortedGroups;
+  }, [eventItems, isOverSchedule, endTargetTime, startTargetTime]);
 
   const PIXELS_PER_MINUTE = 6; // 1 hour = 360px width
 
@@ -152,35 +183,20 @@ export default function TimelinePreview({
         ))}
 
         {/* Milestones */}
-        {milestones.map(milestone => {
-          const time = milestone.scheduledStartTime || milestone.eventTime;
-          const left = diffMinutes(time, startTargetTime) * PIXELS_PER_MINUTE;
-          const isOver = isOverSchedule && milestone.itemType === 'END';
-          
-          return (
-            <div 
-              key={milestone.id}
-              className="absolute top-0 h-full z-30 group/milestone cursor-pointer"
-              style={{ left: `${left}px` }}
-              onClick={() => setEditingItem(milestone)}
-            >
-              <div className={`absolute top-0 left-0 h-full border-l-2 ${milestone.itemType === 'END' ? 'border-charcoal/40' : 'border-sage/40'}`} />
-              <div className={`absolute -top-[5px] left-0 -translate-x-1/2 w-3 h-3 rotate-45 ring-4 ring-white shadow-sm transition-transform group-hover/milestone:scale-125 ${milestone.itemType === 'END' ? 'bg-charcoal' : 'bg-sage'}`} />
-              
-              <div className={`absolute bottom-full mb-3 font-mono text-xs font-bold px-2 py-0.5 rounded shadow-sm -translate-x-1/2 whitespace-nowrap transition-all group-hover/milestone:-translate-y-1 ${milestone.itemType === 'END' ? 'text-charcoal bg-white border border-charcoal/20' : 'text-sage bg-white border border-sage/20'}`}>
-                <div className="text-[10px] uppercase opacity-70 tracking-wider mb-[1px] text-center">{milestone.title}</div>
-                <div className="text-center">{time.slice(0, 5)}</div>
-              </div>
-
-              {/* Over schedule warning for END */}
-              {isOver && (
-                <div className="absolute left-3 top-4 bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-1 rounded shadow-sm whitespace-nowrap">
-                  +{overScheduleByMins} min OVER
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {milestones.map(milestone => (
+          <DraggableMilestone
+            key={milestone.id}
+            milestone={milestone}
+            startTargetTime={startTargetTime}
+            isOverSchedule={isOverSchedule}
+            overScheduleByMins={overScheduleByMins}
+            onUpdateItem={onUpdateItem}
+            onEditItem={setEditingItem}
+            PIXELS_PER_MINUTE={PIXELS_PER_MINUTE}
+            diffMinutes={diffMinutes}
+            addMinutes={addMinutes}
+          />
+        ))}
 
         {/* Absolutely Positioned Groups (The Gantt Blocks) */}
         {groups.map((group) => (

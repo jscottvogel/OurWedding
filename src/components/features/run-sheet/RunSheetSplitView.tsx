@@ -1,6 +1,7 @@
 'use client';
 
-import { useRunSheet } from '@/lib/hooks/useRunSheet';
+import { useState } from 'react';
+import { useRunSheet, type CalculatedRunSheetItem } from '@/lib/hooks/useRunSheet';
 import TimelinePreview from './TimelinePreview';
 import { Loader2, Plus, AlertTriangle } from 'lucide-react';
 
@@ -20,6 +21,15 @@ export default function RunSheetSplitView() {
     updateItem,
     deleteItem,
   } = useRunSheet();
+
+  const [editingItem, setEditingItem] = useState<CalculatedRunSheetItem | null>(null);
+
+  const handleAddItem = async (itemTemplate: any) => {
+    const newItem = await addItem(itemTemplate);
+    if (newItem) {
+      setEditingItem(newItem);
+    }
+  };
 
   if (loading) {
     return (
@@ -66,7 +76,7 @@ export default function RunSheetSplitView() {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => addItem({ title: 'New Milestone', durationMinutes: 0, itemType: 'MILESTONE' })}
+            onClick={() => handleAddItem({ title: 'New Milestone', durationMinutes: 0, itemType: 'MILESTONE' })}
             className="flex items-center gap-2 px-4 py-2 bg-white border border-light-gray text-charcoal rounded-lg hover:bg-light-gray transition-colors font-medium shadow-sm w-full sm:w-auto justify-center"
           >
             <Plus className="w-4 h-4 text-mid-gray" />
@@ -74,7 +84,7 @@ export default function RunSheetSplitView() {
           </button>
           
           <button
-            onClick={() => addItem({ title: 'New Event', durationMinutes: 15 })}
+            onClick={() => handleAddItem({ title: 'New Event', durationMinutes: 15 })}
             className="flex items-center gap-2 px-4 py-2 bg-sage text-white rounded-lg hover:bg-dark-sage transition-colors font-medium shadow-sm w-full sm:w-auto justify-center"
           >
             <Plus className="w-4 h-4" />
@@ -94,6 +104,8 @@ export default function RunSheetSplitView() {
             overScheduleByMins={overScheduleByMins}
             hoveredItemId={null}
             setHoveredItemId={() => {}}
+            editingItem={editingItem}
+            setEditingItem={setEditingItem}
             onUpdateItem={updateItem}
             onDeleteItem={deleteItem}
           />

@@ -186,8 +186,8 @@ export function useRunSheetProvider() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     } as Schema['RunSheetItem']['type'];
-    
     applyLocalUpdate([...items, newItem as CalculatedRunSheetItem]);
+    return newItem as CalculatedRunSheetItem;
   };
 
   const insertNewBlock = async (_targetIndex: number, item: any) => {
