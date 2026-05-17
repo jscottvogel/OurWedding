@@ -70,10 +70,21 @@ export function useRunSheetProvider() {
 
       calculatedItems.push({
         ...event,
-        sortOrder: i, // Force sort order calculation
         scheduledStartTime,
         scheduledEndTime
       });
+    }
+
+    // Ensure the list is always strictly chronological
+    calculatedItems.sort((a, b) => {
+      const timeDiff = a.scheduledStartTime.localeCompare(b.scheduledStartTime);
+      if (timeDiff !== 0) return timeDiff;
+      return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+    });
+
+    // Re-assign sortOrder based on chronological sequence
+    for (let i = 0; i < calculatedItems.length; i++) {
+      calculatedItems[i].sortOrder = i;
     }
 
     const endTime = currentEnd?.eventTime || '23:00:00';
