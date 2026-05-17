@@ -240,7 +240,7 @@ export function useRunSheetProvider() {
       return;
     }
     
-    // Check if we are updating GUESTS_ARRIVE and sync its time to the main wedding record
+  // Check if we are updating GUESTS_ARRIVE and sync its time to the main wedding record
     const existingItem = items.find(item => item.id === id);
     if (existingItem?.itemType === 'GUESTS_ARRIVE') {
       const newTime = updates.eventTime || updates.scheduledStartTime;
@@ -253,16 +253,31 @@ export function useRunSheetProvider() {
   };
 
   const deleteItem = async (id: string) => {
+    const itemToDelete = items.find(item => item.id === id);
+    if (itemToDelete && (itemToDelete.itemType === 'START' || itemToDelete.itemType === 'END' || itemToDelete.itemType === 'GUESTS_ARRIVE')) {
+      console.warn("Attempted to delete a protected item.");
+      return;
+    }
     applyLocalUpdate(items.filter(item => item.id !== id));
   };
 
   const clearRunsheet = async () => {
-    applyLocalUpdate([]);
+    const protectedItems = items.filter(item => item.itemType === 'START' || item.itemType === 'END' || item.itemType === 'GUESTS_ARRIVE');
+    applyLocalUpdate(protectedItems);
   };
 
   const reorderItems = async (newItems: CalculatedRunSheetItem[]) => {
     applyLocalUpdate(newItems);
   };
+
+  // Sync Guests Arrive time if it changes in the Dashboard
+  useEffect(() => {
+    if (!wedding?.weddingTime || items.length === 0) return;
+    const guestsArrive = items.find(i => i.itemType === 'GUESTS_ARRIVE');
+    if (guestsArrive && guestsArrive.eventTime !== wedding.weddingTime && guestsArrive.scheduledStartTime !== wedding.weddingTime) {
+      updateItem(guestsArrive.id, { eventTime: wedding.weddingTime, scheduledStartTime: wedding.weddingTime });
+    }
+  }, [wedding?.weddingTime]);
 
   const processIvyActions = async (actions: any[]) => {
     if (!weddingId) return;
