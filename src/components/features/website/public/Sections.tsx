@@ -74,9 +74,9 @@ export function HeroSection({ wedding, venueVendor }: { wedding?: Schema['Weddin
                 <span>{wedding.venueName}</span>
               )}
               
-              {venueVendor?.address && (
+              {(wedding.venueAddress || venueVendor?.address) && (
                 <a 
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venueVendor.address)}`}
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(wedding.venueAddress || venueVendor?.address || '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs hover:text-white transition-colors pointer-events-auto flex items-center ml-2 border border-current rounded-full px-3 py-1"

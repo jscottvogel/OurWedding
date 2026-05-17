@@ -16,7 +16,9 @@ export default function CoupleHero() {
     coupleName2: '',
     weddingDate: '',
     weddingTime: '',
-    venueName: ''
+    timezone: '',
+    venueName: '',
+    venueAddress: ''
   });
 
   // Sync state when wedding loads
@@ -27,7 +29,9 @@ export default function CoupleHero() {
         coupleName2: wedding.coupleName2 || '',
         weddingDate: wedding.weddingDate || '',
         weddingTime: wedding.weddingTime || '',
-        venueName: wedding.venueName || ''
+        timezone: wedding.timezone || '',
+        venueName: wedding.venueName || '',
+        venueAddress: wedding.venueAddress || ''
       });
       
       if (wedding.heroImageKey) {
@@ -70,7 +74,9 @@ export default function CoupleHero() {
         coupleName2: editData.coupleName2,
         weddingDate: editData.weddingDate,
         weddingTime: formattedTime,
+        timezone: editData.timezone || null,
         venueName: editData.venueName || null,
+        venueAddress: editData.venueAddress || null,
         heroImageKey: updatedHeroImageKey
       });
       setIsEditing(false);
@@ -159,15 +165,16 @@ export default function CoupleHero() {
             {localWeddingDate.toLocaleDateString(undefined, { 
               weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
             })}
-            {wedding.weddingTime && ` at ${formatTime(wedding.weddingTime)}`}
+            {wedding.weddingTime && ` at ${formatTime(wedding.weddingTime)}${wedding.timezone ? ` ${wedding.timezone}` : ''}`}
           </span>
           <span className="text-gold font-bold text-xl">
             — {daysToGo > 0 ? `${daysToGo} days to go!` : 'Today is the day!'}
           </span>
         </div>
         {wedding.venueName && (
-          <p className="text-light-sage mt-1 flex items-center">
-            {wedding.venueName}
+          <p className="text-light-sage mt-1 flex flex-col">
+            <span className="font-medium text-lg">{wedding.venueName}</span>
+            {wedding.venueAddress && <span className="text-sm opacity-90">{wedding.venueAddress}</span>}
           </p>
         )}
       </div>
@@ -208,8 +215,8 @@ export default function CoupleHero() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-12 gap-4">
+                <div className="col-span-5">
                   <label className="block text-sm font-medium mb-1">Wedding Date</label>
                   <input 
                     type="date" 
@@ -218,7 +225,7 @@ export default function CoupleHero() {
                     className="w-full border border-light-gray rounded px-3 py-2 text-sm"
                   />
                 </div>
-                <div>
+                <div className="col-span-4">
                   <label className="block text-sm font-medium mb-1">Guests Arrive Time</label>
                   <input 
                     type="time" 
@@ -226,6 +233,30 @@ export default function CoupleHero() {
                     onChange={(e) => setEditData({...editData, weddingTime: e.target.value})}
                     className="w-full border border-light-gray rounded px-3 py-2 text-sm font-mono"
                   />
+                </div>
+                <div className="col-span-3">
+                  <label className="block text-sm font-medium mb-1">Timezone</label>
+                  <select
+                    value={editData.timezone}
+                    onChange={(e) => setEditData({...editData, timezone: e.target.value})}
+                    className="w-full border border-light-gray rounded px-3 py-2 text-sm"
+                  >
+                    <option value="">Select...</option>
+                    <option value="EST">EST</option>
+                    <option value="CST">CST</option>
+                    <option value="MST">MST</option>
+                    <option value="PST">PST</option>
+                    <option value="EDT">EDT</option>
+                    <option value="CDT">CDT</option>
+                    <option value="MDT">MDT</option>
+                    <option value="PDT">PDT</option>
+                    <option value="GMT">GMT</option>
+                    <option value="BST">BST</option>
+                    <option value="CET">CET</option>
+                    <option value="CEST">CEST</option>
+                    <option value="AEST">AEST</option>
+                    <option value="AEDT">AEDT</option>
+                  </select>
                 </div>
               </div>
 
@@ -237,6 +268,17 @@ export default function CoupleHero() {
                   onChange={(e) => setEditData({...editData, venueName: e.target.value})}
                   placeholder="e.g. The Grand Estate"
                   className="w-full border border-light-gray rounded px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Venue Address (Optional)</label>
+                <textarea 
+                  value={editData.venueAddress}
+                  onChange={(e) => setEditData({...editData, venueAddress: e.target.value})}
+                  placeholder="e.g. 123 Wedding Lane&#10;City, State 12345"
+                  rows={2}
+                  className="w-full border border-light-gray rounded px-3 py-2 text-sm resize-none"
                 />
               </div>
 

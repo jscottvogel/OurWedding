@@ -47,7 +47,7 @@ export default function EmailPreviewPanel() {
       }
     };
 
-    const formatTime = (timeStr?: string) => {
+    const formatTime = (timeStr?: string, tz?: string) => {
       if (!timeStr) return undefined;
       try {
         const [hourStr, minStr] = timeStr.split(':');
@@ -55,7 +55,8 @@ export default function EmailPreviewPanel() {
         const min = parseInt(minStr, 10);
         const ampm = hour >= 12 ? 'PM' : 'AM';
         hour = hour % 12 || 12;
-        return `${hour}:${min.toString().padStart(2, '0')} ${ampm}`;
+        const timeFmt = `${hour}:${min.toString().padStart(2, '0')} ${ampm}`;
+        return tz ? `${timeFmt} ${tz}` : timeFmt;
       } catch {
         return timeStr;
       }
@@ -65,8 +66,9 @@ export default function EmailPreviewPanel() {
       coupleName1: wedding.coupleName1 || 'Partner 1',
       coupleName2: wedding.coupleName2 || 'Partner 2',
       date: formatDate(wedding.weddingDate),
-      time: formatTime(wedding.weddingTime),
+      time: formatTime(wedding.weddingTime, wedding.timezone || undefined),
       venue: wedding.venueName || undefined,
+      city: wedding.venueAddress || undefined, // mapping venueAddress to city field in templates
       rsvpDate: formatDate(wedding.rsvpDeadline),
       websiteUrl: wedding.websiteEnabled && wedding.slug ? `https://${wedding.slug}.weddingsteward.com` : undefined,
     };

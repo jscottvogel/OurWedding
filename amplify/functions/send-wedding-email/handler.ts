@@ -85,7 +85,7 @@ export const handler: AppSyncResolverHandler<
     }
   }
 
-  function formatTime(timeStr?: string): string | undefined {
+  function formatTime(timeStr?: string, tz?: string): string | undefined {
     if (!timeStr) return undefined;
     try {
       // timeStr is usually "HH:mm" or "HH:mm:ss"
@@ -94,7 +94,8 @@ export const handler: AppSyncResolverHandler<
       const min = parseInt(minStr, 10);
       const ampm = hour >= 12 ? 'PM' : 'AM';
       hour = hour % 12 || 12;
-      return `${hour}:${min.toString().padStart(2, '0')} ${ampm}`;
+      const timeFmt = `${hour}:${min.toString().padStart(2, '0')} ${ampm}`;
+      return tz ? `${timeFmt} ${tz}` : timeFmt;
     } catch {
       return timeStr;
     }
@@ -105,8 +106,9 @@ export const handler: AppSyncResolverHandler<
     coupleName1: wedding.coupleName1,
     coupleName2: wedding.coupleName2,
     date: formatDate(wedding.weddingDate),
-    time: formatTime(wedding.weddingTime),
+    time: formatTime(wedding.weddingTime, wedding.timezone || undefined),
     venue: wedding.venueName,
+    city: wedding.venueAddress,
     websiteUrl: wedding.websiteEnabled ? `https://${wedding.slug}.weddingsteward.com` : undefined, // simplified
     rsvpDate: formatDate(wedding.rsvpDeadline),
   };
