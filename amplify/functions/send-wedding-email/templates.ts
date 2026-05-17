@@ -21,6 +21,7 @@ export interface WeddingEmailData {
   photoUrl?: string;
   galleryUrl?: string;
   guestbookUrl?: string;
+  overrideNames?: string;
 }
 
 export interface RenderEmailParams {
@@ -89,7 +90,7 @@ export function renderEmailHtml(params: RenderEmailParams): string {
   const { emailType, weddingData, paletteKey, personalNote, customContent } = params;
   const palette = PALETTES[paletteKey] || PALETTES.classic;
   const details = getEmailTypeDetails(emailType, weddingData);
-  const coupleNames = `${weddingData.coupleName1} & ${weddingData.coupleName2}`;
+  const coupleNames = weddingData.overrideNames || `${weddingData.coupleName1} & ${weddingData.coupleName2}`;
 
   const hasInfoBox = emailType !== 'thank_you' && (weddingData.date || weddingData.venue || weddingData.rsvpDate);
 

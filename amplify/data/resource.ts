@@ -470,6 +470,7 @@ const schema = a.schema({
       photoUrl: a.string(),
       galleryUrl: a.string(),
       guestbookUrl: a.string(),
+      overrideNames: a.string(),
       scheduledAt: a.datetime(),
       sentAt: a.datetime(),
       status: a.enum(['draft', 'sent', 'scheduled', 'failed']),
@@ -512,6 +513,7 @@ const schema = a.schema({
       photoUrl: a.string(),
       galleryUrl: a.string(),
       guestbookUrl: a.string(),
+      overrideNames: a.string(),
       isTest: a.boolean(),
     })
     .returns(a.ref('SendEmailResult'))

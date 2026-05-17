@@ -23,6 +23,7 @@ export const handler: AppSyncResolverHandler<
     photoUrl?: string;
     galleryUrl?: string;
     guestbookUrl?: string;
+    overrideNames?: string;
     isTest?: boolean;
   }, 
   any
@@ -39,6 +40,7 @@ export const handler: AppSyncResolverHandler<
     photoUrl,
     galleryUrl,
     guestbookUrl,
+    overrideNames,
     isTest 
   } = event.arguments;
 
@@ -120,6 +122,7 @@ export const handler: AppSyncResolverHandler<
     photoUrl: photoUrl || undefined,
     galleryUrl: galleryUrl || undefined,
     guestbookUrl: guestbookUrl || undefined,
+    overrideNames: overrideNames || undefined,
   };
 
   const htmlBody = renderEmailHtml({

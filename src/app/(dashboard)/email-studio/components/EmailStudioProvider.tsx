@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { generateClient } from 'aws-amplify/data';
+import { getUrl } from 'aws-amplify/storage';
 import type { Schema } from '../../../../../amplify/data/resource';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useWedding } from '@/lib/hooks/useWedding';
@@ -24,6 +25,8 @@ interface EmailStudioContextType {
   setCustomContent: (c: string) => void;
   photoUrl: string;
   setPhotoUrl: (u: string) => void;
+  overrideNames: string;
+  setOverrideNames: (n: string) => void;
   selectedGuestIds: string[];
   setSelectedGuestIds: (ids: string[]) => void;
   manualEmails: string;
@@ -41,12 +44,14 @@ const EmailStudioContext = createContext<EmailStudioContextType | undefined>(und
 
 export function EmailStudioProvider({ children }: { children: ReactNode }) {
   const { weddingId } = useAuth();
+  const { wedding } = useWedding();
   const [activeType, setActiveType] = useState<EmailType>('save_the_date');
   const [subjectLine, setSubjectLine] = useState('');
   const [paletteKey, setPaletteKey] = useState<PaletteKey>('classic');
   const [personalNote, setPersonalNote] = useState('');
   const [customContent, setCustomContent] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
+  const [overrideNames, setOverrideNames] = useState('');
   const [selectedGuestIds, setSelectedGuestIds] = useState<string[]>([]);
   const [manualEmails, setManualEmails] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -62,21 +67,33 @@ export function EmailStudioProvider({ children }: { children: ReactNode }) {
       });
       setCampaigns(data || []);
       
-      // Load draft for current type if it exists
       const draft = data.find(c => c.status === 'draft' && c.emailType === activeType);
+      
+      let initialPhotoUrl = draft?.photoUrl || '';
+      if (!initialPhotoUrl && activeType !== 'thank_you' && wedding?.heroImageKey) {
+        try {
+          const res = await getUrl({ path: wedding.heroImageKey });
+          initialPhotoUrl = res.url.toString();
+        } catch (e) {
+          console.error('Failed to get hero image URL', e);
+        }
+      }
+
       if (draft) {
         setSubjectLine(draft.subjectLine || '');
         setPaletteKey((draft.paletteKey as PaletteKey) || 'classic');
         setPersonalNote(draft.personalNote || '');
         setCustomContent(draft.customContent || '');
-        setPhotoUrl(draft.photoUrl || '');
+        setPhotoUrl(initialPhotoUrl);
+        setOverrideNames(draft.overrideNames || '');
         setDraftCampaignId(draft.id);
       } else {
         setSubjectLine('');
         setPaletteKey('classic');
         setPersonalNote('');
         setCustomContent('');
-        setPhotoUrl('');
+        setPhotoUrl(initialPhotoUrl);
+        setOverrideNames('');
         setDraftCampaignId(null);
       }
     } catch (e) {
@@ -86,7 +103,7 @@ export function EmailStudioProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     refreshCampaigns();
-  }, [weddingId, activeType]);
+  }, [weddingId, activeType, wedding?.heroImageKey]);
 
   // Debounced Auto-save
   useEffect(() => {
@@ -102,6 +119,7 @@ export function EmailStudioProvider({ children }: { children: ReactNode }) {
             personalNote,
             customContent,
             photoUrl,
+            overrideNames,
           });
         } else {
           const { data } = await client.models.EmailCampaign.create({
@@ -113,6 +131,7 @@ export function EmailStudioProvider({ children }: { children: ReactNode }) {
             personalNote,
             customContent,
             photoUrl,
+            overrideNames,
           });
           if (data) setDraftCampaignId(data.id);
         }
@@ -122,7 +141,7 @@ export function EmailStudioProvider({ children }: { children: ReactNode }) {
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [subjectLine, paletteKey, personalNote, customContent, photoUrl, activeType, weddingId, draftCampaignId]);
+  }, [subjectLine, paletteKey, personalNote, customContent, photoUrl, overrideNames, activeType, weddingId, draftCampaignId]);
 
   return (
     <EmailStudioContext.Provider value={{
@@ -132,6 +151,7 @@ export function EmailStudioProvider({ children }: { children: ReactNode }) {
       personalNote, setPersonalNote,
       customContent, setCustomContent,
       photoUrl, setPhotoUrl,
+      overrideNames, setOverrideNames,
       selectedGuestIds, setSelectedGuestIds,
       manualEmails, setManualEmails,
       isSending, setIsSending,

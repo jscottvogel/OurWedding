@@ -20,6 +20,7 @@ export default function EmailPreviewPanel() {
     personalNote, 
     customContent,
     photoUrl,
+    overrideNames,
     subjectLine,
     draftCampaignId
   } = useEmailStudio();
@@ -95,6 +96,7 @@ export default function EmailPreviewPanel() {
       photoUrl: photoUrl || undefined,
       galleryUrl,
       guestbookUrl,
+      overrideNames: overrideNames || undefined,
     };
 
     return renderEmailHtml({
@@ -104,7 +106,7 @@ export default function EmailPreviewPanel() {
       personalNote,
       customContent
     });
-  }, [wedding, config, activeType, paletteKey, personalNote, customContent, photoUrl]);
+  }, [wedding, config, activeType, paletteKey, personalNote, customContent, photoUrl, overrideNames]);
 
   const handleSendTest = async () => {
     if (!testEmail || !testEmail.includes('@')) {
@@ -145,6 +147,7 @@ export default function EmailPreviewPanel() {
         photoUrl: photoUrl || undefined,
         galleryUrl,
         guestbookUrl,
+        overrideNames: overrideNames || undefined,
         isTest: true
       });
 

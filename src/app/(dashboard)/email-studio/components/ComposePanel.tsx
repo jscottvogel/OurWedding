@@ -14,6 +14,7 @@ export default function ComposePanel() {
     personalNote, setPersonalNote, 
     customContent, setCustomContent,
     photoUrl, setPhotoUrl,
+    overrideNames, setOverrideNames,
     activeType,
     selectedGuestIds,
     manualEmails
@@ -47,6 +48,20 @@ export default function ComposePanel() {
         />
       </div>
 
+      {activeType === 'thank_you' && (
+        <div>
+          <label className="block text-sm font-medium text-charcoal mb-1">Display Names (Optional)</label>
+          <input
+            type="text"
+            value={overrideNames}
+            onChange={(e) => setOverrideNames(e.target.value)}
+            placeholder="e.g. Mr. & Mrs. Prince"
+            className="w-full text-sm rounded-md border-light-gray shadow-sm focus:border-sage focus:ring-sage"
+          />
+          <p className="text-xs text-mid-gray mt-1">Override the default couple names for this email.</p>
+        </div>
+      )}
+
       <div>
         <div className="flex items-center justify-between mb-1">
           <label className="block text-sm font-medium text-charcoal">Personal Note</label>
@@ -75,9 +90,7 @@ export default function ComposePanel() {
         />
       </div>
 
-      {activeType === 'thank_you' && (
-        <PhotoSelector photoUrl={photoUrl} setPhotoUrl={setPhotoUrl} />
-      )}
+      <PhotoSelector photoUrl={photoUrl} setPhotoUrl={setPhotoUrl} />
 
       <PalettePicker />
 
