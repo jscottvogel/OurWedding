@@ -58,28 +58,42 @@ export function HeroSection({ wedding, venueVendor }: { wedding?: Schema['Weddin
           style={hasHeroImage ? {} : { color: 'var(--color-primary)' }}
         >
           <div className="font-medium">{formattedDate}</div>
-          {wedding.venueName && (
-            <div className="flex items-center space-x-3 text-light-sage">
+          {wedding.weddingTime && (
+            <>
               <span className="hidden md:inline opacity-50">•</span>
-              {venueVendor?.website ? (
-                <a 
-                  href={venueVendor.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-white transition-colors pointer-events-auto"
-                >
-                  {wedding.venueName}
-                </a>
-              ) : (
-                <span>{wedding.venueName}</span>
-              )}
+              <div className="font-medium">
+                {(() => {
+                  try {
+                    const [hourStr, minStr] = wedding.weddingTime.split(':');
+                    let hour = parseInt(hourStr, 10);
+                    const min = parseInt(minStr, 10);
+                    const ampm = hour >= 12 ? 'PM' : 'AM';
+                    hour = hour % 12 || 12;
+                    const timeFmt = `${hour}:${min.toString().padStart(2, '0')} ${ampm}`;
+                    return wedding.timezone ? `${timeFmt} ${wedding.timezone}` : timeFmt;
+                  } catch {
+                    return wedding.weddingTime;
+                  }
+                })()}
+              </div>
+            </>
+          )}
+          {wedding.venueName && (
+            <div className="flex flex-col md:flex-row md:items-center space-y-1 md:space-y-0 md:space-x-3 text-light-sage mt-2 md:mt-0">
+              <span className="hidden md:inline opacity-50">•</span>
+              <div className="flex flex-col">
+                <span className="font-medium">{wedding.venueName}</span>
+                {wedding.venueAddress && (
+                  <span className="text-sm opacity-90">{wedding.venueAddress}</span>
+                )}
+              </div>
               
               {(wedding.venueAddress || venueVendor?.address) && (
                 <a 
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(wedding.venueAddress || venueVendor?.address || '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs hover:text-white transition-colors pointer-events-auto flex items-center ml-2 border border-current rounded-full px-3 py-1"
+                  className="text-xs hover:text-white transition-colors pointer-events-auto flex items-center self-start md:self-center border border-current rounded-full px-3 py-1 mt-1 md:mt-0"
                 >
                   <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                   Map

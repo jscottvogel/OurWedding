@@ -215,9 +215,9 @@ export default function CoupleHero() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-12 gap-4">
+              <div className="grid grid-cols-12 gap-4 items-end">
                 <div className="col-span-5">
-                  <label className="block text-sm font-medium mb-1">Wedding Date</label>
+                  <label className="block text-sm font-medium mb-1 truncate" title="Wedding Date">Wedding Date</label>
                   <input 
                     type="date" 
                     value={editData.weddingDate}
@@ -226,7 +226,7 @@ export default function CoupleHero() {
                   />
                 </div>
                 <div className="col-span-4">
-                  <label className="block text-sm font-medium mb-1">Guests Arrive Time</label>
+                  <label className="block text-sm font-medium mb-1 truncate" title="Arrival Time">Arrival Time</label>
                   <input 
                     type="time" 
                     value={editData.weddingTime}
