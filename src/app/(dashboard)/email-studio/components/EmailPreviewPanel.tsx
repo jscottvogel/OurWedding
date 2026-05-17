@@ -2,6 +2,7 @@
 
 import { useEmailStudio } from './EmailStudioProvider';
 import { useWedding } from '@/lib/hooks/useWedding';
+import { useWebsiteConfig } from '@/lib/hooks/useWebsiteConfig';
 import { renderEmailHtml } from '../../../../../amplify/functions/send-wedding-email/templates';
 import { useMemo, useState } from 'react';
 import { generateClient } from 'aws-amplify/data';
@@ -12,11 +13,13 @@ const client = generateClient<Schema>();
 
 export default function EmailPreviewPanel() {
   const { wedding } = useWedding();
+  const { config } = useWebsiteConfig();
   const { 
     activeType, 
     paletteKey, 
     personalNote, 
     customContent,
+    photoUrl,
     subjectLine,
     draftCampaignId
   } = useEmailStudio();
@@ -29,7 +32,7 @@ export default function EmailPreviewPanel() {
   const htmlContent = useMemo(() => {
     if (!wedding) return '';
 
-    const formatDate = (dateStr?: string) => {
+    const formatDate = (dateStr?: string | null) => {
       if (!dateStr) return undefined;
       try {
         const d = new Date(dateStr);
@@ -47,7 +50,7 @@ export default function EmailPreviewPanel() {
       }
     };
 
-    const formatTime = (timeStr?: string, tz?: string) => {
+    const formatTime = (timeStr?: string | null, tz?: string | null) => {
       if (!timeStr) return undefined;
       try {
         const [hourStr, minStr] = timeStr.split(':');
@@ -62,15 +65,36 @@ export default function EmailPreviewPanel() {
       }
     };
 
+    const baseUrl = wedding.websiteEnabled && wedding.slug ? `https://${wedding.slug}.weddingsteward.com` : undefined;
+    let galleryUrl = undefined;
+    let guestbookUrl = undefined;
+
+    if (baseUrl && config && config.enabledSections) {
+      try {
+        const sections = JSON.parse(config.enabledSections);
+        if (sections.includes('gallery')) {
+          galleryUrl = `${baseUrl}/#gallery`;
+        }
+        if (sections.includes('guestbook')) {
+          guestbookUrl = `${baseUrl}/#guestbook`;
+        }
+      } catch (e) {
+        // ignore parse error
+      }
+    }
+
     const weddingData = {
       coupleName1: wedding.coupleName1 || 'Partner 1',
       coupleName2: wedding.coupleName2 || 'Partner 2',
       date: formatDate(wedding.weddingDate),
       time: formatTime(wedding.weddingTime, wedding.timezone || undefined),
       venue: wedding.venueName || undefined,
-      city: wedding.venueAddress || undefined, // mapping venueAddress to city field in templates
+      city: wedding.venueAddress || undefined,
       rsvpDate: formatDate(wedding.rsvpDeadline),
-      websiteUrl: wedding.websiteEnabled && wedding.slug ? `https://${wedding.slug}.weddingsteward.com` : undefined,
+      websiteUrl: baseUrl,
+      photoUrl: photoUrl || undefined,
+      galleryUrl,
+      guestbookUrl,
     };
 
     return renderEmailHtml({
@@ -80,7 +104,7 @@ export default function EmailPreviewPanel() {
       personalNote,
       customContent
     });
-  }, [wedding, activeType, paletteKey, personalNote, customContent]);
+  }, [wedding, config, activeType, paletteKey, personalNote, customContent, photoUrl]);
 
   const handleSendTest = async () => {
     if (!testEmail || !testEmail.includes('@')) {
@@ -97,6 +121,18 @@ export default function EmailPreviewPanel() {
     setTestSent(false);
 
     try {
+      const baseUrl = wedding?.websiteEnabled && wedding?.slug ? `https://${wedding.slug}.weddingsteward.com` : undefined;
+      let galleryUrl = undefined;
+      let guestbookUrl = undefined;
+
+      if (baseUrl && config && config.enabledSections) {
+        try {
+          const sections = JSON.parse(config.enabledSections);
+          if (sections.includes('gallery')) galleryUrl = `${baseUrl}/#gallery`;
+          if (sections.includes('guestbook')) guestbookUrl = `${baseUrl}/#guestbook`;
+        } catch (e) {}
+      }
+
       const result = await client.mutations.sendWeddingEmail({
         campaignId: draftCampaignId,
         recipientEmails: [testEmail],
@@ -106,6 +142,9 @@ export default function EmailPreviewPanel() {
         paletteKey: paletteKey,
         personalNote,
         customContent,
+        photoUrl: photoUrl || undefined,
+        galleryUrl,
+        guestbookUrl,
         isTest: true
       });
 

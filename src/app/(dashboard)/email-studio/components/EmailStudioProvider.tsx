@@ -22,6 +22,8 @@ interface EmailStudioContextType {
   setPersonalNote: (n: string) => void;
   customContent: string;
   setCustomContent: (c: string) => void;
+  photoUrl: string;
+  setPhotoUrl: (u: string) => void;
   selectedGuestIds: string[];
   setSelectedGuestIds: (ids: string[]) => void;
   manualEmails: string;
@@ -44,6 +46,7 @@ export function EmailStudioProvider({ children }: { children: ReactNode }) {
   const [paletteKey, setPaletteKey] = useState<PaletteKey>('classic');
   const [personalNote, setPersonalNote] = useState('');
   const [customContent, setCustomContent] = useState('');
+  const [photoUrl, setPhotoUrl] = useState('');
   const [selectedGuestIds, setSelectedGuestIds] = useState<string[]>([]);
   const [manualEmails, setManualEmails] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -66,12 +69,14 @@ export function EmailStudioProvider({ children }: { children: ReactNode }) {
         setPaletteKey((draft.paletteKey as PaletteKey) || 'classic');
         setPersonalNote(draft.personalNote || '');
         setCustomContent(draft.customContent || '');
+        setPhotoUrl(draft.photoUrl || '');
         setDraftCampaignId(draft.id);
       } else {
         setSubjectLine('');
         setPaletteKey('classic');
         setPersonalNote('');
         setCustomContent('');
+        setPhotoUrl('');
         setDraftCampaignId(null);
       }
     } catch (e) {
@@ -96,6 +101,7 @@ export function EmailStudioProvider({ children }: { children: ReactNode }) {
             paletteKey,
             personalNote,
             customContent,
+            photoUrl,
           });
         } else {
           const { data } = await client.models.EmailCampaign.create({
@@ -106,6 +112,7 @@ export function EmailStudioProvider({ children }: { children: ReactNode }) {
             paletteKey,
             personalNote,
             customContent,
+            photoUrl,
           });
           if (data) setDraftCampaignId(data.id);
         }
@@ -115,7 +122,7 @@ export function EmailStudioProvider({ children }: { children: ReactNode }) {
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [subjectLine, paletteKey, personalNote, customContent, activeType, weddingId, draftCampaignId]);
+  }, [subjectLine, paletteKey, personalNote, customContent, photoUrl, activeType, weddingId, draftCampaignId]);
 
   return (
     <EmailStudioContext.Provider value={{
@@ -124,6 +131,7 @@ export function EmailStudioProvider({ children }: { children: ReactNode }) {
       paletteKey, setPaletteKey,
       personalNote, setPersonalNote,
       customContent, setCustomContent,
+      photoUrl, setPhotoUrl,
       selectedGuestIds, setSelectedGuestIds,
       manualEmails, setManualEmails,
       isSending, setIsSending,

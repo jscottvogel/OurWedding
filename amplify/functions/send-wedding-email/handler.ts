@@ -20,6 +20,9 @@ export const handler: AppSyncResolverHandler<
     paletteKey: string; 
     personalNote?: string; 
     customContent?: string;
+    photoUrl?: string;
+    galleryUrl?: string;
+    guestbookUrl?: string;
     isTest?: boolean;
   }, 
   any
@@ -33,6 +36,9 @@ export const handler: AppSyncResolverHandler<
     paletteKey, 
     personalNote, 
     customContent,
+    photoUrl,
+    galleryUrl,
+    guestbookUrl,
     isTest 
   } = event.arguments;
 
@@ -111,6 +117,9 @@ export const handler: AppSyncResolverHandler<
     city: wedding.venueAddress,
     websiteUrl: wedding.websiteEnabled ? `https://${wedding.slug}.weddingsteward.com` : undefined, // simplified
     rsvpDate: formatDate(wedding.rsvpDeadline),
+    photoUrl: photoUrl || undefined,
+    galleryUrl: galleryUrl || undefined,
+    guestbookUrl: guestbookUrl || undefined,
   };
 
   const htmlBody = renderEmailHtml({

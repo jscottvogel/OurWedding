@@ -18,6 +18,9 @@ export interface WeddingEmailData {
   rsvpDate?: string;
   rsvpLink?: string;
   websiteUrl?: string;
+  photoUrl?: string;
+  galleryUrl?: string;
+  guestbookUrl?: string;
 }
 
 export interface RenderEmailParams {
@@ -76,8 +79,8 @@ function getEmailTypeDetails(type: EmailType, data: WeddingEmailData): { subtitl
       return {
         subtitle: 'THANK YOU',
         mainText: 'Thank you so much for celebrating with us! Your presence and generosity made our day truly unforgettable.',
-        ctaText: 'View Gallery',
-        ctaLink: data.websiteUrl
+        ctaText: undefined,
+        ctaLink: undefined
       };
   }
 }
@@ -88,7 +91,7 @@ export function renderEmailHtml(params: RenderEmailParams): string {
   const details = getEmailTypeDetails(emailType, weddingData);
   const coupleNames = `${weddingData.coupleName1} & ${weddingData.coupleName2}`;
 
-  const hasInfoBox = weddingData.date || weddingData.venue || weddingData.rsvpDate;
+  const hasInfoBox = emailType !== 'thank_you' && (weddingData.date || weddingData.venue || weddingData.rsvpDate);
 
   return `<!DOCTYPE html>
 <html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
@@ -167,6 +170,16 @@ export function renderEmailHtml(params: RenderEmailParams): string {
                   </tr>
                 </table>
                 
+                ${weddingData.photoUrl ? `
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 40px;">
+                  <tr>
+                    <td align="center">
+                      <img src="${weddingData.photoUrl}" alt="Wedding Photo" width="520" style="width: 100%; max-width: 520px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: block;" />
+                    </td>
+                  </tr>
+                </table>
+                ` : ''}
+                
                 ${hasInfoBox ? `
                 <!-- Info Box -->
                 <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: ${palette.bg}; border-radius: 8px; margin-bottom: 40px;">
@@ -234,6 +247,34 @@ export function renderEmailHtml(params: RenderEmailParams): string {
                               ${details.ctaText}
                             </a>
                           </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+                ` : ''}
+
+                ${emailType === 'thank_you' && (weddingData.galleryUrl || weddingData.guestbookUrl) ? `
+                <!-- Thank You Action Links -->
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 10px;">
+                  <tr>
+                    <td align="center">
+                      <table border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                          ${weddingData.galleryUrl ? `
+                          <td align="center" bgcolor="${palette.accent}" style="border-radius: 30px; padding: 0 10px;">
+                            <a href="${weddingData.galleryUrl}" target="_blank" style="display: inline-block; padding: 16px 36px; font-family: 'Montserrat', sans-serif; font-size: 12px; color: #ffffff; text-decoration: none; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; border-radius: 30px; border: 1px solid ${palette.accent};">
+                              View Gallery
+                            </a>
+                          </td>
+                          ` : ''}
+                          ${weddingData.guestbookUrl ? `
+                          <td align="center" bgcolor="${palette.bg}" style="border-radius: 30px; padding: 0 10px;">
+                            <a href="${weddingData.guestbookUrl}" target="_blank" style="display: inline-block; padding: 16px 36px; font-family: 'Montserrat', sans-serif; font-size: 12px; color: ${palette.dark}; text-decoration: none; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; border-radius: 30px; border: 1px solid ${palette.accent};">
+                              View Guestbook
+                            </a>
+                          </td>
+                          ` : ''}
                         </tr>
                       </table>
                     </td>

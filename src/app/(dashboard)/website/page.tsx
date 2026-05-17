@@ -2,10 +2,12 @@
 
 import { useState } from 'react';
 import { useWebsiteConfig } from '@/lib/hooks/useWebsiteConfig';
+import { useWedding } from '@/lib/hooks/useWedding';
 import { Loader2 } from 'lucide-react';
 
 export default function WebsiteOverviewPage() {
   const { config, isLoading, updateConfig } = useWebsiteConfig();
+  const { wedding, updateWedding } = useWedding();
   const [isPublishing, setIsPublishing] = useState(false);
 
   const togglePublish = async () => {
@@ -14,6 +16,9 @@ export default function WebsiteOverviewPage() {
     try {
       const newStatus = config.publishStatus === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED';
       await updateConfig({ publishStatus: newStatus });
+      if (wedding) {
+        await updateWedding({ websiteEnabled: newStatus === 'PUBLISHED' });
+      }
     } catch (error) {
       console.error('Failed to toggle publish status', error);
     } finally {

@@ -4,6 +4,7 @@ import { useEmailStudio } from './EmailStudioProvider';
 import PalettePicker from './PalettePicker';
 import RecipientSelector from './RecipientSelector';
 import SendConfirmModal from './SendConfirmModal';
+import PhotoSelector from './PhotoSelector';
 import { Send, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 
@@ -12,6 +13,7 @@ export default function ComposePanel() {
     subjectLine, setSubjectLine, 
     personalNote, setPersonalNote, 
     customContent, setCustomContent,
+    photoUrl, setPhotoUrl,
     activeType,
     selectedGuestIds,
     manualEmails
@@ -72,6 +74,10 @@ export default function ComposePanel() {
           rows={4}
         />
       </div>
+
+      {activeType === 'thank_you' && (
+        <PhotoSelector photoUrl={photoUrl} setPhotoUrl={setPhotoUrl} />
+      )}
 
       <PalettePicker />
 
