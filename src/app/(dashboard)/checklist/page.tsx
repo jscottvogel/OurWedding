@@ -32,9 +32,9 @@ const client = generateClient<Schema>();
 export default function ChecklistPage() {
   const { wedding } = useWedding();
   const { tasks, loading, addTask, updateTask, deleteTask } = useChecklist();
-  const [hideCompleted, setHideCompleted] = useState(false);
+  const [hideCompleted, setHideCompleted] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'timeline'>('timeline');
 
   const handleExportCSV = () => {
     if (tasks.length === 0) {

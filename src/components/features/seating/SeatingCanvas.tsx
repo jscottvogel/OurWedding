@@ -172,7 +172,7 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
       <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-12rem)] lg:min-h-[600px]">
         
         {/* Unassigned Guests Sidebar */}
-        <div className="w-full lg:w-72 h-64 lg:h-auto bg-white rounded-xl border border-light-gray shadow-sm flex flex-col flex-shrink-0">
+        <div className="w-full lg:w-72 h-64 lg:h-full min-h-0 bg-white rounded-xl border border-light-gray shadow-sm flex flex-col flex-shrink-0">
           <div className="p-4 border-b border-light-gray bg-ivory rounded-t-xl">
             <h3 className="font-display text-sage text-lg flex items-center">
               <Users className="w-5 h-5 mr-2" /> Unassigned
@@ -181,7 +181,7 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
           </div>
           
           <UnassignedDroppable>
-            <div className="flex-1 overflow-y-auto p-4 flex flex-wrap gap-2 content-start">
+            <div className="p-4 flex flex-wrap gap-2 content-start">
               {unassignedGuests.map(guest => (
                 <DraggableGuest key={guest.id} guest={guest} />
               ))}
@@ -270,7 +270,7 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
 function UnassignedDroppable({ children }: { children: React.ReactNode }) {
   const { setNodeRef, isOver } = useDroppable({ id: 'unassigned' });
   return (
-    <div ref={setNodeRef} className={`flex-1 h-full transition-colors ${isOver ? 'bg-sage/5' : ''}`}>
+    <div ref={setNodeRef} className={`flex-1 min-h-0 overflow-y-auto transition-colors ${isOver ? 'bg-sage/5' : ''}`}>
       {children}
     </div>
   );

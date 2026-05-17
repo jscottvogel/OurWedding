@@ -104,14 +104,13 @@ export default function DraggableMilestone({
     >
       <div className={`absolute top-0 left-0 h-[2000px] border-l-2 ${milestone.itemType === 'END' ? 'border-charcoal/40' : 'border-sage/40'}`} />
       
-      {/* Clickable Flag Area */}
       <div 
         className="absolute top-0 left-0 -translate-x-1/2 w-16 h-12 bg-transparent flex justify-center edit-milestone-btn cursor-pointer"
         onClick={() => !isDragging && onEditItem(milestone)}
       >
         <div className={`absolute top-[-5px] w-3 h-3 rotate-45 ring-4 ring-white shadow-sm transition-transform group-hover/milestone:scale-125 ${milestone.itemType === 'END' ? 'bg-charcoal' : 'bg-sage'}`} />
         
-        <div className={`absolute bottom-[15px] flex flex-col items-center justify-end font-mono text-xs font-bold px-2 py-0.5 rounded shadow-sm whitespace-nowrap transition-all group-hover/milestone:-translate-y-1 ${milestone.itemType === 'END' ? 'text-charcoal bg-white border border-charcoal/20' : 'text-sage bg-white border border-sage/20'} ${isDragging ? '-translate-y-1 ring-2 ring-sage/50' : ''}`}>
+        <div className={`absolute top-[-45px] flex flex-col items-center justify-end font-mono text-xs font-bold px-2 py-0.5 rounded shadow-sm whitespace-nowrap transition-all group-hover/milestone:-translate-y-1 ${milestone.itemType === 'END' ? 'text-charcoal bg-white border border-charcoal/20' : 'text-sage bg-white border border-sage/20'} ${isDragging ? '-translate-y-1 ring-2 ring-sage/50' : ''}`}>
           <div className="text-[10px] uppercase opacity-70 tracking-wider mb-[1px] text-center">{milestone.title}</div>
           <div className="text-center">{displayTime}</div>
         </div>
