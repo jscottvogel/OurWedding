@@ -29,12 +29,45 @@ export default function EmailPreviewPanel() {
   const htmlContent = useMemo(() => {
     if (!wedding) return '';
 
+    const formatDate = (dateStr?: string) => {
+      if (!dateStr) return undefined;
+      try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        const isDateOnly = dateStr.length <= 10 || !dateStr.includes('T');
+        return d.toLocaleDateString('en-US', {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+          timeZone: isDateOnly ? 'UTC' : undefined
+        });
+      } catch {
+        return dateStr;
+      }
+    };
+
+    const formatTime = (timeStr?: string) => {
+      if (!timeStr) return undefined;
+      try {
+        const [hourStr, minStr] = timeStr.split(':');
+        let hour = parseInt(hourStr, 10);
+        const min = parseInt(minStr, 10);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        hour = hour % 12 || 12;
+        return `${hour}:${min.toString().padStart(2, '0')} ${ampm}`;
+      } catch {
+        return timeStr;
+      }
+    };
+
     const weddingData = {
       coupleName1: wedding.coupleName1 || 'Partner 1',
       coupleName2: wedding.coupleName2 || 'Partner 2',
-      date: wedding.weddingDate ? new Date(wedding.weddingDate).toLocaleDateString() : undefined,
+      date: formatDate(wedding.weddingDate),
+      time: formatTime(wedding.weddingTime),
       venue: wedding.venueName || undefined,
-      rsvpDate: wedding.rsvpDeadline ? new Date(wedding.rsvpDeadline).toLocaleDateString() : undefined,
+      rsvpDate: formatDate(wedding.rsvpDeadline),
       websiteUrl: wedding.websiteEnabled && wedding.slug ? `https://${wedding.slug}.weddingsteward.com` : undefined,
     };
 

@@ -91,81 +91,186 @@ export function renderEmailHtml(params: RenderEmailParams): string {
   const hasInfoBox = weddingData.date || weddingData.venue || weddingData.rsvpDate;
 
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--[if mso]>
+  <xml>
+    <o:OfficeDocumentSettings>
+      <o:AllowPNG/>
+      <o:PixelsPerInch>96</o:PixelsPerInch>
+    </o:OfficeDocumentSettings>
+  </xml>
+  <![endif]-->
   <title>${details.subtitle} - ${coupleNames}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400;500&display=swap');
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; }
+    img { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+    table { border-collapse: collapse !important; }
+    body { height: 100% !important; margin: 0 !important; padding: 0 !important; width: 100% !important; }
+    a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; font-size: inherit !important; font-family: inherit !important; font-weight: inherit !important; line-height: inherit !important; }
+    .email-container { max-width: 600px; margin: auto; }
+    @media screen and (max-width: 600px) {
+      .responsive-pad { padding: 30px 20px !important; }
+      .title-text { font-size: 32px !important; }
+    }
+  </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: ${palette.bg}; font-family: 'Georgia', serif; color: ${palette.dark}; line-height: 1.6; -webkit-font-smoothing: antialiased;">
-  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-    
-    <!-- Header Block -->
-    <div style="background-color: ${palette.dark}; padding: 40px 20px; text-align: center; color: #ffffff;">
-      <div style="font-family: 'Arial', sans-serif; font-size: 12px; letter-spacing: 4px; color: ${palette.light}; margin-bottom: 15px; text-transform: uppercase;">
-        ${details.subtitle}
-      </div>
-      <h1 style="margin: 0; font-size: 32px; font-weight: normal;">${coupleNames}</h1>
-    </div>
-    
-    <!-- Gradient Divider -->
-    <div style="height: 4px; background: linear-gradient(to right, ${palette.dark}, ${palette.accent}, ${palette.light});"></div>
+<body style="margin: 0; padding: 0; background-color: ${palette.bg}; font-family: 'Montserrat', Arial, sans-serif; color: ${palette.dark}; line-height: 1.6; -webkit-font-smoothing: antialiased;">
+  <div style="background-color: ${palette.bg}; padding: 40px 0;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+      <tr>
+        <td align="center">
+          <!-- Main Card -->
+          <table border="0" cellpadding="0" cellspacing="0" width="100%" class="email-container" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.08);">
+            
+            <!-- Header Area -->
+            <tr>
+              <td align="center" style="background-color: ${palette.dark}; padding: 60px 20px;">
+                <p style="font-family: 'Montserrat', sans-serif; font-size: 11px; letter-spacing: 6px; color: ${palette.light}; margin: 0 0 20px 0; text-transform: uppercase; font-weight: 500;">
+                  ${details.subtitle}
+                </p>
+                <h1 class="title-text" style="margin: 0; font-family: 'Cormorant Garamond', serif; font-size: 42px; font-weight: 400; color: #ffffff; letter-spacing: 1px;">
+                  ${coupleNames}
+                </h1>
+              </td>
+            </tr>
+            
+            <!-- Elegant Gold/Accent Line -->
+            <tr>
+              <td style="height: 4px; background: linear-gradient(90deg, ${palette.dark} 0%, ${palette.accent} 50%, ${palette.dark} 100%);"></td>
+            </tr>
 
-    <!-- Body Block -->
-    <div style="padding: 40px 30px;">
-      
-      ${personalNote ? `
-      <div style="margin-bottom: 30px; font-style: italic; font-size: 18px; text-align: center; color: ${palette.dark};">
-        "${personalNote.replace(/\\n/g, '<br/>')}"
-      </div>
-      ` : ''}
-      
-      <div style="margin-bottom: 30px; font-size: 16px; text-align: center;">
-        ${details.mainText}
-      </div>
-      
-      ${hasInfoBox ? `
-      <div style="background-color: ${palette.bg}; padding: 30px; margin-bottom: 30px; text-align: center; border: 1px solid ${palette.light};">
-        ${weddingData.date ? `<div style="font-size: 18px; font-weight: bold; margin-bottom: 5px;">${weddingData.date}</div>` : ''}
-        ${weddingData.time ? `<div style="margin-bottom: 15px; font-size: 14px; color: ${palette.accent};">${weddingData.time}</div>` : ''}
-        ${weddingData.venue ? `<div style="font-size: 16px; margin-bottom: 5px;">${weddingData.venue}</div>` : ''}
-        ${weddingData.city ? `<div style="font-size: 16px; margin-bottom: 15px;">${weddingData.city}</div>` : ''}
-        ${weddingData.rsvpDate && (emailType === 'invitation' || emailType === 'rsvp_reminder') ? `
-          <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid ${palette.light}; font-size: 14px;">
-            <strong>Kindly RSVP by ${weddingData.rsvpDate}</strong>
-          </div>
-        ` : ''}
-      </div>
-      ` : ''}
+            <!-- Body Area -->
+            <tr>
+              <td align="center" class="responsive-pad" style="padding: 50px 40px;">
+                
+                ${personalNote ? `
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 40px;">
+                  <tr>
+                    <td align="center" style="font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 22px; color: ${palette.accent}; line-height: 1.5; padding: 0 20px;">
+                      "${personalNote.replace(/\\n/g, '<br/>')}"
+                    </td>
+                  </tr>
+                </table>
+                ` : ''}
+                
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 40px;">
+                  <tr>
+                    <td align="center" style="font-family: 'Montserrat', sans-serif; font-size: 15px; color: #4a4a4a; line-height: 1.8; font-weight: 300;">
+                      ${details.mainText}
+                    </td>
+                  </tr>
+                </table>
+                
+                ${hasInfoBox ? `
+                <!-- Info Box -->
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: ${palette.bg}; border-radius: 8px; margin-bottom: 40px;">
+                  <tr>
+                    <td align="center" style="padding: 40px 30px;">
+                      
+                      ${weddingData.date ? `
+                      <div style="font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; color: ${palette.dark}; margin-bottom: 8px;">
+                        ${weddingData.date}
+                      </div>
+                      ` : ''}
+                      
+                      ${weddingData.time ? `
+                      <div style="font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 500; color: ${palette.accent}; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 25px;">
+                        ${weddingData.time}
+                      </div>
+                      ` : ''}
+                      
+                      ${(weddingData.venue || weddingData.city) ? `
+                      <div style="width: 40px; height: 1px; background-color: ${palette.accent}; margin: 0 auto 25px auto; opacity: 0.5;"></div>
+                      ` : ''}
+                      
+                      ${weddingData.venue ? `
+                      <div style="font-family: 'Montserrat', sans-serif; font-size: 16px; color: ${palette.dark}; font-weight: 500; margin-bottom: 6px;">
+                        ${weddingData.venue}
+                      </div>
+                      ` : ''}
+                      
+                      ${weddingData.city ? `
+                      <div style="font-family: 'Montserrat', sans-serif; font-size: 14px; color: #666666; font-weight: 300;">
+                        ${weddingData.city}
+                      </div>
+                      ` : ''}
+                      
+                      ${weddingData.rsvpDate && (emailType === 'invitation' || emailType === 'rsvp_reminder') ? `
+                      <div style="margin-top: 30px; padding-top: 25px; border-top: 1px dashed ${palette.accent}; font-family: 'Montserrat', sans-serif; font-size: 13px; color: ${palette.dark}; font-weight: 500; text-transform: uppercase; letter-spacing: 1px;">
+                        Kindly RSVP by ${weddingData.rsvpDate}
+                      </div>
+                      ` : ''}
+                      
+                    </td>
+                  </tr>
+                </table>
+                ` : ''}
 
-      ${customContent ? `
-      <div style="margin-bottom: 30px; font-size: 16px;">
-        ${customContent.replace(/\\n/g, '<br/>')}
-      </div>
-      ` : ''}
+                ${customContent ? `
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 40px;">
+                  <tr>
+                    <td align="center" style="font-family: 'Montserrat', sans-serif; font-size: 15px; color: #4a4a4a; line-height: 1.8; font-weight: 300;">
+                      ${customContent.replace(/\\n/g, '<br/>')}
+                    </td>
+                  </tr>
+                </table>
+                ` : ''}
 
-      ${details.ctaLink && details.ctaText ? `
-      <div style="text-align: center; margin-top: 40px; margin-bottom: 20px;">
-        <a href="${details.ctaLink}" style="display: inline-block; background-color: ${palette.accent}; color: #ffffff; text-decoration: none; padding: 14px 32px; font-family: 'Arial', sans-serif; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; border-radius: 2px;">
-          ${details.ctaText}
-        </a>
-      </div>
-      ` : ''}
+                ${details.ctaLink && details.ctaText ? `
+                <!-- CTA Button -->
+                <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-top: 10px;">
+                  <tr>
+                    <td align="center">
+                      <table border="0" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td align="center" bgcolor="${palette.accent}" style="border-radius: 30px;">
+                            <a href="${details.ctaLink}" target="_blank" style="display: inline-block; padding: 16px 36px; font-family: 'Montserrat', sans-serif; font-size: 12px; color: #ffffff; text-decoration: none; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; border-radius: 30px; border: 1px solid ${palette.accent};">
+                              ${details.ctaText}
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+                ` : ''}
 
-    </div>
+              </td>
+            </tr>
 
-    <!-- Footer Block -->
-    <div style="background-color: ${palette.dark}; color: ${palette.light}; padding: 40px 20px; text-align: center; font-size: 14px;">
-      <div style="margin-bottom: 15px; font-size: 18px;">${coupleNames}</div>
-      ${weddingData.websiteUrl ? `
-      <div>
-        <a href="${weddingData.websiteUrl}" style="color: ${palette.light}; text-decoration: none; font-family: 'Arial', sans-serif; letter-spacing: 1px; font-size: 12px; text-transform: uppercase;">
-          Visit Our Website
-        </a>
-      </div>
-      ` : ''}
-    </div>
-
+            <!-- Footer Area -->
+            <tr>
+              <td align="center" style="background-color: ${palette.bg}; padding: 40px 20px; border-top: 1px solid #eeeeee;">
+                <p style="font-family: 'Cormorant Garamond', serif; font-size: 24px; color: ${palette.dark}; margin: 0 0 15px 0; font-style: italic;">
+                  ${coupleNames}
+                </p>
+                ${weddingData.websiteUrl ? `
+                <p style="margin: 0;">
+                  <a href="${weddingData.websiteUrl}" style="font-family: 'Montserrat', sans-serif; font-size: 11px; color: ${palette.accent}; text-decoration: none; letter-spacing: 2px; text-transform: uppercase; font-weight: 500;">
+                    Visit Our Website
+                  </a>
+                </p>
+                ` : ''}
+              </td>
+            </tr>
+            
+          </table>
+          <!-- End Main Card -->
+          
+          <!-- Spacer -->
+          <table border="0" cellpadding="0" cellspacing="0" width="100%">
+            <tr><td height="40" style="font-size: 0; line-height: 0;">&nbsp;</td></tr>
+          </table>
+          
+        </td>
+      </tr>
+    </table>
   </div>
 </body>
 </html>`;
