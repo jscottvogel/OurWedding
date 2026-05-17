@@ -15,6 +15,7 @@ export default function CoupleHero() {
     coupleName1: '',
     coupleName2: '',
     weddingDate: '',
+    weddingTime: '',
     venueName: ''
   });
 
@@ -25,6 +26,7 @@ export default function CoupleHero() {
         coupleName1: wedding.coupleName1 || '',
         coupleName2: wedding.coupleName2 || '',
         weddingDate: wedding.weddingDate || '',
+        weddingTime: wedding.weddingTime || '',
         venueName: wedding.venueName || ''
       });
       
@@ -56,12 +58,18 @@ export default function CoupleHero() {
 
       const { generateClient } = await import('aws-amplify/data');
       const client = generateClient({ authMode: 'userPool' });
+      
+      const formattedTime = editData.weddingTime 
+        ? (editData.weddingTime.length === 5 ? `${editData.weddingTime}:00` : editData.weddingTime)
+        : null;
+
       // @ts-ignore
       await client.models.Wedding.update({
         id: wedding.id,
         coupleName1: editData.coupleName1,
         coupleName2: editData.coupleName2,
         weddingDate: editData.weddingDate,
+        weddingTime: formattedTime,
         venueName: editData.venueName || null,
         heroImageKey: updatedHeroImageKey
       });
@@ -94,6 +102,20 @@ export default function CoupleHero() {
   const [year, month, day] = wedding.weddingDate.split('-').map(Number);
   const localWeddingDate = new Date(year, month - 1, day);
   const daysToGo = differenceInDays(localWeddingDate, startOfDay(new Date()));
+
+  const formatTime = (timeStr?: string) => {
+    if (!timeStr) return undefined;
+    try {
+      const [hourStr, minStr] = timeStr.split(':');
+      let hour = parseInt(hourStr, 10);
+      const min = parseInt(minStr, 10);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      hour = hour % 12 || 12;
+      return `${hour}:${min.toString().padStart(2, '0')} ${ampm}`;
+    } catch {
+      return timeStr;
+    }
+  };
 
   return (
     <div className="relative h-80 md:h-96 w-full bg-dark-sage overflow-hidden group">
@@ -137,6 +159,7 @@ export default function CoupleHero() {
             {localWeddingDate.toLocaleDateString(undefined, { 
               weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
             })}
+            {wedding.weddingTime && ` at ${formatTime(wedding.weddingTime)}`}
           </span>
           <span className="text-gold font-bold text-xl">
             — {daysToGo > 0 ? `${daysToGo} days to go!` : 'Today is the day!'}
@@ -160,7 +183,7 @@ export default function CoupleHero() {
       {/* Edit Modal */}
       {isEditing && (
         <div className="fixed inset-0 bg-charcoal/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 relative">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 relative max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-display text-sage mb-6">Edit Wedding Details</h2>
             
             <div className="space-y-4 text-charcoal">
@@ -185,14 +208,25 @@ export default function CoupleHero() {
                 </div>
               </div>
               
-              <div>
-                <label className="block text-sm font-medium mb-1">Wedding Date</label>
-                <input 
-                  type="date" 
-                  value={editData.weddingDate}
-                  onChange={(e) => setEditData({...editData, weddingDate: e.target.value})}
-                  className="w-full border border-light-gray rounded px-3 py-2 text-sm"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Wedding Date</label>
+                  <input 
+                    type="date" 
+                    value={editData.weddingDate}
+                    onChange={(e) => setEditData({...editData, weddingDate: e.target.value})}
+                    className="w-full border border-light-gray rounded px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Guests Arrive Time</label>
+                  <input 
+                    type="time" 
+                    value={editData.weddingTime}
+                    onChange={(e) => setEditData({...editData, weddingTime: e.target.value})}
+                    className="w-full border border-light-gray rounded px-3 py-2 text-sm font-mono"
+                  />
+                </div>
               </div>
 
               <div>
