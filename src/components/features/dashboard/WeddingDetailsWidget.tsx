@@ -45,7 +45,7 @@ export default function WeddingDetailsWidget() {
   }
 
   return (
-    <div className="bg-white p-6 rounded-xl border border-light-gray shadow-sm h-full flex flex-col">
+    <div className="bg-white p-6 rounded-xl border border-light-gray shadow-sm">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-medium text-charcoal">Wedding Details</h3>
         {!isEditing ? (
