@@ -10,9 +10,28 @@ export function HeroSection({ wedding, venueVendor }: { wedding?: Schema['Weddin
   let formattedDate = 'Date TBD';
   if (wedding.weddingDate) {
     const [year, month, day] = wedding.weddingDate.split('-').map(Number);
-    formattedDate = format(new Date(year, month - 1, day), 'MMMM d, yyyy');
+    formattedDate = new Date(year, month - 1, day).toLocaleDateString(undefined, { 
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+    });
   }
   const hasHeroImage = !!wedding.heroImageKey;
+  
+  const formatTime = (timeStr?: string, tz?: string) => {
+    if (!timeStr) return '';
+    try {
+      const [hourStr, minStr] = timeStr.split(':');
+      let hour = parseInt(hourStr, 10);
+      const min = parseInt(minStr, 10);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      hour = hour % 12 || 12;
+      const timeFmt = `${hour}:${min.toString().padStart(2, '0')} ${ampm}`;
+      return tz ? `${timeFmt} ${tz}` : timeFmt;
+    } catch {
+      return timeStr;
+    }
+  };
+
+  const timeString = formatTime(wedding.weddingTime, wedding.timezone || undefined);
   
   return (
     <section id="hero" className={`relative min-h-[90vh] w-full overflow-hidden flex flex-col justify-end group ${hasHeroImage ? 'bg-dark-sage' : 'bg-transparent'}`}>
@@ -48,57 +67,40 @@ export function HeroSection({ wedding, venueVendor }: { wedding?: Schema['Weddin
       {/* Content */}
       <div className="relative z-20 p-8 md:p-16 w-full pointer-events-none animate-in fade-in slide-in-from-bottom-8 duration-1000">
         <h1 
-          className={`text-5xl md:text-7xl font-display mb-4 tracking-wide ${hasHeroImage ? 'text-white drop-shadow-xl' : ''}`}
+          className={`text-5xl md:text-7xl font-display mb-2 tracking-wide ${hasHeroImage ? 'text-white drop-shadow-xl' : ''}`}
           style={hasHeroImage ? {} : { color: 'var(--color-primary)' }}
         >
           {wedding.coupleName1} & {wedding.coupleName2}
         </h1>
+        
         <div 
-          className={`text-lg md:text-xl font-body tracking-wider flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-6 ${hasHeroImage ? 'text-ivory drop-shadow-md' : ''}`}
+          className={`flex flex-col space-y-1 ${hasHeroImage ? 'text-ivory drop-shadow-md' : ''}`}
           style={hasHeroImage ? {} : { color: 'var(--color-primary)' }}
         >
-          <div className="font-medium">{formattedDate}</div>
-          {wedding.weddingTime && (
-            <>
-              <span className="hidden md:inline opacity-50">•</span>
-              <div className="font-medium">
-                {(() => {
-                  try {
-                    const [hourStr, minStr] = wedding.weddingTime.split(':');
-                    let hour = parseInt(hourStr, 10);
-                    const min = parseInt(minStr, 10);
-                    const ampm = hour >= 12 ? 'PM' : 'AM';
-                    hour = hour % 12 || 12;
-                    const timeFmt = `${hour}:${min.toString().padStart(2, '0')} ${ampm}`;
-                    return wedding.timezone ? `${timeFmt} ${wedding.timezone}` : timeFmt;
-                  } catch {
-                    return wedding.weddingTime;
-                  }
-                })()}
-              </div>
-            </>
-          )}
+          <span className="text-lg md:text-xl font-body font-medium tracking-wider">
+            {formattedDate}
+            {timeString && ` at ${timeString}`}
+          </span>
+
           {wedding.venueName && (
-            <div className="flex flex-col md:flex-row md:items-center space-y-1 md:space-y-0 md:space-x-3 text-light-sage mt-2 md:mt-0">
-              <span className="hidden md:inline opacity-50">•</span>
-              <div className="flex flex-col">
-                <span className="font-medium">{wedding.venueName}</span>
+            <div className="flex flex-col text-light-sage mt-2">
+              <span className="font-medium text-lg font-body tracking-wider">{wedding.venueName}</span>
+              <div className="flex items-center flex-wrap gap-3 mt-1">
                 {wedding.venueAddress && (
-                  <span className="text-sm opacity-90">{wedding.venueAddress}</span>
+                  <span className="text-sm opacity-90 font-body tracking-wider">{wedding.venueAddress}</span>
+                )}
+                {(wedding.venueAddress || venueVendor?.address) && (
+                  <a 
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(wedding.venueAddress || venueVendor?.address || '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs hover:text-white transition-colors pointer-events-auto flex items-center border border-current rounded-full px-3 py-1"
+                  >
+                    <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    Map
+                  </a>
                 )}
               </div>
-              
-              {(wedding.venueAddress || venueVendor?.address) && (
-                <a 
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(wedding.venueAddress || venueVendor?.address || '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs hover:text-white transition-colors pointer-events-auto flex items-center self-start md:self-center border border-current rounded-full px-3 py-1 mt-1 md:mt-0"
-                >
-                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                  Map
-                </a>
-              )}
             </div>
           )}
         </div>

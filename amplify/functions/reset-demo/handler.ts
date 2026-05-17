@@ -56,7 +56,10 @@ export const handler = async () => {
         coupleName1: 'Emily',
         coupleName2: 'Michael',
         weddingDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+        weddingTime: '15:30:00',
+        timezone: 'CST',
         venueName: 'The Grand Estate',
+        venueAddress: '190 County Road 490, Princeton, TX 75407',
         budgetTotal: 45000,
         isActive: true,
         websiteEnabled: true,
@@ -77,7 +80,7 @@ export const handler = async () => {
 
   await putItems(TABLE_VENDOR, [
     { weddingId: DEMO_WEDDING_ID, category: 'Photography', companyName: 'Luminous Captures', contractStatus: 'SIGNED', quotedAmount: 3500, depositAmount: 1500, depositPaid: true },
-    { weddingId: DEMO_WEDDING_ID, category: 'Venue', companyName: 'The Grand Estate', contractStatus: 'SIGNED', quotedAmount: 12000, depositAmount: 5000, depositPaid: true },
+    { weddingId: DEMO_WEDDING_ID, category: 'Venue', companyName: 'The Grand Estate', contractStatus: 'SIGNED', quotedAmount: 12000, depositAmount: 5000, depositPaid: true, address: '190 County Road 490, Princeton, TX 75407' },
     { weddingId: DEMO_WEDDING_ID, category: 'Florist', companyName: 'Blooms & Botanicals', contractStatus: 'SENT', quotedAmount: 2800 },
     { weddingId: DEMO_WEDDING_ID, category: 'Catering', companyName: 'Epicurean Delights', contractStatus: 'NOT_STARTED', quotedAmount: 8500 },
     { weddingId: DEMO_WEDDING_ID, category: 'Entertainment', companyName: 'Midnight Groove Band', contractStatus: 'SIGNED', quotedAmount: 4000, depositAmount: 1000, depositPaid: false },
@@ -105,18 +108,18 @@ export const handler = async () => {
   ]);
 
   await putItems(TABLE_RUNSHEET, [
-    { weddingId: DEMO_WEDDING_ID, title: 'Hair & Makeup Begins', eventTime: '09:00', durationMinutes: 180, location: 'Bridal Suite', itemType: 'EVENT' },
-    { weddingId: DEMO_WEDDING_ID, title: 'Photographer Arrives', eventTime: '11:30', durationMinutes: 30, location: 'Bridal Suite', itemType: 'EVENT' },
-    { weddingId: DEMO_WEDDING_ID, title: 'First Look', eventTime: '13:00', durationMinutes: 45, location: 'Garden', itemType: 'EVENT' },
-    { weddingId: DEMO_WEDDING_ID, title: 'Wedding Party Photos', eventTime: '13:45', durationMinutes: 60, location: 'Garden', itemType: 'EVENT' },
-    { weddingId: DEMO_WEDDING_ID, title: 'Guests Arrive', eventTime: '15:30', durationMinutes: 30, location: 'Chapel', itemType: 'EVENT' },
-    { weddingId: DEMO_WEDDING_ID, title: 'Ceremony Begins', eventTime: '16:00', durationMinutes: 45, location: 'Chapel', itemType: 'EVENT' },
-    { weddingId: DEMO_WEDDING_ID, title: 'Cocktail Hour', eventTime: '16:45', durationMinutes: 60, location: 'Terrace', itemType: 'EVENT' },
-    { weddingId: DEMO_WEDDING_ID, title: 'Grand Entrance & First Dance', eventTime: '18:00', durationMinutes: 15, location: 'Main Hall', itemType: 'EVENT' },
-    { weddingId: DEMO_WEDDING_ID, title: 'Dinner Served', eventTime: '18:30', durationMinutes: 90, location: 'Main Hall', itemType: 'EVENT' },
-    { weddingId: DEMO_WEDDING_ID, title: 'Speeches & Toasts', eventTime: '19:30', durationMinutes: 30, location: 'Main Hall', itemType: 'EVENT' },
-    { weddingId: DEMO_WEDDING_ID, title: 'Dance Floor Opens', eventTime: '20:00', durationMinutes: 120, location: 'Main Hall', itemType: 'EVENT' },
-    { weddingId: DEMO_WEDDING_ID, title: 'Sparkler Send-off', eventTime: '22:30', durationMinutes: 15, location: 'Front Drive', itemType: 'EVENT' },
+    { weddingId: DEMO_WEDDING_ID, title: 'Hair & Makeup Begins', eventTime: '09:00:00', durationMinutes: 180, location: 'Bridal Suite', itemType: 'EVENT' },
+    { weddingId: DEMO_WEDDING_ID, title: 'Photographer Arrives', eventTime: '11:30:00', durationMinutes: 30, location: 'Bridal Suite', itemType: 'EVENT' },
+    { weddingId: DEMO_WEDDING_ID, title: 'First Look', eventTime: '13:00:00', durationMinutes: 45, location: 'Garden', itemType: 'EVENT' },
+    { weddingId: DEMO_WEDDING_ID, title: 'Wedding Party Photos', eventTime: '13:45:00', durationMinutes: 60, location: 'Garden', itemType: 'EVENT' },
+    { weddingId: DEMO_WEDDING_ID, title: 'Guests Arrive', eventTime: '15:30:00', durationMinutes: 30, location: 'Chapel', itemType: 'GUESTS_ARRIVE', isFixed: true },
+    { weddingId: DEMO_WEDDING_ID, title: 'Ceremony Begins', eventTime: '16:00:00', durationMinutes: 45, location: 'Chapel', itemType: 'EVENT' },
+    { weddingId: DEMO_WEDDING_ID, title: 'Cocktail Hour', eventTime: '16:45:00', durationMinutes: 60, location: 'Terrace', itemType: 'EVENT' },
+    { weddingId: DEMO_WEDDING_ID, title: 'Grand Entrance & First Dance', eventTime: '18:00:00', durationMinutes: 15, location: 'Main Hall', itemType: 'EVENT' },
+    { weddingId: DEMO_WEDDING_ID, title: 'Dinner Served', eventTime: '18:30:00', durationMinutes: 90, location: 'Main Hall', itemType: 'EVENT' },
+    { weddingId: DEMO_WEDDING_ID, title: 'Speeches & Toasts', eventTime: '19:30:00', durationMinutes: 30, location: 'Main Hall', itemType: 'EVENT' },
+    { weddingId: DEMO_WEDDING_ID, title: 'Dance Floor Opens', eventTime: '20:00:00', durationMinutes: 120, location: 'Main Hall', itemType: 'EVENT' },
+    { weddingId: DEMO_WEDDING_ID, title: 'Sparkler Send-off', eventTime: '22:30:00', durationMinutes: 15, location: 'Front Drive', itemType: 'EVENT' },
   ]);
 
   console.log('Seeding complete!');

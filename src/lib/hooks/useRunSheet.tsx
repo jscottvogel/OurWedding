@@ -135,27 +135,49 @@ export function useRunSheetProvider() {
           } catch(e) { console.error(e); }
         }
         if (!guestsArrive) {
-          try {
-            const res = await client.models.RunSheetItem.create({
-              weddingId, title: 'Guests Arrive', eventTime: wedding?.weddingTime || '15:30:00', itemType: 'GUESTS_ARRIVE', isFixed: true, sortOrder: 0
-            });
-            if (res.data) {
-              guestsArrive = res.data;
-              incomingDbItems.push(guestsArrive);
+          // Look for an existing item titled 'Guests Arrive'
+          guestsArrive = incomingDbItems.find(i => i.title.toLowerCase().includes('guests arrive') && i.itemType !== 'GUESTS_ARRIVE');
+          if (guestsArrive) {
+            // Retroactively upgrade it
+            guestsArrive.itemType = 'GUESTS_ARRIVE';
+            guestsArrive.isFixed = true;
+            if (!isSaving && !hasUnsavedChanges) {
+              client.models.RunSheetItem.update({
+                id: guestsArrive.id,
+                itemType: 'GUESTS_ARRIVE',
+                isFixed: true,
+              }).catch(e => console.error(e));
             }
-          } catch(e) { console.error(e); }
-        } else if (wedding?.weddingTime && guestsArrive.eventTime !== wedding.weddingTime) {
-          // If the central weddingTime was updated externally, sync it to the runsheet db item
-          // Wait, we shouldn't do it here because it will cause a loop if we are in the middle of saving.
-          // But actually, we only do this if hasUnsavedChanges is false, which means it's an external update.
-          if (!isSaving && !hasUnsavedChanges) {
-             guestsArrive.eventTime = wedding.weddingTime;
-             // Don't auto-save immediately here to avoid feedback loops, just use local state for now.
-             // When they click save, it will persist.
+          } else {
+            try {
+              let evtTime = wedding?.weddingTime || '15:30:00';
+              if (evtTime.length === 5) evtTime += ':00';
+              
+              const res = await client.models.RunSheetItem.create({
+                weddingId, 
+                title: 'Guests Arrive', 
+                eventTime: evtTime, 
+                itemType: 'GUESTS_ARRIVE', 
+                isFixed: true, 
+                sortOrder: 0
+              });
+              if (res.data) {
+                guestsArrive = res.data;
+                incomingDbItems.push(guestsArrive);
+              }
+            } catch(e) { console.error("Failed to auto-create Guests Arrive:", e); }
+          }
+        } else if (wedding?.weddingTime) {
+          let evtTime = wedding.weddingTime;
+          if (evtTime.length === 5) evtTime += ':00';
+          if (guestsArrive.eventTime !== evtTime) {
+            if (!isSaving && !hasUnsavedChanges) {
+               guestsArrive.eventTime = evtTime;
+            }
           }
         }
 
-        setDbItems(incomingDbItems);
+        setDbItems([...incomingDbItems]);
 
         const events = incomingDbItems.filter(i => i.itemType === 'EVENT' || i.itemType === 'MILESTONE' || i.itemType === 'GUESTS_ARRIVE' || !i.itemType);
         events.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
