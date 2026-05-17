@@ -4,6 +4,7 @@ import { useWedding } from '@/lib/hooks/useWedding';
 import { useChecklist } from '@/lib/hooks/useChecklist';
 import { useGuests } from '@/lib/hooks/useGuests';
 import { useBudget } from '@/lib/hooks/useBudget';
+import { useVendors } from '@/lib/hooks/useVendors';
 import { differenceInDays, startOfDay } from 'date-fns';
 
 export default function StatsRow() {
@@ -11,8 +12,9 @@ export default function StatsRow() {
   const { tasks, loading: tasksLoading } = useChecklist();
   const { guests, loading: guestsLoading } = useGuests();
   const { items: budgetItems, loading: budgetLoading } = useBudget();
+  const { vendors, loading: vendorsLoading } = useVendors();
 
-  if (weddingLoading || !wedding) {
+  if (weddingLoading || !wedding || vendorsLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         {[1, 2, 3, 4].map(i => (
@@ -37,7 +39,17 @@ export default function StatsRow() {
     invited: guests.length || 1 
   };
   
-  const spent = budgetItems.reduce((acc, item) => acc + (item.actualCost || 0), 0);
+  // Combine budget items and vendors to get actual spent
+  const combinedItems = [
+    ...budgetItems,
+    ...vendors.filter(v => v.quotedAmount || v.depositAmount).map(v => {
+       const actual = (v.depositPaid ? (v.depositAmount || 0) : 0) + 
+                      (v.balancePaid ? ((v.quotedAmount || 0) - (v.depositAmount || 0)) : 0);
+       return { actualCost: actual };
+    })
+  ];
+
+  const spent = combinedItems.reduce((acc, item) => acc + (item.actualCost || 0), 0);
   const budgetStats = { 
     spent, 
     total: wedding.budgetTotal || 30000 

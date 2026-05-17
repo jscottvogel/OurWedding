@@ -67,6 +67,7 @@ export default function DraggableGanttBlock({
     if ((e.target as HTMLElement).closest('.edit-button')) return;
     
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(true);
     startXRef.current = e.clientX;
     startLeftRef.current = localLeft !== null ? localLeft : baseLeft;

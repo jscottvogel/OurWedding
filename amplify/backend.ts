@@ -100,9 +100,11 @@ backend.sendWeddingEmail.resources.lambda.addToRolePolicy(
       backend.data.resources.tables['Wedding'].tableArn,
       backend.data.resources.tables['EmailCampaign'].tableArn,
       backend.data.resources.tables['EmailSendRecord'].tableArn,
+      backend.data.resources.tables['RunSheetItem'].tableArn,
       backend.data.resources.tables['Wedding'].tableArn + '/index/*',
       backend.data.resources.tables['EmailCampaign'].tableArn + '/index/*',
-      backend.data.resources.tables['EmailSendRecord'].tableArn + '/index/*'
+      backend.data.resources.tables['EmailSendRecord'].tableArn + '/index/*',
+      backend.data.resources.tables['RunSheetItem'].tableArn + '/index/*'
     ],
   })
 );
@@ -110,6 +112,7 @@ backend.sendWeddingEmail.resources.lambda.addToRolePolicy(
 backend.sendWeddingEmail.addEnvironment('TABLE_WEDDING', backend.data.resources.tables['Wedding'].tableName);
 backend.sendWeddingEmail.addEnvironment('TABLE_EMAIL_CAMPAIGN', backend.data.resources.tables['EmailCampaign'].tableName);
 backend.sendWeddingEmail.addEnvironment('TABLE_EMAIL_SEND_RECORD', backend.data.resources.tables['EmailSendRecord'].tableName);
+backend.sendWeddingEmail.addEnvironment('TABLE_RUN_SHEET_ITEM', backend.data.resources.tables['RunSheetItem'].tableName);
 
 // Grant DynamoDB access for resetDemo
 backend.resetDemo.resources.lambda.addToRolePolicy(

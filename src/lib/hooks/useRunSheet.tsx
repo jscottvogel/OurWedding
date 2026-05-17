@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../amplify/data/resource';
 import { useAuth } from './useAuth';
+import { useWedding } from './useWedding';
 
 const client = generateClient<Schema>();
 
@@ -14,6 +15,7 @@ export type CalculatedRunSheetItem = Schema['RunSheetItem']['type'] & {
 
 export function useRunSheetProvider() {
   const { weddingId, loading: authLoading } = useAuth();
+  const { wedding, updateWedding } = useWedding();
   
   const [dbItems, setDbItems] = useState<Schema['RunSheetItem']['type'][]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -108,6 +110,7 @@ export function useRunSheetProvider() {
 
         let currentStart = incomingDbItems.find(i => i.itemType === 'START');
         let currentEnd = incomingDbItems.find(i => i.itemType === 'END');
+        let guestsArrive = incomingDbItems.find(i => i.itemType === 'GUESTS_ARRIVE');
         
         if (!currentStart) {
           try {
@@ -131,10 +134,30 @@ export function useRunSheetProvider() {
             }
           } catch(e) { console.error(e); }
         }
+        if (!guestsArrive) {
+          try {
+            const res = await client.models.RunSheetItem.create({
+              weddingId, title: 'Guests Arrive', eventTime: wedding?.weddingTime || '15:30:00', itemType: 'GUESTS_ARRIVE', isFixed: true, sortOrder: 0
+            });
+            if (res.data) {
+              guestsArrive = res.data;
+              incomingDbItems.push(guestsArrive);
+            }
+          } catch(e) { console.error(e); }
+        } else if (wedding?.weddingTime && guestsArrive.eventTime !== wedding.weddingTime) {
+          // If the central weddingTime was updated externally, sync it to the runsheet db item
+          // Wait, we shouldn't do it here because it will cause a loop if we are in the middle of saving.
+          // But actually, we only do this if hasUnsavedChanges is false, which means it's an external update.
+          if (!isSaving && !hasUnsavedChanges) {
+             guestsArrive.eventTime = wedding.weddingTime;
+             // Don't auto-save immediately here to avoid feedback loops, just use local state for now.
+             // When they click save, it will persist.
+          }
+        }
 
         setDbItems(incomingDbItems);
 
-        const events = incomingDbItems.filter(i => i.itemType === 'EVENT' || i.itemType === 'MILESTONE' || !i.itemType);
+        const events = incomingDbItems.filter(i => i.itemType === 'EVENT' || i.itemType === 'MILESTONE' || i.itemType === 'GUESTS_ARRIVE' || !i.itemType);
         events.sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
         const { calculatedItems, isOver, overMins } = calculateSchedule(events, currentStart, currentEnd);
@@ -216,6 +239,16 @@ export function useRunSheetProvider() {
       setHasUnsavedChanges(true);
       return;
     }
+    
+    // Check if we are updating GUESTS_ARRIVE and sync its time to the main wedding record
+    const existingItem = items.find(item => item.id === id);
+    if (existingItem?.itemType === 'GUESTS_ARRIVE') {
+      const newTime = updates.eventTime || updates.scheduledStartTime;
+      if (newTime && newTime !== wedding?.weddingTime) {
+        updateWedding({ weddingTime: newTime }).catch(e => console.error("Failed to sync wedding time:", e));
+      }
+    }
+
     applyLocalUpdate(items.map(item => item.id === id ? { ...item, ...updates } as CalculatedRunSheetItem : item));
   };
 

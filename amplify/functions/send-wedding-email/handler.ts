@@ -67,14 +67,48 @@ export const handler: AppSyncResolverHandler<
     throw new Error(`Wedding ${weddingId} not found`);
   }
 
+  function formatDate(dateStr?: string): string | undefined {
+    if (!dateStr) return undefined;
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const isDateOnly = dateStr.length <= 10 || !dateStr.includes('T');
+      return d.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+        timeZone: isDateOnly ? 'UTC' : undefined
+      });
+    } catch {
+      return dateStr;
+    }
+  }
+
+  function formatTime(timeStr?: string): string | undefined {
+    if (!timeStr) return undefined;
+    try {
+      // timeStr is usually "HH:mm" or "HH:mm:ss"
+      const [hourStr, minStr] = timeStr.split(':');
+      let hour = parseInt(hourStr, 10);
+      const min = parseInt(minStr, 10);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      hour = hour % 12 || 12;
+      return `${hour}:${min.toString().padStart(2, '0')} ${ampm}`;
+    } catch {
+      return timeStr;
+    }
+  }
+
   // Prepare template data
   const weddingData: WeddingEmailData = {
     coupleName1: wedding.coupleName1,
     coupleName2: wedding.coupleName2,
-    date: wedding.weddingDate,
+    date: formatDate(wedding.weddingDate),
+    time: formatTime(wedding.weddingTime),
     venue: wedding.venueName,
     websiteUrl: wedding.websiteEnabled ? `https://${wedding.slug}.weddingsteward.com` : undefined, // simplified
-    rsvpDate: wedding.rsvpDeadline,
+    rsvpDate: formatDate(wedding.rsvpDeadline),
   };
 
   const htmlBody = renderEmailHtml({

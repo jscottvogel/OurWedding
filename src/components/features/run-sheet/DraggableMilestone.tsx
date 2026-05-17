@@ -48,6 +48,7 @@ export default function DraggableMilestone({
     if (e.button !== 0) return; // Only left click
     
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(true);
     hasMovedRef.current = false;
     startXRef.current = e.clientX;

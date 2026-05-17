@@ -56,8 +56,8 @@ export default function RunSheetItemModal({ isOpen, onClose, item, onUpdate, onD
     return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
   };
 
-  const isMilestone = item.itemType === 'MILESTONE' || item.itemType === 'START' || item.itemType === 'END';
-  const isProtected = item.itemType === 'START' || item.itemType === 'END';
+  const isMilestone = item.itemType === 'MILESTONE' || item.itemType === 'START' || item.itemType === 'END' || item.itemType === 'GUESTS_ARRIVE';
+  const isProtected = item.itemType === 'START' || item.itemType === 'END' || item.itemType === 'GUESTS_ARRIVE';
 
   return (
     <div className="fixed inset-0 bg-charcoal/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">

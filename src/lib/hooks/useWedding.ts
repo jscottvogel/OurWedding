@@ -37,5 +37,18 @@ export function useWedding() {
     return () => sub.unsubscribe();
   }, [authLoading, weddingId]);
 
-  return { wedding, loading };
+  const updateWedding = async (updates: Partial<Schema['Wedding']['type']>) => {
+    if (!weddingId) return;
+    try {
+      await client.models.Wedding.update({
+        id: weddingId,
+        ...updates
+      });
+    } catch (err) {
+      console.error('Failed to update wedding:', err);
+      throw err;
+    }
+  };
+
+  return { wedding, loading, updateWedding };
 }

@@ -5,6 +5,7 @@ import NextActions from '@/components/features/dashboard/NextActions';
 import VendorStatus from '@/components/features/dashboard/VendorStatus';
 import RecentGallery from '@/components/features/dashboard/RecentGallery';
 import QRQuickShare from '@/components/features/dashboard/QRQuickShare';
+import WeddingDetailsWidget from '@/components/features/dashboard/WeddingDetailsWidget';
 
 export default function DashboardPage() {
   return (
@@ -15,7 +16,8 @@ export default function DashboardPage() {
         <div className="lg:col-span-2">
           <NextActions />
         </div>
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-6">
+          <WeddingDetailsWidget />
           <VendorStatus />
         </div>
       </div>

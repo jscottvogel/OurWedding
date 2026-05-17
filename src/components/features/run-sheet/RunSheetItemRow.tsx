@@ -182,13 +182,15 @@ export default function RunSheetItemRow({
 
       {/* Delete Action (Hover only) */}
       <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0">
-        <button
-          onClick={() => onDelete(item.id)}
-          className="p-1.5 rounded-md hover:bg-rose-50 text-charcoal/40 hover:text-rose-500 transition-colors"
-          title="Delete item"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        {item.itemType !== 'GUESTS_ARRIVE' && (
+          <button
+            onClick={() => onDelete(item.id)}
+            className="p-1.5 rounded-md hover:bg-rose-50 text-charcoal/40 hover:text-rose-500 transition-colors"
+            title="Delete item"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </div>
   );
