@@ -14,6 +14,7 @@ interface Props {
 
 export default function RunSheetItemModal({ isOpen, onClose, item, onUpdate, onDelete }: Props) {
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(0);
   const [eventTime, setEventTime] = useState('');
   const [isFixed, setIsFixed] = useState(false);
@@ -22,6 +23,7 @@ export default function RunSheetItemModal({ isOpen, onClose, item, onUpdate, onD
   useEffect(() => {
     if (item && isOpen) {
       setTitle(item.title);
+      setDescription(item.description || '');
       setDurationMinutes(item.durationMinutes || 0);
       setEventTime(item.scheduledStartTime || '');
       setIsFixed(!!item.isFixed);
@@ -37,6 +39,7 @@ export default function RunSheetItemModal({ isOpen, onClose, item, onUpdate, onD
     
     onUpdate(item.id, {
       title,
+      description,
       durationMinutes,
       eventTime: isFixed ? formattedTime : undefined,
       isFixed,
@@ -83,6 +86,19 @@ export default function RunSheetItemModal({ isOpen, onClose, item, onUpdate, onD
               placeholder={isMilestone ? "E.g., Photographer Arrives" : "E.g., Cake Cutting"}
             />
           </div>
+
+          {!isProtected && (
+            <div>
+              <label className="block text-sm font-medium text-charcoal mb-1.5">Description (Optional)</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full border border-light-gray rounded-lg p-2.5 focus:border-sage focus:ring-1 focus:ring-sage focus:outline-none text-sm"
+                placeholder="Add any extra details or instructions..."
+                rows={2}
+              />
+            </div>
+          )}
 
           <div className={`grid ${isMilestone ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
             <div>

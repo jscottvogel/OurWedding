@@ -143,7 +143,9 @@ export function EventsSection({ events }: { events?: Schema['RunSheetItem']['typ
                   <p className="text-charcoal/70 mt-1">{event.description}</p>
                 </div>
                 <div className="mt-4 md:mt-0 text-right">
-                  <p className="font-medium text-lg" style={{ color: 'var(--color-accent)' }}>{event.eventTime}</p>
+                  <p className="font-medium text-lg" style={{ color: 'var(--color-accent)' }}>
+                    {event.eventTime ? format(new Date(`2000-01-01T${event.eventTime}`), 'h:mm a') : ''}
+                  </p>
                   {event.location && (
                     <a 
                       href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`}

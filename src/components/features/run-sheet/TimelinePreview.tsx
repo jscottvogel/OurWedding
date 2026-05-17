@@ -216,6 +216,22 @@ export default function TimelinePreview({
               {marker.label}
             </div>
           ))}
+
+          {/* Milestones */}
+          {milestones.map(milestone => (
+            <DraggableMilestone
+              key={milestone.id}
+              milestone={milestone}
+              startTargetTime={startTargetTime}
+              isOverSchedule={isOverSchedule}
+              overScheduleByMins={overScheduleByMins}
+              onUpdateItem={onUpdateItem}
+              onEditItem={setEditingItem}
+              PIXELS_PER_MINUTE={PIXELS_PER_MINUTE}
+              diffMinutes={diffMinutes}
+              addMinutes={addMinutes}
+            />
+          ))}
         </div>
 
         {/* Content - Vertical Scroll */}
@@ -233,22 +249,6 @@ export default function TimelinePreview({
               >
                 <div className={`h-full border-l ${marker.isHour ? 'border-light-gray border-dashed' : 'border-light-gray/30 border-dotted'}`} />
               </div>
-            ))}
-
-            {/* Milestones */}
-            {milestones.map(milestone => (
-              <DraggableMilestone
-                key={milestone.id}
-                milestone={milestone}
-                startTargetTime={startTargetTime}
-                isOverSchedule={isOverSchedule}
-                overScheduleByMins={overScheduleByMins}
-                onUpdateItem={onUpdateItem}
-                onEditItem={setEditingItem}
-                PIXELS_PER_MINUTE={PIXELS_PER_MINUTE}
-                diffMinutes={diffMinutes}
-                addMinutes={addMinutes}
-              />
             ))}
 
             {/* Absolutely Positioned Groups (The Gantt Blocks) */}

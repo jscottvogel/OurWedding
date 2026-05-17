@@ -98,11 +98,11 @@ export default function DraggableMilestone({
   return (
     <div 
       ref={containerRef}
-      className={`absolute top-0 h-full group/milestone cursor-grab active:cursor-grabbing ${isDragging ? 'z-50' : 'z-40'}`}
+      className={`absolute top-0 h-[2000px] group/milestone cursor-grab active:cursor-grabbing ${isDragging ? 'z-50' : 'z-40'}`}
       style={{ left: `${displayLeft}px` }}
       onMouseDown={handleDragStart}
     >
-      <div className={`absolute top-0 left-0 h-full border-l-2 ${milestone.itemType === 'END' ? 'border-charcoal/40' : 'border-sage/40'}`} />
+      <div className={`absolute top-0 left-0 h-[2000px] border-l-2 ${milestone.itemType === 'END' ? 'border-charcoal/40' : 'border-sage/40'}`} />
       
       {/* Clickable Flag Area */}
       <div 

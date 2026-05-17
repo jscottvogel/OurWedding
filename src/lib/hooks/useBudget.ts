@@ -37,20 +37,28 @@ export function useBudget() {
 
   const addItem = async (item: Omit<Schema['BudgetItem']['type'], 'id' | 'createdAt' | 'updatedAt' | 'weddingId'>) => {
     if (!weddingId) return;
-    await client.models.BudgetItem.create({
+    const { data } = await client.models.BudgetItem.create({
       ...item,
       weddingId
     });
+    if (data) {
+      setItems(prev => [...prev, data]);
+    }
   };
 
   const updateItem = async (id: string, updates: Partial<Schema['BudgetItem']['type']>) => {
-    await client.models.BudgetItem.update({
+    setItems(prev => prev.map(i => i.id === id ? { ...i, ...updates } : i));
+    const { data } = await client.models.BudgetItem.update({
       id,
       ...updates
     });
+    if (data) {
+      setItems(prev => prev.map(i => i.id === id ? data : i));
+    }
   };
 
   const deleteItem = async (id: string) => {
+    setItems(prev => prev.filter(i => i.id !== id));
     await client.models.BudgetItem.delete({ id });
   };
 

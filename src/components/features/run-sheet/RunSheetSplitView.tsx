@@ -24,11 +24,12 @@ export default function RunSheetSplitView() {
 
   const [editingItem, setEditingItem] = useState<CalculatedRunSheetItem | null>(null);
 
-  const handleAddItem = async (itemTemplate: any) => {
-    const newItem = await addItem(itemTemplate);
-    if (newItem) {
-      setEditingItem(newItem);
-    }
+  const handleAddItem = (itemTemplate: any) => {
+    setEditingItem({
+      ...itemTemplate,
+      id: `new-${Date.now()}`,
+      isNew: true
+    } as any);
   };
 
   if (loading) {
@@ -83,8 +84,20 @@ export default function RunSheetSplitView() {
           setHoveredItemId={() => {}}
           editingItem={editingItem}
           setEditingItem={setEditingItem}
-          onUpdateItem={updateItem}
-          onDeleteItem={deleteItem}
+          onUpdateItem={(id, updates) => {
+            if (editingItem && (editingItem as any).isNew && editingItem.id === id) {
+              addItem({ ...editingItem, ...updates });
+            } else {
+              updateItem(id, updates);
+            }
+          }}
+          onDeleteItem={(id) => {
+            if (editingItem && (editingItem as any).isNew && editingItem.id === id) {
+              setEditingItem(null);
+            } else {
+              deleteItem(id);
+            }
+          }}
         />
       </div>
     </div>
