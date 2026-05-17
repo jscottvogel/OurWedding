@@ -62,6 +62,8 @@ export default function TimelinePreview({
   const [isPanning, setIsPanning] = useState(false);
   const startPanRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
 
+  const innerScrollRef = useRef<HTMLDivElement>(null);
+  
   const handlePanStart = (e: React.MouseEvent) => {
     // Only pan if we didn't click inside an event block or milestone (they have their own drag logic)
     if ((e.target as HTMLElement).closest('.group') || (e.target as HTMLElement).closest('.group\\/milestone')) {
@@ -69,25 +71,25 @@ export default function TimelinePreview({
     }
     
     setIsPanning(true);
-    if (scrollContainerRef.current) {
+    if (scrollContainerRef.current && innerScrollRef.current) {
       startPanRef.current = {
         x: e.clientX,
         y: e.clientY,
         scrollLeft: scrollContainerRef.current.scrollLeft,
-        scrollTop: scrollContainerRef.current.scrollTop
+        scrollTop: innerScrollRef.current.scrollTop
       };
     }
   };
 
   const handlePanMove = (e: React.MouseEvent) => {
-    if (!isPanning || !scrollContainerRef.current) return;
+    if (!isPanning || !scrollContainerRef.current || !innerScrollRef.current) return;
     e.preventDefault();
     
     const dx = e.clientX - startPanRef.current.x;
     const dy = e.clientY - startPanRef.current.y;
     
     scrollContainerRef.current.scrollLeft = startPanRef.current.scrollLeft - dx;
-    scrollContainerRef.current.scrollTop = startPanRef.current.scrollTop - dy;
+    innerScrollRef.current.scrollTop = startPanRef.current.scrollTop - dy;
   };
 
   const handlePanEnd = () => {
@@ -191,19 +193,16 @@ export default function TimelinePreview({
   return (
     <div 
       ref={scrollContainerRef}
-      className={`flex-1 w-full h-full bg-[#FAFAFA] relative overflow-auto pt-12 pb-24 px-4 md:px-8 select-none ${isPanning ? 'cursor-grabbing' : 'cursor-grab'}`}
+      className={`w-full h-full bg-[#FAFAFA] relative overflow-x-auto overflow-y-hidden select-none ${isPanning ? 'cursor-grabbing' : 'cursor-grab'} px-4 md:px-8`}
       onMouseDown={handlePanStart}
       onMouseMove={handlePanMove}
       onMouseUp={handlePanEnd}
       onMouseLeave={handlePanEnd}
     >
-      
-      <div 
-        className="relative h-full mt-8"
-        style={{ width: `${totalWidth}px`, minHeight: `${Math.max(250, maxTop + 150)}px` }}
-      >
-        {/* Sticky Timeline Header */}
-        <div className="sticky top-0 z-40 bg-[#FAFAFA] pt-8 pb-4 -mt-8" style={{ width: '100%' }}>
+      <div className="flex flex-col h-full" style={{ width: `${totalWidth}px` }}>
+        
+        {/* Header - Fixed Height, Horizontal Scroll Only */}
+        <div className="flex-none relative h-20 pt-10 pb-2 z-40 bg-[#FAFAFA]">
           {/* Horizontal Timeline Axis Line */}
           <div className="absolute bottom-0 left-0 right-0 border-t-2 border-light-gray" />
           
@@ -218,51 +217,59 @@ export default function TimelinePreview({
             </div>
           ))}
         </div>
-        
-        {/* Vertical Grid Lines */}
-        {gridMarkers.map((marker, idx) => (
-          <div 
-            key={`grid-${idx}`}
-            className="absolute top-0 h-full flex flex-col items-center z-0"
-            style={{ left: `${marker.left}px` }}
-          >
-            <div className={`h-full border-l ${marker.isHour ? 'border-light-gray border-dashed' : 'border-light-gray/30 border-dotted'}`} />
+
+        {/* Content - Vertical Scroll */}
+        <div 
+          ref={innerScrollRef}
+          className="flex-1 relative overflow-y-auto overflow-x-hidden pb-24"
+        >
+          <div style={{ position: 'relative', width: '100%', minHeight: `${Math.max(250, maxTop + 100)}px` }}>
+            {/* Vertical Grid Lines */}
+            {gridMarkers.map((marker, idx) => (
+              <div 
+                key={`grid-${idx}`}
+                className="absolute top-0 h-full flex flex-col items-center z-0"
+                style={{ left: `${marker.left}px` }}
+              >
+                <div className={`h-full border-l ${marker.isHour ? 'border-light-gray border-dashed' : 'border-light-gray/30 border-dotted'}`} />
+              </div>
+            ))}
+
+            {/* Milestones */}
+            {milestones.map(milestone => (
+              <DraggableMilestone
+                key={milestone.id}
+                milestone={milestone}
+                startTargetTime={startTargetTime}
+                isOverSchedule={isOverSchedule}
+                overScheduleByMins={overScheduleByMins}
+                onUpdateItem={onUpdateItem}
+                onEditItem={setEditingItem}
+                PIXELS_PER_MINUTE={PIXELS_PER_MINUTE}
+                diffMinutes={diffMinutes}
+                addMinutes={addMinutes}
+              />
+            ))}
+
+            {/* Absolutely Positioned Groups (The Gantt Blocks) */}
+            {groups.map((group) => (
+              <DraggableGanttBlock 
+                key={group.id}
+                group={group}
+                startTargetTime={startTargetTime}
+                endTargetTime={endTargetTime}
+                isOverSchedule={isOverSchedule}
+                hoveredItemId={hoveredItemId}
+                setHoveredItemId={setHoveredItemId}
+                onUpdateItem={onUpdateItem}
+                onEditItem={setEditingItem}
+                PIXELS_PER_MINUTE={PIXELS_PER_MINUTE}
+                diffMinutes={diffMinutes}
+                addMinutes={addMinutes}
+              />
+            ))}
           </div>
-        ))}
-
-        {/* Milestones */}
-        {milestones.map(milestone => (
-          <DraggableMilestone
-            key={milestone.id}
-            milestone={milestone}
-            startTargetTime={startTargetTime}
-            isOverSchedule={isOverSchedule}
-            overScheduleByMins={overScheduleByMins}
-            onUpdateItem={onUpdateItem}
-            onEditItem={setEditingItem}
-            PIXELS_PER_MINUTE={PIXELS_PER_MINUTE}
-            diffMinutes={diffMinutes}
-            addMinutes={addMinutes}
-          />
-        ))}
-
-        {/* Absolutely Positioned Groups (The Gantt Blocks) */}
-        {groups.map((group) => (
-          <DraggableGanttBlock 
-            key={group.id}
-            group={group}
-            startTargetTime={startTargetTime}
-            endTargetTime={endTargetTime}
-            isOverSchedule={isOverSchedule}
-            hoveredItemId={hoveredItemId}
-            setHoveredItemId={setHoveredItemId}
-            onUpdateItem={onUpdateItem}
-            onEditItem={setEditingItem}
-            PIXELS_PER_MINUTE={PIXELS_PER_MINUTE}
-            diffMinutes={diffMinutes}
-            addMinutes={addMinutes}
-          />
-        ))}
+        </div>
       </div>
 
       <RunSheetItemModal
