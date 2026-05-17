@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { CalculatedRunSheetItem } from '@/lib/hooks/useRunSheet';
 
 interface Props {
@@ -31,6 +32,7 @@ export default function DraggableMilestone({
   // Local state for smooth dragging
   const [localLeft, setLocalLeft] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const hasMovedRef = useRef(false);
   
   const containerRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef<number>(0);
@@ -44,10 +46,10 @@ export default function DraggableMilestone({
 
   const handleDragStart = (e: React.MouseEvent) => {
     if (e.button !== 0) return; // Only left click
-    if ((e.target as HTMLElement).closest('.edit-milestone-btn')) return;
     
     e.preventDefault();
     setIsDragging(true);
+    hasMovedRef.current = false;
     startXRef.current = e.clientX;
     startLeftRef.current = localLeft !== null ? localLeft : baseLeft;
     
@@ -58,6 +60,9 @@ export default function DraggableMilestone({
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
         const deltaX = e.clientX - startXRef.current;
+        if (Math.abs(deltaX) > 3) {
+          hasMovedRef.current = true;
+        }
         setLocalLeft(startLeftRef.current + deltaX);
       }
     };
@@ -95,33 +100,46 @@ export default function DraggableMilestone({
 
   const displayTime = isDragging ? currentHoverTime.slice(0, 5) : time.slice(0, 5);
 
-  return (
-    <div 
-      ref={containerRef}
-      className={`absolute top-20 h-[2000px] group/milestone cursor-grab active:cursor-grabbing ${isDragging ? 'z-50' : 'z-40'}`}
-      style={{ left: `${displayLeft}px` }}
-      onMouseDown={handleDragStart}
-    >
-      <div className={`absolute top-0 left-0 h-[2000px] border-l-2 ${milestone.itemType === 'END' ? 'border-charcoal/40' : 'border-sage/40'}`} />
-      
-      <div 
-        className="absolute top-0 left-0 -translate-x-1/2 w-16 h-12 bg-transparent flex justify-center edit-milestone-btn cursor-pointer"
-        onClick={() => !isDragging && onEditItem(milestone)}
-      >
-        <div className={`absolute top-[-5px] w-3 h-3 rotate-45 ring-4 ring-white shadow-sm transition-transform group-hover/milestone:scale-125 ${milestone.itemType === 'END' ? 'bg-charcoal' : 'bg-sage'}`} />
-        
-        <div className={`absolute top-[-45px] flex flex-col items-center justify-end font-mono text-xs font-bold px-2 py-0.5 rounded shadow-sm whitespace-nowrap transition-all group-hover/milestone:-translate-y-1 ${milestone.itemType === 'END' ? 'text-charcoal bg-white border border-charcoal/20' : 'text-sage bg-white border border-sage/20'} ${isDragging ? '-translate-y-1 ring-2 ring-sage/50' : ''}`}>
-          <div className="text-[10px] uppercase opacity-70 tracking-wider mb-[1px] text-center">{milestone.title}</div>
-          <div className="text-center">{displayTime}</div>
-        </div>
-      </div>
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const portalNode = mounted ? document.getElementById('timeline-lines-container') : null;
 
-      {/* Over schedule warning for END */}
-      {isOver && (
-        <div className="absolute left-3 top-4 bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-1 rounded shadow-sm whitespace-nowrap pointer-events-none">
-          +{overScheduleByMins} min OVER
+  const verticalLine = (
+    <div 
+      className={`absolute top-0 h-[2000px] border-l-2 ${milestone.itemType === 'END' ? 'border-charcoal/40' : 'border-sage/40'} ${isDragging ? 'z-50' : 'z-0'}`} 
+      style={{ left: `${displayLeft}px` }}
+    />
+  );
+
+  return (
+    <>
+      <div 
+        ref={containerRef}
+        className={`absolute top-20 h-0 group/milestone cursor-grab active:cursor-grabbing ${isDragging ? 'z-50' : 'z-40'}`}
+        style={{ left: `${displayLeft}px` }}
+        onMouseDown={handleDragStart}
+      >
+        <div 
+          className="absolute top-0 left-0 -translate-x-1/2 w-16 h-12 bg-transparent flex justify-center edit-milestone-btn cursor-pointer"
+          onClick={() => !hasMovedRef.current && onEditItem(milestone)}
+        >
+          <div className={`absolute top-[-5px] w-3 h-3 rotate-45 ring-4 ring-white shadow-sm transition-transform group-hover/milestone:scale-125 ${milestone.itemType === 'END' ? 'bg-charcoal' : 'bg-sage'}`} />
+          
+          <div className={`absolute top-[-45px] flex flex-col items-center justify-end font-mono text-xs font-bold px-2 py-0.5 rounded shadow-sm whitespace-nowrap transition-all group-hover/milestone:-translate-y-1 ${milestone.itemType === 'END' ? 'text-charcoal bg-white border border-charcoal/20' : 'text-sage bg-white border border-sage/20'} ${isDragging ? '-translate-y-1 ring-2 ring-sage/50' : ''}`}>
+            <div className="text-[10px] uppercase opacity-70 tracking-wider mb-[1px] text-center">{milestone.title}</div>
+            <div className="text-center">{displayTime}</div>
+          </div>
         </div>
-      )}
-    </div>
+
+        {/* Over schedule warning for END */}
+        {isOver && (
+          <div className="absolute left-3 top-4 bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-1 rounded shadow-sm whitespace-nowrap pointer-events-none">
+            +{overScheduleByMins} min OVER
+          </div>
+        )}
+      </div>
+      
+      {portalNode ? createPortal(verticalLine, portalNode) : verticalLine}
+    </>
   );
 }

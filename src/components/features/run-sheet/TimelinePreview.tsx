@@ -240,6 +240,8 @@ export default function TimelinePreview({
           className="flex-1 relative overflow-y-auto overflow-x-hidden pb-24"
         >
           <div style={{ position: 'relative', width: '100%', minHeight: `${Math.max(250, maxTop + 100)}px` }}>
+            <div id="timeline-lines-container" className="absolute top-0 left-0 w-full h-full z-0 pointer-events-none" />
+
             {/* Vertical Grid Lines */}
             {gridMarkers.map((marker, idx) => (
               <div 
