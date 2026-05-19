@@ -4,10 +4,44 @@ import React, { useRef, useEffect, useState } from 'react';
 import type { Schema } from '../../../../../amplify/data/resource';
 import { StorageImage } from './StorageImage';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { generateClient } from 'aws-amplify/data';
+
+const client = generateClient<Schema>();
 
 export function GalleryCarousel({ photos }: { photos: Schema['GalleryUpload']['type'][] }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [livePhotos, setLivePhotos] = useState(photos);
+
+  useEffect(() => {
+    const weddingId = photos[0]?.weddingId;
+    if (!weddingId) return;
+
+    const fetchPhotos = async () => {
+      try {
+        const { data } = await client.models.GalleryUpload.list({
+          filter: { weddingId: { eq: weddingId }, showOnWebsite: { eq: true } },
+          authMode: 'apiKey'
+        });
+        if (data) {
+          const activeItems = data.filter(item => !item.isDeleted);
+          activeItems.sort((a, b) => {
+            const dateA = a.uploadedAt ? new Date(a.uploadedAt).getTime() : 0;
+            const dateB = b.uploadedAt ? new Date(b.uploadedAt).getTime() : 0;
+            return dateB - dateA;
+          });
+          setLivePhotos(activeItems);
+        }
+      } catch (error) {
+        console.error('Failed to poll new gallery images', error);
+      }
+    };
+
+    const intervalId = setInterval(fetchPhotos, 15000);
+    fetchPhotos();
+
+    return () => clearInterval(intervalId);
+  }, [photos]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
@@ -33,7 +67,7 @@ export function GalleryCarousel({ photos }: { photos: Schema['GalleryUpload']['t
   const posRef = useRef<number>(0);
 
   useEffect(() => {
-    if (photos.length <= 2 || isHovered) {
+    if (livePhotos.length <= 2 || isHovered) {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
       return;
     }
@@ -55,7 +89,7 @@ export function GalleryCarousel({ photos }: { photos: Schema['GalleryUpload']['t
 
         // Calculate the exact pixel width of one full original set of photos
         const firstOriginal = container.children[0] as HTMLElement;
-        const firstDuplicate = container.children[photos.length] as HTMLElement;
+        const firstDuplicate = container.children[livePhotos.length] as HTMLElement;
         
         if (firstOriginal && firstDuplicate) {
           const originalWidth = firstDuplicate.offsetLeft - firstOriginal.offsetLeft;
@@ -77,12 +111,12 @@ export function GalleryCarousel({ photos }: { photos: Schema['GalleryUpload']['t
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [isHovered, photos.length]);
+  }, [isHovered, livePhotos.length]);
 
   // Duplicate photos 4 times to ensure it can infinite loop even on ultra-wide screens
-  const displayPhotos = photos.length > 2 
-    ? [...photos, ...photos, ...photos, ...photos] 
-    : photos;
+  const displayPhotos = livePhotos.length > 2 
+    ? [...livePhotos, ...livePhotos, ...livePhotos, ...livePhotos] 
+    : livePhotos;
 
   return (
     <div 
@@ -117,7 +151,7 @@ export function GalleryCarousel({ photos }: { photos: Schema['GalleryUpload']['t
         ))}
       </div>
       
-      {photos.length > 2 && (
+      {livePhotos.length > 2 && (
         <>
           <button 
             onClick={() => scroll('left')}

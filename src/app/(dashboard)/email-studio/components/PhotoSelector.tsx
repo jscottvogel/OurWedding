@@ -42,11 +42,11 @@ export default function PhotoSelector({ photoUrl, setPhotoUrl }: PhotoSelectorPr
 
   const handleSelect = async (storageKey: string) => {
     try {
-      const result = await getUrl({ path: storageKey });
-      setPhotoUrl(result.url.toString());
+      const baseUrl = window.location.origin;
+      setPhotoUrl(`${baseUrl}/api/email-image?key=${encodeURIComponent(storageKey)}`);
       setIsOpen(false);
     } catch (e) {
-      console.error('Failed to get public URL for image', e);
+      console.error('Failed to set proxy URL for image', e);
     }
   };
 
