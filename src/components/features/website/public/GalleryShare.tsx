@@ -10,10 +10,11 @@ export function GalleryShare({ slug }: { slug: string }) {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && slug) {
-      const isCustomDomain = !window.location.hostname.includes('localhost') && !window.location.hostname.includes('weddingsteward.com');
+      const hostname = window.location.hostname;
+      const isCustomDomain = !hostname.includes('localhost') && !hostname.includes('weddingsteward.com') && !hostname.includes('amplifyapp.com');
       
       let baseUrl = window.location.origin;
-      if (!isCustomDomain && !window.location.hostname.includes('localhost')) {
+      if (hostname.includes('weddingsteward.com')) {
         baseUrl = 'https://weddingsteward.com';
       }
       

@@ -1,42 +1,52 @@
 'use client';
 
 import { useWedding } from '@/lib/hooks/useWedding';
+import { useWebsiteConfig } from '@/lib/hooks/useWebsiteConfig';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Download, Copy, ExternalLink, QrCode } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function QRQuickShare() {
-  const { wedding, loading } = useWedding();
-
-  const handleCopy = () => {
-    if (wedding?.slug && typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      const baseUrl = hostname.includes('localhost') ? window.location.origin : 'https://weddingsteward.com';
-      const url = `${baseUrl}/w/${wedding.slug}/upload`;
-      navigator.clipboard.writeText(url);
-      toast.success('Link copied to clipboard');
-    }
-  };
-
+  const { wedding, loading: weddingLoading } = useWedding();
+  const { config, isLoading: configLoading } = useWebsiteConfig();
+  const [uploadUrl, setUploadUrl] = useState('');
   const [localQr, setLocalQr] = useState<string | null>(null);
 
   useEffect(() => {
-    if (wedding?.slug && typeof window !== 'undefined') {
+    if (wedding && !configLoading && typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const baseUrl = hostname.includes('weddingsteward.com') ? 'https://weddingsteward.com' : window.location.origin;
+      
+      let finalUrl = '';
+      if (config?.customDomain) {
+        finalUrl = `https://${config.customDomain}/upload`;
+      } else if (config?.subdomain) {
+        finalUrl = `${baseUrl}/w/${config.subdomain}/upload`;
+      } else {
+        finalUrl = `${baseUrl}/w/${wedding.slug}/upload`;
+      }
+      
+      setUploadUrl(finalUrl);
+      
       import('qrcode').then((QRCode) => {
-        const hostname = window.location.hostname;
-        const baseUrl = hostname.includes('localhost') ? window.location.origin : 'https://weddingsteward.com';
-        const url = `${baseUrl}/w/${wedding.slug}/upload`;
-        QRCode.default.toDataURL(url, { width: 300, margin: 1 })
+        QRCode.default.toDataURL(finalUrl, { width: 300, margin: 1 })
           .then(url => setLocalQr(url))
           .catch(err => console.error(err));
       });
     }
-  }, [wedding]);
+  }, [wedding, config, configLoading]);
+
+  const handleCopy = () => {
+    if (uploadUrl) {
+      navigator.clipboard.writeText(uploadUrl);
+      toast.success('Link copied to clipboard');
+    }
+  };
 
   const displayQr = localQr;
 
-  if (loading) {
+  if (weddingLoading || configLoading) {
     return <div className="h-full bg-white rounded-xl border border-light-gray animate-pulse" />;
   }
 

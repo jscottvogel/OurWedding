@@ -1,29 +1,40 @@
 'use client';
 
 import { useWedding } from '@/lib/hooks/useWedding';
+import { useWebsiteConfig } from '@/lib/hooks/useWebsiteConfig';
 import { Download, Copy, Printer, ScanLine } from 'lucide-react';
 import { toast } from 'sonner';
 import { useEffect, useState } from 'react';
 
 export default function QRCodePage() {
-  const { wedding, loading } = useWedding();
+  const { wedding, loading: weddingLoading } = useWedding();
+  const { config, isLoading: configLoading } = useWebsiteConfig();
   const [uploadUrl, setUploadUrl] = useState('');
   const [localQr, setLocalQr] = useState<string | null>(null);
 
   useEffect(() => {
-    if (wedding?.slug && typeof window !== 'undefined') {
+    if (wedding && !configLoading && typeof window !== 'undefined') {
       const hostname = window.location.hostname;
-      const baseUrl = hostname.includes('localhost') ? window.location.origin : 'https://weddingsteward.com';
-      const url = `${baseUrl}/w/${wedding.slug}/upload`;
-      setUploadUrl(url);
+      const baseUrl = hostname.includes('weddingsteward.com') ? 'https://weddingsteward.com' : window.location.origin;
+      
+      let finalUrl = '';
+      if (config?.customDomain) {
+        finalUrl = `https://${config.customDomain}/upload`;
+      } else if (config?.subdomain) {
+        finalUrl = `${baseUrl}/w/${config.subdomain}/upload`;
+      } else {
+        finalUrl = `${baseUrl}/w/${wedding.slug}/upload`;
+      }
+      
+      setUploadUrl(finalUrl);
       
       import('qrcode').then((QRCode) => {
-        QRCode.default.toDataURL(url, { width: 500, margin: 1 })
+        QRCode.default.toDataURL(finalUrl, { width: 500, margin: 1 })
           .then(qr => setLocalQr(qr))
           .catch(err => console.error(err));
       });
     }
-  }, [wedding]);
+  }, [wedding, config, configLoading]);
 
   const displayQr = localQr;
 
@@ -46,7 +57,7 @@ export default function QRCodePage() {
     }
   };
 
-  if (loading) {
+  if (weddingLoading || configLoading) {
     return <div className="p-8 animate-pulse text-sage font-medium text-lg">Loading QR code details...</div>;
   }
 

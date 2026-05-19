@@ -7,7 +7,7 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
 
   // 1. Custom Domain Routing (True Custom Domains)
-  const isCustomDomain = !hostname.includes('localhost') && !hostname.endsWith('weddingsteward.com');
+  const isCustomDomain = !hostname.includes('localhost') && !hostname.endsWith('weddingsteward.com') && !hostname.endsWith('amplifyapp.com');
   
   if (isCustomDomain) {
     // It's a true custom domain (e.g. sarahandtom.com)
