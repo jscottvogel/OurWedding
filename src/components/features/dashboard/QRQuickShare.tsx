@@ -22,7 +22,7 @@ export default function QRQuickShare() {
   const [localQr, setLocalQr] = useState<string | null>(null);
 
   useEffect(() => {
-    if (wedding?.slug && !wedding?.qrCodeUrl && typeof window !== 'undefined') {
+    if (wedding?.slug && typeof window !== 'undefined') {
       import('qrcode').then((QRCode) => {
         const hostname = window.location.hostname;
         const baseUrl = hostname.includes('localhost') ? window.location.origin : 'https://weddingsteward.com';
@@ -34,7 +34,7 @@ export default function QRQuickShare() {
     }
   }, [wedding]);
 
-  const displayQr = wedding?.qrCodeUrl || localQr;
+  const displayQr = localQr;
 
   if (loading) {
     return <div className="h-full bg-white rounded-xl border border-light-gray animate-pulse" />;

@@ -17,17 +17,15 @@ export default function QRCodePage() {
       const url = `${baseUrl}/w/${wedding.slug}/upload`;
       setUploadUrl(url);
       
-      if (!wedding.qrCodeUrl) {
-        import('qrcode').then((QRCode) => {
-          QRCode.default.toDataURL(url, { width: 500, margin: 1 })
-            .then(qr => setLocalQr(qr))
-            .catch(err => console.error(err));
-        });
-      }
+      import('qrcode').then((QRCode) => {
+        QRCode.default.toDataURL(url, { width: 500, margin: 1 })
+          .then(qr => setLocalQr(qr))
+          .catch(err => console.error(err));
+      });
     }
   }, [wedding]);
 
-  const displayQr = wedding?.qrCodeUrl || localQr;
+  const displayQr = localQr;
 
   const handleCopy = () => {
     if (uploadUrl) {
@@ -96,7 +94,7 @@ export default function QRCodePage() {
             <div className="space-y-4">
               <button 
                 onClick={handleDownload}
-                disabled={!wedding?.qrCodeUrl}
+                disabled={!displayQr}
                 className="w-full bg-sage text-white px-4 py-3 rounded-lg font-medium hover:bg-dark-sage transition-colors flex items-center justify-center shadow-sm disabled:opacity-50"
               >
                 <Download className="w-5 h-5 mr-2" /> Download High-Res PNG
