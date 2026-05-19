@@ -160,7 +160,7 @@ const schema = a.schema({
       caption: a.string(),
       uploadedAt: a.datetime(),
       isDeleted: a.boolean().default(false),
-      showOnWebsite: a.boolean().default(false),
+      showOnWebsite: a.boolean().default(true),
     })
     .secondaryIndexes((index) => [index('weddingId')])
     .authorization((allow) => [
