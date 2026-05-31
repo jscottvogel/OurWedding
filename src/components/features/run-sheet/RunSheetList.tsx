@@ -15,6 +15,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { restrictToVerticalAxis, restrictToWindowEdges } from '@dnd-kit/modifiers';
 import { Plus, AlertTriangle } from 'lucide-react';
 import type { CalculatedRunSheetItem } from '@/lib/hooks/useRunSheet';
 import RunSheetItemRow from './RunSheetItemRow';
@@ -99,6 +100,7 @@ export default function RunSheetList({
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
+          modifiers={[restrictToVerticalAxis, restrictToWindowEdges]}
         >
           <SortableContext
             items={items.map(i => i.id)}

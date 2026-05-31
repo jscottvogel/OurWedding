@@ -159,9 +159,9 @@ export default function IvyChat() {
         ...wedding,
         checklist: tasks.map(t => ({ id: t.id, title: t.title, status: t.isCompleted ? 'done' : 'pending', category: t.category })),
         vendors: vendors.map(v => ({ id: v.id, name: v.companyName, category: v.category, status: v.contractStatus })),
-        runsheet: runsheet.map((r: any) => ({ id: r.id, title: r.title, time: r.eventTime })),
+        runsheet: runsheet.map((r: any) => ({ id: r.id, title: r.title, time: r.eventTime, duration: r.durationMinutes, isFixed: r.isFixed, isPublic: r.isPublic, mode: r.mode })),
         gallery: photos.map(p => ({ id: p.id, uploader: p.uploaderName, caption: p.caption || '' })),
-        guests: guests.map(g => ({ id: g.id, firstName: g.firstName, lastName: g.lastName, rsvpStatus: g.rsvpStatus, attendingCount: g.attendingCount, mealChoice: g.mealChoice, dietaryRestrictions: [g.dietaryVegetarian ? 'Vegetarian' : '', g.dietaryVegan ? 'Vegan' : '', g.dietaryGlutenFree ? 'GF' : '', g.dietaryNutFree ? 'Nut-Free' : ''].filter(Boolean).join(', ') })),
+        guests: guests.map(g => ({ id: g.id, firstName: g.firstName, lastName: g.lastName, rsvpStatus: g.rsvpStatus, attendingCount: g.attendingCount, primaryGuestId: g.primaryGuestId, tags: g.tags })),
         budget: budgetItems.map(b => ({ id: b.id, description: b.description, estimatedCost: b.estimatedCost, category: b.category, actualCost: b.actualCost })),
         guestbook: guestbookEntries.map(e => ({ id: e.id, guestName: e.guestName, message: e.message, isApproved: e.isApproved })),
         website: {
@@ -241,10 +241,7 @@ export default function IvyChat() {
             if (wedding?.id) await client.models.WebsiteTravel.create({ weddingId: wedding.id, hotelName: toolCall.input.hotelName, address: toolCall.input.address, bookingUrl: toolCall.input.bookingUrl, notes: toolCall.input.notes, isVisible: true });
             lastActionMessage = `I've added ${toolCall.input.hotelName} to the travel section!`;
             addedCount++;
-          } else if (toolCall.name === 'add_party_member') {
-            if (wedding?.id) await client.models.WebsitePartyMember.create({ weddingId: wedding.id, name: toolCall.input.name, role: toolCall.input.role as any, bio: toolCall.input.bio, isVisible: true });
-            lastActionMessage = `I've added ${toolCall.input.name} to the wedding party!`;
-            addedCount++;
+
           } else if (toolCall.name === 'add_registry') {
             if (wedding?.id) await client.models.WebsiteRegistry.create({ weddingId: wedding.id, registryName: toolCall.input.registryName, registryUrl: toolCall.input.registryUrl, isVisible: true });
             lastActionMessage = `I've added ${toolCall.input.registryName} to your registry!`;
@@ -256,9 +253,7 @@ export default function IvyChat() {
           } else if (toolCall.name === 'delete_travel_item') {
             await client.models.WebsiteTravel.delete({ id: toolCall.input.id });
             lastActionMessage = "I've removed that from your travel accommodations!";
-          } else if (toolCall.name === 'delete_party_member') {
-            await client.models.WebsitePartyMember.delete({ id: toolCall.input.id });
-            lastActionMessage = "I've removed them from the wedding party!";
+
           } else if (toolCall.name === 'update_website_config') {
             await updateConfig(toolCall.input.updates);
             lastActionMessage = "I've updated the website configuration for you!";
@@ -268,9 +263,7 @@ export default function IvyChat() {
           } else if (toolCall.name === 'update_travel_item') {
             await client.models.WebsiteTravel.update({ id: toolCall.input.id, ...toolCall.input.updates });
             lastActionMessage = "I've updated that travel accommodation!";
-          } else if (toolCall.name === 'update_party_member') {
-            await client.models.WebsitePartyMember.update({ id: toolCall.input.id, ...toolCall.input.updates });
-            lastActionMessage = "I've updated the wedding party member!";
+
           } else if (toolCall.name === 'update_registry') {
             await client.models.WebsiteRegistry.update({ id: toolCall.input.id, ...toolCall.input.updates });
             lastActionMessage = "I've updated that registry link!";
@@ -286,7 +279,9 @@ export default function IvyChat() {
               lastName: toolCall.input.lastName,
               email: toolCall.input.email,
               rsvpStatus: toolCall.input.rsvpStatus || 'PENDING',
-              attendingCount: toolCall.input.attendingCount || 1
+              attendingCount: toolCall.input.attendingCount || 1,
+              tags: toolCall.input.tags,
+              primaryGuestId: toolCall.input.primaryGuestId
             });
             lastActionMessage = `I've added ${toolCall.input.firstName} to your guest list!`;
             addedCount++;

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Trash2, Edit2, Check, X, Search, Filter, Tags, GripVertical, UserMinus } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Search, Filter, Tags, GripVertical, UserMinus, ChevronUp, ChevronDown } from 'lucide-react';
 import { DndContext, useDraggable, useDroppable, DragOverlay, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
 import type { Schema } from '../../../../amplify/data/resource';
 import TagSelectorModal from './TagSelectorModal';
@@ -135,6 +135,15 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
   
   // Primary Form states
   const [firstName, setFirstName] = useState('');
@@ -350,6 +359,21 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
       if (!b.primaryGuestId) return 1;
       return a.firstName.localeCompare(b.firstName);
     }
+    
+    if (sortConfig) {
+      let valA: any = sortConfig.key === 'partySize' ? (guests.filter(g => g.primaryGuestId === pA.id).length + 1) : (pA as any)[sortConfig.key];
+      let valB: any = sortConfig.key === 'partySize' ? (guests.filter(g => g.primaryGuestId === pB.id).length + 1) : (pB as any)[sortConfig.key];
+      
+      valA = valA || '';
+      valB = valB || '';
+      
+      if (typeof valA === 'string') valA = valA.toLowerCase();
+      if (typeof valB === 'string') valB = valB.toLowerCase();
+
+      if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+    }
+
     const nameA = (pA.lastName || '') + pA.firstName;
     const nameB = (pB.lastName || '') + pB.firstName;
     const cmp = nameA.localeCompare(nameB);
@@ -502,12 +526,24 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
         <table className="w-full min-w-[800px] text-left border-collapse">
           <thead className="sticky top-0 bg-white z-10 shadow-sm">
             <tr className="border-b border-light-gray text-xs font-medium text-mid-gray uppercase tracking-wider">
-              <th className="p-4 w-[15%] min-w-[120px]">First Name</th>
-              <th className="p-4 w-[15%] min-w-[120px]">Last Name</th>
-              <th className="p-4 w-[20%] min-w-[180px]">Email</th>
-              <th className="p-4 w-[10%] min-w-[80px] text-center" title="Max allowed party size including this guest">Party</th>
-              <th className="p-4 w-[15%] min-w-[100px] text-center">RSVP</th>
-              <th className="p-4 w-[15%] min-w-[150px]">Tags</th>
+              <th className="p-4 w-[15%] min-w-[120px] cursor-pointer hover:bg-light-gray/20 transition-colors" onClick={() => handleSort('firstName')}>
+                <div className="flex items-center">First Name {sortConfig?.key === 'firstName' ? (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />) : <ChevronDown className="w-3 h-3 ml-1 opacity-0 group-hover:opacity-100" />}</div>
+              </th>
+              <th className="p-4 w-[15%] min-w-[120px] cursor-pointer hover:bg-light-gray/20 transition-colors" onClick={() => handleSort('lastName')}>
+                <div className="flex items-center">Last Name {sortConfig?.key === 'lastName' ? (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />) : <ChevronDown className="w-3 h-3 ml-1 opacity-0" />}</div>
+              </th>
+              <th className="p-4 w-[20%] min-w-[180px] cursor-pointer hover:bg-light-gray/20 transition-colors" onClick={() => handleSort('email')}>
+                <div className="flex items-center">Email {sortConfig?.key === 'email' ? (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />) : <ChevronDown className="w-3 h-3 ml-1 opacity-0" />}</div>
+              </th>
+              <th className="p-4 w-[10%] min-w-[80px] text-center cursor-pointer hover:bg-light-gray/20 transition-colors" title="Max allowed party size including this guest" onClick={() => handleSort('partySize')}>
+                <div className="flex items-center justify-center">Party {sortConfig?.key === 'partySize' ? (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />) : <ChevronDown className="w-3 h-3 ml-1 opacity-0" />}</div>
+              </th>
+              <th className="p-4 w-[15%] min-w-[100px] text-center cursor-pointer hover:bg-light-gray/20 transition-colors" onClick={() => handleSort('rsvpStatus')}>
+                <div className="flex items-center justify-center">RSVP {sortConfig?.key === 'rsvpStatus' ? (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />) : <ChevronDown className="w-3 h-3 ml-1 opacity-0" />}</div>
+              </th>
+              <th className="p-4 w-[15%] min-w-[150px] cursor-pointer hover:bg-light-gray/20 transition-colors" onClick={() => handleSort('tags')}>
+                <div className="flex items-center">Tags {sortConfig?.key === 'tags' ? (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />) : <ChevronDown className="w-3 h-3 ml-1 opacity-0" />}</div>
+              </th>
               <th className="p-4 w-28"></th>
             </tr>
           </thead>

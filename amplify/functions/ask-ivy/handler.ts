@@ -39,13 +39,13 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
           additionalInfo += `\nConfiguration [ID: ${cfg.id}]: Title: "${cfg.siteTitle}", Background: ${cfg.backgroundColor}, Primary Color: ${cfg.primaryColor}, Accent Color: ${cfg.accentColor}, Heading Font: ${cfg.headingFont}, Body Font: ${cfg.bodyFont}, Password Protected: ${cfg.passwordProtected}`;
         }
         additionalInfo += `\nStory: ${parsed.website.story?.coupleStory || 'Not written yet.'}`;
-        if (parsed.website.partyMembers?.length > 0) additionalInfo += `\nWedding Party:\n` + parsed.website.partyMembers.map((p: any) => `- [ID: ${p.id}] ${p.name} (${p.role})`).join('\n');
+        if (parsed.website.faqs?.length > 0) additionalInfo += `\nFAQs:\n` + parsed.website.faqs.map((f: any) => `- [ID: ${f.id}] Q: ${f.question}`).join('\n');
         if (parsed.website.travels?.length > 0) additionalInfo += `\nTravel:\n` + parsed.website.travels.map((t: any) => `- [ID: ${t.id}] ${t.hotelName}`).join('\n');
         if (parsed.website.registries?.length > 0) additionalInfo += `\nRegistries:\n` + parsed.website.registries.map((r: any) => `- [ID: ${r.id}] ${r.registryName}`).join('\n');
         if (parsed.website.faqs?.length > 0) additionalInfo += `\nFAQs:\n` + parsed.website.faqs.map((f: any) => `- [ID: ${f.id}] Q: ${f.question}`).join('\n');
       }
       if (parsed.guests && parsed.guests.length > 0) {
-        additionalInfo += `\n\nGuests:\n` + parsed.guests.map((g: any) => `- [ID: ${g.id}] ${g.firstName} ${g.lastName} (RSVP: ${g.rsvpStatus}, Party: ${g.partyId || 'None'}, Meal: ${g.mealChoice || 'None'}, Diet: ${g.dietaryRestrictions || 'None'})`).join('\n');
+        additionalInfo += `\n\nGuests:\n` + parsed.guests.map((g: any) => `- [ID: ${g.id}] ${g.firstName} ${g.lastName} (RSVP: ${g.rsvpStatus}, PrimaryGuest ID: ${g.primaryGuestId || 'None'}, Tags: ${g.tags || 'None'})`).join('\n');
       }
       if (parsed.budget && parsed.budget.length > 0) {
         additionalInfo += `\n\nBudget Items:\n` + parsed.budget.map((b: any) => `- [ID: ${b.id}] ${b.expenseName} - $${b.amount} (${b.category}, Paid: ${b.isPaid})`).join('\n');
@@ -103,7 +103,8 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
     You assist the couple in planning their wedding. Be concise and keep answers short (under 3 paragraphs).
     Here is the context about their wedding:
     ${contextStr}
-    You have tools to add tasks, vendors, runsheet items, and update gallery captions. You are also a Website Editor and can update the global website configuration (colors, title, password) and add/update/delete website content (FAQs, Registry, Wedding Party, Travel, Story). If the user asks you to create a "typical" schedule, checklist, or list, you CAN and SHOULD use your tools multiple times in a row to generate the full list of items in a single response!
+    You have tools to add tasks, vendors, runsheet items, and update gallery captions. You are also a Website Editor and can update the global website configuration (colors, title, password) and add/update/delete website content (FAQs, Registry, Travel, Story). 
+    NEW RULES FOR GUESTS AND WEDDING PARTY: The Wedding Party is now dynamically managed on the website using tags on the Guest List! Do NOT try to add party members directly to the website. Instead, add or update the guest on the Guest List and give them a tag like "Bridesmaid", "Groomsman", "Best Man", etc. Also, guests are grouped into parties using the \`primaryGuestId\`. RSVP Meal choices and Dietary Needs have also been replaced by tags (e.g., "Beef", "Gluten-free"). If the user asks you to create a "typical" schedule, checklist, or list, you CAN and SHOULD use your tools multiple times in a row to generate the full list of items in a single response!
     For a typical runsheet, you MUST generate a granular breakdown containing at least 10 to 15 distinct events (e.g. hair/makeup, arrivals, first look, photos, ceremony, cocktail hour, reception, speeches, dancing, send-off).
     IMPORTANT: NEVER clear or delete existing items when asked to populate or add to a schedule unless the user EXPLICITLY says "clear" or "start over".
     VISION CAPABILITY: If the user provides an image, carefully analyze it. If it is a picture of handwritten notes, an invoice, a checklist, or an inspiration board, extract the relevant information and explicitly use your tools (e.g., \`add_task\`, \`add_vendor\`, \`add_runsheet_item\`) to digitize and save it to their dashboard!
@@ -287,7 +288,10 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
             eventTime: { type: "string", description: "Time of the event in HH:MM format (e.g. '14:00')." },
             description: { type: "string", description: "Details about what happens." },
             location: { type: "string", description: "Where the event takes place." },
-            durationMinutes: { type: "integer", description: "Expected duration in minutes." }
+            durationMinutes: { type: "integer", description: "Expected duration in minutes." },
+            isFixed: { type: "boolean", description: "Set to true to lock the start time and prevent auto-calculation." },
+            isPublic: { type: "boolean", description: "Set to true if this event should be visible to guests on the website." },
+            mode: { type: "string", description: "Can be 'sequential' (default) or 'concurrent' (happens at the same time as the previous item)." }
           },
           required: ["title", "eventTime"]
         }
@@ -306,7 +310,10 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
                 eventTime: { type: "string" },
                 description: { type: "string" },
                 location: { type: "string" },
-                durationMinutes: { type: "integer" }
+                durationMinutes: { type: "integer" },
+                isFixed: { type: "boolean" },
+                isPublic: { type: "boolean" },
+                mode: { type: "string" }
               }
             }
           },
@@ -367,19 +374,7 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
           required: ["hotelName"]
         }
       },
-      {
-        name: "add_party_member",
-        description: "Add a member to the wedding party.",
-        input_schema: {
-          type: "object",
-          properties: {
-            name: { type: "string" },
-            role: { type: "string" },
-            bio: { type: "string" }
-          },
-          required: ["name", "role"]
-        }
-      },
+
       {
         name: "add_registry",
         description: "Add a new gift registry link to the website.",
@@ -416,17 +411,7 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
           required: ["id"]
         }
       },
-      {
-        name: "delete_party_member",
-        description: "Delete an existing member from the wedding party.",
-        input_schema: {
-          type: "object",
-          properties: {
-            id: { type: "string", description: "The ID of the party member to delete." }
-          },
-          required: ["id"]
-        }
-      },
+
       {
         name: "delete_registry",
         description: "Delete an existing registry link from the website.",
@@ -466,7 +451,8 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
                 headingFont: { type: "string" },
                 bodyFont: { type: "string" },
                 passwordProtected: { type: "boolean" },
-                sitePassword: { type: "string" }
+                sitePassword: { type: "string" },
+                partyTags: { type: "array", items: { type: "string" }, description: "Tags that should be displayed in the Wedding Party section on the website." }
               }
             }
           },
@@ -493,25 +479,7 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
           required: ["id", "updates"]
         }
       },
-      {
-        name: "update_party_member",
-        description: "Update an existing member of the wedding party.",
-        input_schema: {
-          type: "object",
-          properties: {
-            id: { type: "string" },
-            updates: {
-              type: "object",
-              properties: {
-                name: { type: "string" },
-                role: { type: "string" },
-                bio: { type: "string" }
-              }
-            }
-          },
-          required: ["id", "updates"]
-        }
-      },
+
       {
         name: "update_registry",
         description: "Update an existing registry link.",
@@ -558,15 +526,16 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
             firstName: { type: "string" },
             lastName: { type: "string" },
             email: { type: "string" },
-            rsvpStatus: { type: "string", description: "Must be: PENDING, ATTENDING, DECLINED" },
-            partyId: { type: "string", description: "Optional party grouping ID" }
+            rsvpStatus: { type: "string", description: "Must be: PENDING, CONFIRMED, DECLINED" },
+            tags: { type: "string", description: "Comma separated tags (e.g. 'Bridesmaid, Vegetarian')" },
+            primaryGuestId: { type: "string", description: "If this guest is part of another guest's party, provide the primary guest's ID here." }
           },
           required: ["firstName", "lastName"]
         }
       },
       {
         name: "update_guest",
-        description: "Update an existing guest's details or RSVP status.",
+        description: "Update an existing guest's details, RSVP status, or tags.",
         input_schema: {
           type: "object",
           properties: {
@@ -577,10 +546,9 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
                 firstName: { type: "string" },
                 lastName: { type: "string" },
                 email: { type: "string" },
-                rsvpStatus: { type: "string", description: "Must be: PENDING, ATTENDING, DECLINED" },
-                mealChoice: { type: "string" },
-                dietaryRestrictions: { type: "string" },
-                partyId: { type: "string" }
+                rsvpStatus: { type: "string", description: "Must be: PENDING, CONFIRMED, DECLINED" },
+                tags: { type: "string", description: "Comma separated tags (e.g. 'Bridesmaid, Chicken, Gluten-free')" },
+                primaryGuestId: { type: "string", description: "If this guest is part of another guest's party, provide the primary guest's ID here." }
               }
             }
           },
