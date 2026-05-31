@@ -5,6 +5,7 @@ import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../../amplify/data/resource';
 
 import { useGuests } from '@/lib/hooks/useGuests';
+import { SYSTEM_TAGS } from '@/lib/constants/tags';
 import GuestTable from '@/components/features/guests/GuestTable';
 import GuestBulkImport from '@/components/features/guests/GuestBulkImport';
 import { Download, Upload, Users, UserCheck, UserX, Clock } from 'lucide-react';
@@ -26,7 +27,18 @@ export default function GuestsPage() {
     const sub = client.models.GuestTag.observeQuery({
       filter: { weddingId: { eq: weddingId } }
     }).subscribe({
-      next: ({ items }) => setAvailableTags(items),
+      next: ({ items }) => {
+        const itemNames = new Set(items.map(t => t.name));
+        const virtualTags = SYSTEM_TAGS.filter(name => !itemNames.has(name)).map(name => ({
+          id: `system-${name}`,
+          name,
+          isPublic: false,
+          weddingId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        } as Schema['GuestTag']['type']));
+        setAvailableTags([...items, ...virtualTags]);
+      },
       error: (e) => console.error(e)
     });
     return () => sub.unsubscribe();

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../../amplify/data/resource';
+import { SYSTEM_TAGS } from '@/lib/constants/tags';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { Tag, Plus, Trash2, X, Lock, Globe } from 'lucide-react';
 import { toast } from 'sonner';
@@ -23,7 +24,25 @@ export default function GuestTagManager({ isOpen, onClose }: { isOpen: boolean, 
       filter: { weddingId: { eq: weddingId } }
     }).subscribe({
       next: ({ items }) => {
-        setTags(items);
+        const itemNames = new Set(items.map(t => t.name));
+        const virtualTags = SYSTEM_TAGS.filter(name => !itemNames.has(name)).map(name => ({
+          id: `system-${name}`,
+          name,
+          isPublic: false,
+          weddingId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        } as Schema['GuestTag']['type']));
+        
+        const allTags = [...items, ...virtualTags].sort((a, b) => {
+          const aIsSystem = SYSTEM_TAGS.includes(a.name);
+          const bIsSystem = SYSTEM_TAGS.includes(b.name);
+          if (aIsSystem && !bIsSystem) return -1;
+          if (!aIsSystem && bIsSystem) return 1;
+          return a.name.localeCompare(b.name);
+        });
+        
+        setTags(allTags);
         setLoading(false);
       },
       error: (err) => {
@@ -62,10 +81,18 @@ export default function GuestTagManager({ isOpen, onClose }: { isOpen: boolean, 
 
   const handleTogglePublic = async (tag: Schema['GuestTag']['type']) => {
     try {
-      await client.models.GuestTag.update({
-        id: tag.id,
-        isPublic: !tag.isPublic
-      });
+      if (tag.id.startsWith('system-')) {
+        await client.models.GuestTag.create({
+          weddingId,
+          name: tag.name,
+          isPublic: !tag.isPublic
+        });
+      } else {
+        await client.models.GuestTag.update({
+          id: tag.id,
+          isPublic: !tag.isPublic
+        });
+      }
     } catch (e) {
       toast.error('Failed to update tag');
     }
@@ -119,26 +146,34 @@ export default function GuestTagManager({ isOpen, onClose }: { isOpen: boolean, 
             <p className="text-center text-mid-gray py-8 px-4 text-sm">No tags created yet. Private tags are for your eyes only. Public tags will appear on the RSVP form for guests to select (e.g., Dietary Restrictions).</p>
           ) : (
             <ul className="space-y-2">
-              {tags.map(tag => (
-                <li key={tag.id} className="flex items-center justify-between p-3 border border-light-gray rounded-lg bg-ivory/30">
-                  <span className="font-medium text-charcoal">{tag.name}</span>
-                  <div className="flex items-center space-x-2">
-                    <button 
-                      onClick={() => handleTogglePublic(tag)}
-                      className={`text-xs px-2 py-1 rounded flex items-center ${tag.isPublic ? 'bg-sage/10 text-sage' : 'bg-gray-100 text-mid-gray'}`}
-                    >
-                      {tag.isPublic ? <Globe className="w-3 h-3 mr-1" /> : <Lock className="w-3 h-3 mr-1" />}
-                      {tag.isPublic ? 'Public' : 'Private'}
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(tag.id)}
-                      className="text-mid-gray hover:text-red-500 p-1 rounded"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </li>
-              ))}
+              {tags.map(tag => {
+                const isSystemTag = SYSTEM_TAGS.includes(tag.name);
+                return (
+                  <li key={tag.id} className="flex items-center justify-between p-3 border border-light-gray rounded-lg bg-ivory/30">
+                    <div>
+                      <span className="font-medium text-charcoal">{tag.name}</span>
+                      {isSystemTag && <span className="ml-2 text-[10px] uppercase tracking-wider text-sage bg-sage/10 px-1.5 py-0.5 rounded">System Tag</span>}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        onClick={() => handleTogglePublic(tag)}
+                        className={`text-xs px-2 py-1 rounded flex items-center ${tag.isPublic ? 'bg-sage/10 text-sage' : 'bg-gray-100 text-mid-gray'}`}
+                      >
+                        {tag.isPublic ? <Globe className="w-3 h-3 mr-1" /> : <Lock className="w-3 h-3 mr-1" />}
+                        {tag.isPublic ? 'Public' : 'Private'}
+                      </button>
+                      {!isSystemTag && (
+                        <button 
+                          onClick={() => handleDelete(tag.id)}
+                          className="text-mid-gray hover:text-red-500 p-1 rounded"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
