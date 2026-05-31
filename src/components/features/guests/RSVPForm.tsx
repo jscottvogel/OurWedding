@@ -272,32 +272,6 @@ export default function RSVPForm({ guests, onUpdate, wedding }: RSVPFormProps) {
               <div className="space-y-4 animate-in fade-in duration-300">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-charcoal mb-1">Meal Choice</label>
-                    <select 
-                      required
-                      value={mealChoice}
-                      onChange={(e) => setMealChoice(e.target.value)}
-                      className="w-full border border-light-gray rounded-lg p-3 bg-white focus:border-sage focus:outline-none"
-                    >
-                      <option value="" disabled>Select a meal...</option>
-                      {(wedding?.rsvpMealOptions || wedding?.mealOptions || ['Beef', 'Chicken', 'Vegetarian']).filter(Boolean).map(m => (
-                        <option key={m as string} value={m as string}>{m}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-charcoal mb-1">Dietary Needs</label>
-                    <input 
-                      type="text" 
-                      value={dietaryRequirements}
-                      onChange={(e) => setDietaryRequirements(e.target.value)}
-                      placeholder="e.g. Gluten-free"
-                      className="w-full border border-light-gray rounded-lg p-3 focus:border-sage focus:outline-none"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
                     <label className="block text-sm font-medium text-charcoal mb-1">Email</label>
                     <input 
                       type="email" 
@@ -404,31 +378,6 @@ export default function RSVPForm({ guests, onUpdate, wedding }: RSVPFormProps) {
 
                   {member.isAttending && (
                     <div className="space-y-4 animate-in fade-in duration-300">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-medium text-mid-gray mb-1">Meal Choice</label>
-                          <select 
-                            required
-                            value={member.mealChoice}
-                            onChange={(e) => updatePartyMember(idx, { mealChoice: e.target.value })}
-                            className="w-full border border-light-gray rounded p-2 text-sm bg-white focus:border-sage focus:outline-none"
-                          >
-                            <option value="" disabled>Select a meal...</option>
-                            {(wedding?.rsvpMealOptions || wedding?.mealOptions || ['Beef', 'Chicken', 'Vegetarian']).filter(Boolean).map(m => (
-                              <option key={m as string} value={m as string}>{m}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-mid-gray mb-1">Dietary Needs</label>
-                          <input 
-                            type="text" 
-                            value={member.dietaryRequirements}
-                            onChange={(e) => updatePartyMember(idx, { dietaryRequirements: e.target.value })}
-                            className="w-full border border-light-gray rounded p-2 text-sm focus:border-sage focus:outline-none"
-                          />
-                        </div>
-                      </div>
                       
                       {publicTags.length > 0 && (
                         <div className="flex flex-wrap gap-2 pt-2">

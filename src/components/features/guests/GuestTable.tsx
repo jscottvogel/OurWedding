@@ -26,6 +26,7 @@ interface EditingPartyMember {
 
 function GuestRow({
   guest,
+  partySize,
   availableTags,
   onStartEdit,
   onDelete,
@@ -33,6 +34,7 @@ function GuestRow({
   isOverlay
 }: {
   guest: Schema['Guest']['type'];
+  partySize: number;
   availableTags: Schema['GuestTag']['type'][];
   onStartEdit: (guest: Schema['Guest']['type']) => void;
   onDelete: (id: string) => void;
@@ -84,7 +86,7 @@ function GuestRow({
       <td className="p-4 text-mid-gray text-sm">{guest.lastName || '-'}</td>
       <td className="p-4 text-mid-gray text-sm">{guest.email || '-'}</td>
       <td className="p-4 text-center text-sm font-medium text-charcoal">
-        {!guest.primaryGuestId ? guest.maxGuests || 1 : '-'}
+        {!guest.primaryGuestId ? partySize : '-'}
       </td>
       <td className="p-4 text-center">
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -181,9 +183,17 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
 
       if (activeGuest && overGuest) {
         const targetPrimaryId = overGuest.primaryGuestId || overGuest.id;
+        const targetPrimary = guests.find(g => g.id === targetPrimaryId);
 
         if (activeGuest.id !== targetPrimaryId && activeGuest.primaryGuestId !== targetPrimaryId) {
+          const currentSize = guests.filter(g => g.primaryGuestId === targetPrimaryId).length + 1;
+          const newMax = Math.max(targetPrimary?.maxGuests || 1, currentSize + 1);
+          
           await onUpdate(activeGuest.id, { primaryGuestId: targetPrimaryId });
+          
+          if (targetPrimary && newMax > (targetPrimary.maxGuests || 1)) {
+            await onUpdate(targetPrimaryId, { maxGuests: newMax });
+          }
         }
       }
     }
@@ -513,10 +523,13 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
                 return null;
               }
 
+              const partySize = guests.filter(g => g.primaryGuestId === guest.id).length + 1;
+
               return (
                 <GuestRow 
                   key={guest.id} 
                   guest={guest} 
+                  partySize={partySize}
                   availableTags={availableTags}
                   onStartEdit={startEdit}
                   onDelete={onDelete}
