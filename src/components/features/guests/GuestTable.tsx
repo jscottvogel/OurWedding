@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Trash2, Edit2, Check, X, Search, Filter } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Search, Filter, UserPlus } from 'lucide-react';
 import type { Schema } from '../../../../amplify/data/resource';
 
 interface GuestTableProps {
@@ -14,6 +14,7 @@ interface GuestTableProps {
 
 export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate, onDelete }: GuestTableProps) {
   const [isAdding, setIsAdding] = useState(false);
+  const [addingParentId, setAddingParentId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -39,13 +40,14 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
     setLegacyTags([]);
     setMaxGuests(1);
     setIsAdding(false);
+    setAddingParentId(null);
     setEditingId(null);
   };
 
   const handleAddSubmit = async () => {
     if (!firstName) return;
     const tagsStr = [...legacyTags, ...selectedTags].join(', ');
-    await onAdd({ firstName, lastName, email, notes, tags: tagsStr, rsvpStatus, maxGuests, attendingCount: 1 });
+    await onAdd({ firstName, lastName, email, notes, tags: tagsStr, rsvpStatus, maxGuests: addingParentId ? undefined : maxGuests, primaryGuestId: addingParentId || undefined, attendingCount: 1 });
     resetForm();
   };
 
@@ -132,13 +134,13 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
         <table className="w-full min-w-[800px] text-left border-collapse">
           <thead className="sticky top-0 bg-white z-10 shadow-sm">
             <tr className="border-b border-light-gray text-xs font-medium text-mid-gray uppercase tracking-wider">
-              <th className="p-4 w-[15%]">First Name</th>
-              <th className="p-4 w-[15%] hidden md:table-cell">Last Name</th>
-              <th className="p-4 w-[20%] hidden md:table-cell">Email</th>
-              <th className="p-4 w-[10%] text-center" title="Max allowed party size including this guest">Party</th>
-              <th className="p-4 w-[15%] text-center">RSVP</th>
-              <th className="p-4 w-[15%] hidden xl:table-cell">Tags</th>
-              <th className="p-4 w-24"></th>
+              <th className="p-4 w-[15%] min-w-[120px]">First Name</th>
+              <th className="p-4 w-[15%] min-w-[120px]">Last Name</th>
+              <th className="p-4 w-[20%] min-w-[180px]">Email</th>
+              <th className="p-4 w-[10%] min-w-[80px] text-center" title="Max allowed party size including this guest">Party</th>
+              <th className="p-4 w-[15%] min-w-[100px] text-center">RSVP</th>
+              <th className="p-4 w-[15%] min-w-[150px]">Tags</th>
+              <th className="p-4 w-28"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-light-gray/50">
@@ -147,10 +149,10 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
                 <td className="p-3">
                   <input type="text" placeholder="First Name" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
                 </td>
-                <td className="p-3 hidden md:table-cell">
+                <td className="p-3">
                   <input type="text" placeholder="Last Name" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
                 </td>
-                <td className="p-3 hidden md:table-cell">
+                <td className="p-3">
                   <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
                 </td>
                 <td className="p-3 text-center">
@@ -163,7 +165,7 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
                     <option value="DECLINED">Declined</option>
                   </select>
                 </td>
-                <td className="p-3 hidden xl:table-cell">
+                <td className="p-3">
                   <div className="flex flex-wrap gap-1 mb-1">
                     {availableTags.map(tag => (
                       <label key={tag.id} className="flex items-center space-x-1 bg-white border border-light-gray px-1.5 py-0.5 rounded text-xs cursor-pointer hover:border-sage">
@@ -191,10 +193,10 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
                   <td className="p-3">
                     <input type="text" placeholder="First Name" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
                   </td>
-                  <td className="p-3 hidden md:table-cell">
+                  <td className="p-3">
                     <input type="text" placeholder="Last Name" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
                   </td>
-                  <td className="p-3 hidden md:table-cell">
+                  <td className="p-3">
                     <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
                   </td>
                   <td className="p-3 text-center">
@@ -207,7 +209,7 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
                       <option value="DECLINED">Declined</option>
                     </select>
                   </td>
-                  <td className="p-3 hidden xl:table-cell">
+                  <td className="p-3">
                     <div className="flex flex-wrap gap-1 mb-2">
                       {availableTags.map(tag => (
                         <label key={tag.id} className="flex items-center space-x-1 bg-white border border-light-gray px-1.5 py-0.5 rounded text-xs cursor-pointer hover:border-sage">
@@ -238,46 +240,92 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
                   </td>
                 </tr>
               ) : (
-                <tr key={guest.id} className={`hover:bg-ivory/30 transition-colors group ${guest.primaryGuestId ? 'bg-gray-50/50' : ''}`}>
-                  <td className="p-4 flex items-center">
-                    {guest.primaryGuestId && (
-                      <div className="w-3 h-3 border-l-2 border-b-2 border-light-gray mr-2 mb-1" />
-                    )}
-                    <p className={`font-medium text-charcoal ${guest.primaryGuestId ? 'text-sm' : ''}`}>{guest.firstName}</p>
-                  </td>
-                  <td className="p-4 hidden md:table-cell text-mid-gray text-sm">{guest.lastName || '-'}</td>
-                  <td className="p-4 hidden md:table-cell text-mid-gray text-sm">{guest.email || '-'}</td>
-                  <td className="p-4 text-center text-sm font-medium text-charcoal">
-                    {!guest.primaryGuestId ? guest.maxGuests || 1 : '-'}
-                  </td>
-                  <td className="p-4 text-center">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      guest.rsvpStatus === 'CONFIRMED' ? 'bg-sage/20 text-dark-sage' :
-                      guest.rsvpStatus === 'DECLINED' ? 'bg-red-100 text-red-700' :
-                      'bg-light-gray text-mid-gray'
-                    }`}>
-                      {guest.rsvpStatus}
-                    </span>
-                  </td>
-                  <td className="p-4 hidden xl:table-cell">
-                    <div className="flex flex-wrap gap-1">
-                      {guest.tags ? guest.tags.split(',').map(t => t.trim()).filter(Boolean).map(tag => {
-                        const isPredefined = availableTags.some(at => at.name === tag);
-                        return (
-                          <span key={tag} className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${isPredefined ? 'bg-sage/10 text-sage border-sage/20' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-                            {tag}
-                          </span>
-                        );
-                      }) : '-'}
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => startEdit(guest)} className="p-1.5 text-mid-gray hover:text-sage"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => onDelete(guest.id)} className="p-1.5 text-mid-gray hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
-                    </div>
-                  </td>
-                </tr>
+                <React.Fragment key={guest.id}>
+                  <tr className={`hover:bg-ivory/30 transition-colors group ${guest.primaryGuestId ? 'bg-gray-50/50' : ''}`}>
+                    <td className="p-4 flex items-center">
+                      {guest.primaryGuestId && (
+                        <div className="w-3 h-3 border-l-2 border-b-2 border-light-gray mr-2 mb-1" />
+                      )}
+                      <p className={`font-medium text-charcoal ${guest.primaryGuestId ? 'text-sm' : ''}`}>{guest.firstName}</p>
+                    </td>
+                    <td className="p-4 text-mid-gray text-sm">{guest.lastName || '-'}</td>
+                    <td className="p-4 text-mid-gray text-sm">{guest.email || '-'}</td>
+                    <td className="p-4 text-center text-sm font-medium text-charcoal">
+                      {!guest.primaryGuestId ? guest.maxGuests || 1 : '-'}
+                    </td>
+                    <td className="p-4 text-center">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        guest.rsvpStatus === 'CONFIRMED' ? 'bg-sage/20 text-dark-sage' :
+                        guest.rsvpStatus === 'DECLINED' ? 'bg-red-100 text-red-700' :
+                        'bg-light-gray text-mid-gray'
+                      }`}>
+                        {guest.rsvpStatus}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex flex-wrap gap-1">
+                        {guest.tags ? guest.tags.split(',').map(t => t.trim()).filter(Boolean).map(tag => {
+                          const isPredefined = availableTags.some(at => at.name === tag);
+                          return (
+                            <span key={tag} className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${isPredefined ? 'bg-sage/10 text-sage border-sage/20' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                              {tag}
+                            </span>
+                          );
+                        }) : '-'}
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {!guest.primaryGuestId && (guests.filter(g => g.primaryGuestId === guest.id).length + 1 < (guest.maxGuests || 1)) && (
+                          <button onClick={() => { resetForm(); setAddingParentId(guest.id); }} className="p-1.5 text-sage hover:text-dark-sage" title="Add Party Member"><UserPlus className="w-4 h-4" /></button>
+                        )}
+                        <button onClick={() => startEdit(guest)} className="p-1.5 text-mid-gray hover:text-sage"><Edit2 className="w-4 h-4" /></button>
+                        <button onClick={() => onDelete(guest.id)} className="p-1.5 text-mid-gray hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                  {addingParentId === guest.id && (
+                    <tr className="bg-sage/5">
+                      <td className="p-3 pl-8 flex items-center">
+                        <div className="w-3 h-3 border-l-2 border-b-2 border-sage mr-2 mb-1" />
+                        <input type="text" placeholder="First Name" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
+                      </td>
+                      <td className="p-3">
+                        <input type="text" placeholder="Last Name" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
+                      </td>
+                      <td className="p-3">
+                        <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
+                      </td>
+                      <td className="p-3 text-center">-</td>
+                      <td className="p-3 text-center">
+                        <select value={rsvpStatus || 'PENDING'} onChange={e => setRsvpStatus(e.target.value as any)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white">
+                          <option value="PENDING">Pending</option>
+                          <option value="CONFIRMED">Confirmed</option>
+                          <option value="DECLINED">Declined</option>
+                        </select>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex flex-wrap gap-1 mb-1">
+                          {availableTags.map(tag => (
+                            <label key={tag.id} className="flex items-center space-x-1 bg-white border border-light-gray px-1.5 py-0.5 rounded text-xs cursor-pointer hover:border-sage">
+                              <input type="checkbox" className="w-3 h-3 text-sage" checked={selectedTags.includes(tag.name)} onChange={e => {
+                                if (e.target.checked) setSelectedTags([...selectedTags, tag.name]);
+                                else setSelectedTags(selectedTags.filter(t => t !== tag.name));
+                              }} />
+                              <span className="text-gray-600 truncate max-w-[80px]" title={tag.name}>{tag.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center justify-end space-x-2">
+                          <button onClick={resetForm} className="p-1.5 text-mid-gray hover:bg-light-gray rounded"><X className="w-4 h-4" /></button>
+                          <button onClick={handleAddSubmit} disabled={!firstName} className="p-1.5 text-white bg-sage hover:bg-dark-sage rounded disabled:opacity-50"><Check className="w-4 h-4" /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               )
             ))}
             
