@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Trash2, Edit2, Check, X, Search, Filter, UserPlus } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Search, Filter, Tags } from 'lucide-react';
 import type { Schema } from '../../../../amplify/data/resource';
+import TagSelectorModal from './TagSelectorModal';
 
 interface GuestTableProps {
   guests: Schema['Guest']['type'][];
@@ -12,23 +13,37 @@ interface GuestTableProps {
   onDelete: (id: string) => Promise<void>;
 }
 
+interface EditingPartyMember {
+  id?: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  rsvpStatus: Schema['Guest']['type']['rsvpStatus'];
+  selectedTags: string[];
+  legacyTags: string[];
+}
+
 export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate, onDelete }: GuestTableProps) {
   const [isAdding, setIsAdding] = useState(false);
-  const [addingParentId, setAddingParentId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Form states
+  // Primary Form states
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [notes, setNotes] = useState('');
   const [rsvpStatus, setRsvpStatus] = useState<Schema['Guest']['type']['rsvpStatus']>('PENDING');
-  
-  // New Form states for Tags and Party
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [legacyTags, setLegacyTags] = useState<string[]>([]);
   const [maxGuests, setMaxGuests] = useState<number>(1);
+
+  // Party members state
+  const [partyMembers, setPartyMembers] = useState<EditingPartyMember[]>([]);
+
+  // Tag Modal state
+  // null = closed, 'primary' = editing primary, number = editing party member at index
+  const [activeTagEditor, setActiveTagEditor] = useState<'primary' | number | null>(null);
 
   const resetForm = () => {
     setFirstName('');
@@ -39,44 +54,125 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
     setSelectedTags([]);
     setLegacyTags([]);
     setMaxGuests(1);
+    setPartyMembers([]);
     setIsAdding(false);
-    setAddingParentId(null);
     setEditingId(null);
+    setActiveTagEditor(null);
   };
 
   const handleAddSubmit = async () => {
     if (!firstName) return;
     const tagsStr = [...legacyTags, ...selectedTags].join(', ');
-    await onAdd({ firstName, lastName, email, notes, tags: tagsStr, rsvpStatus, maxGuests: addingParentId ? undefined : maxGuests, primaryGuestId: addingParentId || undefined, attendingCount: 1 });
+    const calculatedMax = Math.max(maxGuests, partyMembers.length + 1);
+    
+    // Add primary
+    const res = await onAdd({ firstName, lastName, email, notes, tags: tagsStr, rsvpStatus, maxGuests: calculatedMax, attendingCount: 1 });
+    const newId = res?.data?.id;
+    
+    // Add party members
+    if (newId) {
+      for (const pm of partyMembers) {
+        if (!pm.firstName) continue;
+        const pmTags = [...pm.legacyTags, ...pm.selectedTags].join(', ');
+        await onAdd({ 
+          firstName: pm.firstName, 
+          lastName: pm.lastName, 
+          email: pm.email, 
+          tags: pmTags, 
+          rsvpStatus: pm.rsvpStatus, 
+          primaryGuestId: newId, 
+          attendingCount: 1 
+        });
+      }
+    }
     resetForm();
   };
 
   const handleUpdateSubmit = async () => {
     if (!editingId || !firstName) return;
     const tagsStr = [...legacyTags, ...selectedTags].join(', ');
-    await onUpdate(editingId, { firstName, lastName, email, notes, tags: tagsStr, rsvpStatus, maxGuests });
+    const calculatedMax = Math.max(maxGuests, partyMembers.length + 1);
+    
+    // Update primary
+    await onUpdate(editingId, { firstName, lastName, email, notes, tags: tagsStr, rsvpStatus, maxGuests: calculatedMax });
+    
+    const existingSubGuests = guests.filter(g => g.primaryGuestId === editingId);
+    
+    // Handle party members
+    for (const pm of partyMembers) {
+      if (!pm.firstName) continue;
+      const pmTags = [...pm.legacyTags, ...pm.selectedTags].join(', ');
+      
+      if (pm.id) {
+        await onUpdate(pm.id, { firstName: pm.firstName, lastName: pm.lastName, email: pm.email, tags: pmTags, rsvpStatus: pm.rsvpStatus });
+      } else {
+        await onAdd({ 
+          firstName: pm.firstName, 
+          lastName: pm.lastName, 
+          email: pm.email, 
+          tags: pmTags, 
+          rsvpStatus: pm.rsvpStatus, 
+          primaryGuestId: editingId, 
+          attendingCount: 1 
+        });
+      }
+    }
+    
+    // Handle deleted party members
+    const currentIds = partyMembers.map(p => p.id).filter(Boolean);
+    for (const existing of existingSubGuests) {
+      if (!currentIds.includes(existing.id)) {
+        await onDelete(existing.id);
+      }
+    }
+
     resetForm();
   };
 
   const startEdit = (guest: Schema['Guest']['type']) => {
-    setFirstName(guest.firstName);
-    setLastName(guest.lastName || '');
-    setEmail(guest.email || '');
-    setNotes(guest.notes || '');
-    setRsvpStatus(guest.rsvpStatus || 'PENDING');
+    const targetGuest = guest.primaryGuestId ? guests.find(g => g.id === guest.primaryGuestId) || guest : guest;
     
-    const allTags = guest.tags ? guest.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+    setFirstName(targetGuest.firstName);
+    setLastName(targetGuest.lastName || '');
+    setEmail(targetGuest.email || '');
+    setNotes(targetGuest.notes || '');
+    setRsvpStatus(targetGuest.rsvpStatus || 'PENDING');
+    
     const availableTagNames = availableTags.map(t => t.name);
+    const allTags = targetGuest.tags ? targetGuest.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
     
     setSelectedTags(allTags.filter(t => availableTagNames.includes(t)));
     setLegacyTags(allTags.filter(t => !availableTagNames.includes(t)));
-    setMaxGuests(guest.maxGuests || 1);
+    setMaxGuests(targetGuest.maxGuests || 1);
     
-    setEditingId(guest.id);
+    const subGuests = guests.filter(g => g.primaryGuestId === targetGuest.id);
+    setPartyMembers(subGuests.map(sg => {
+      const pmTags = sg.tags ? sg.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+      return {
+        id: sg.id,
+        firstName: sg.firstName,
+        lastName: sg.lastName || '',
+        email: sg.email || '',
+        rsvpStatus: sg.rsvpStatus || 'PENDING',
+        selectedTags: pmTags.filter(t => availableTagNames.includes(t)),
+        legacyTags: pmTags.filter(t => !availableTagNames.includes(t))
+      };
+    }));
+    
+    setEditingId(targetGuest.id);
+    setIsAdding(false);
   };
 
-  const removeLegacyTag = (tagToRemove: string) => {
-    setLegacyTags(legacyTags.filter(t => t !== tagToRemove));
+  const updatePartyMember = (index: number, updates: Partial<EditingPartyMember>) => {
+    const newMembers = [...partyMembers];
+    newMembers[index] = { ...newMembers[index], ...updates };
+    setPartyMembers(newMembers);
+  };
+
+  const removePartyMemberRow = (index: number) => {
+    const newMembers = [...partyMembers];
+    newMembers.splice(index, 1);
+    setPartyMembers(newMembers);
   };
 
   const filteredGuests = guests.filter(g => 
@@ -100,6 +196,116 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
     const nameB = (pB.lastName || '') + pB.firstName;
     return nameA.localeCompare(nameB);
   });
+
+  const getTagModalProps = () => {
+    if (activeTagEditor === 'primary') {
+      return {
+        initialSelected: selectedTags,
+        legacyTags: legacyTags,
+        onSave: (sel: string[], leg: string[]) => { setSelectedTags(sel); setLegacyTags(leg); }
+      };
+    } else if (typeof activeTagEditor === 'number') {
+      const pm = partyMembers[activeTagEditor];
+      return {
+        initialSelected: pm.selectedTags,
+        legacyTags: pm.legacyTags,
+        onSave: (sel: string[], leg: string[]) => updatePartyMember(activeTagEditor, { selectedTags: sel, legacyTags: leg })
+      };
+    }
+    return { initialSelected: [], legacyTags: [], onSave: () => {} };
+  };
+
+  const renderEditRows = () => (
+    <React.Fragment>
+      <tr className="bg-sage/5">
+        <td className="p-3">
+          <input type="text" placeholder="First Name" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white" />
+        </td>
+        <td className="p-3">
+          <input type="text" placeholder="Last Name" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white" />
+        </td>
+        <td className="p-3">
+          <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white" />
+        </td>
+        <td className="p-3 text-center">
+          <input type="number" min="1" value={maxGuests} onChange={e => setMaxGuests(parseInt(e.target.value) || 1)} className="w-16 p-2 border rounded text-sm focus:border-sage focus:outline-none text-center mx-auto block bg-white" title="Max Party Size" />
+        </td>
+        <td className="p-3 text-center">
+          <select value={rsvpStatus || 'PENDING'} onChange={e => setRsvpStatus(e.target.value as any)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white">
+            <option value="PENDING">Pending</option>
+            <option value="CONFIRMED">Confirmed</option>
+            <option value="DECLINED">Declined</option>
+          </select>
+        </td>
+        <td className="p-3">
+          <button type="button" onClick={() => setActiveTagEditor('primary')} className="flex items-center space-x-2 w-full p-2 border rounded text-sm bg-white hover:border-sage focus:outline-none text-left text-mid-gray">
+            <Tags className="w-4 h-4 text-sage" />
+            <span className="truncate flex-1">
+              {selectedTags.length + legacyTags.length > 0 
+                ? `${selectedTags.length + legacyTags.length} selected` 
+                : 'Select tags...'}
+            </span>
+          </button>
+        </td>
+        <td className="p-3">
+          <div className="flex items-center justify-end space-x-2">
+            <button onClick={resetForm} className="p-1.5 text-mid-gray hover:bg-light-gray rounded"><X className="w-4 h-4" /></button>
+            <button onClick={editingId ? handleUpdateSubmit : handleAddSubmit} disabled={!firstName} className="p-1.5 text-white bg-sage hover:bg-dark-sage rounded disabled:opacity-50"><Check className="w-4 h-4" /></button>
+          </div>
+        </td>
+      </tr>
+
+      {/* Party Members Edit Rows */}
+      {partyMembers.map((pm, idx) => (
+        <tr key={pm.id || idx} className="bg-sage/5 relative">
+          <td className="p-3 pl-8 flex items-center">
+            <div className="w-3 h-3 border-l-2 border-b-2 border-sage mr-2 mb-1 opacity-50" />
+            <input type="text" placeholder="First Name" value={pm.firstName} onChange={e => updatePartyMember(idx, { firstName: e.target.value })} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white" />
+          </td>
+          <td className="p-3">
+            <input type="text" placeholder="Last Name" value={pm.lastName} onChange={e => updatePartyMember(idx, { lastName: e.target.value })} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white" />
+          </td>
+          <td className="p-3">
+            <input type="email" placeholder="Email" value={pm.email} onChange={e => updatePartyMember(idx, { email: e.target.value })} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white" />
+          </td>
+          <td className="p-3 text-center">-</td>
+          <td className="p-3 text-center">
+            <select value={pm.rsvpStatus || 'PENDING'} onChange={e => updatePartyMember(idx, { rsvpStatus: e.target.value as any })} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white">
+              <option value="PENDING">Pending</option>
+              <option value="CONFIRMED">Confirmed</option>
+              <option value="DECLINED">Declined</option>
+            </select>
+          </td>
+          <td className="p-3">
+            <button type="button" onClick={() => setActiveTagEditor(idx)} className="flex items-center space-x-2 w-full p-2 border rounded text-sm bg-white hover:border-sage focus:outline-none text-left text-mid-gray">
+              <Tags className="w-4 h-4 text-sage" />
+              <span className="truncate flex-1">
+                {pm.selectedTags.length + pm.legacyTags.length > 0 
+                  ? `${pm.selectedTags.length + pm.legacyTags.length} selected` 
+                  : 'Select tags...'}
+              </span>
+            </button>
+          </td>
+          <td className="p-3">
+            <div className="flex items-center justify-end space-x-2">
+              <button onClick={() => removePartyMemberRow(idx)} className="p-1.5 text-mid-gray hover:text-red-500 rounded" title="Remove Party Member"><Trash2 className="w-4 h-4" /></button>
+            </div>
+          </td>
+        </tr>
+      ))}
+      <tr className="bg-sage/5">
+        <td colSpan={7} className="p-3 text-center border-t border-dashed border-light-gray/50">
+          <button 
+            type="button" 
+            onClick={() => setPartyMembers([...partyMembers, { firstName: '', lastName: '', email: '', rsvpStatus: 'PENDING', selectedTags: [], legacyTags: [] }])}
+            className="text-sm text-sage hover:text-dark-sage font-medium inline-flex items-center"
+          >
+            <Plus className="w-4 h-4 mr-1" /> Add Party Member
+          </button>
+        </td>
+      </tr>
+    </React.Fragment>
+  );
 
   return (
     <div className="bg-white rounded-xl border border-light-gray shadow-sm overflow-hidden flex flex-col h-[600px]">
@@ -144,102 +350,18 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
             </tr>
           </thead>
           <tbody className="divide-y divide-light-gray/50">
-            {isAdding && (
-              <tr className="bg-sage/5">
-                <td className="p-3">
-                  <input type="text" placeholder="First Name" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
-                </td>
-                <td className="p-3">
-                  <input type="text" placeholder="Last Name" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
-                </td>
-                <td className="p-3">
-                  <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
-                </td>
-                <td className="p-3 text-center">
-                  <input type="number" min="1" value={maxGuests} onChange={e => setMaxGuests(parseInt(e.target.value) || 1)} className="w-16 p-2 border rounded text-sm focus:border-sage focus:outline-none text-center mx-auto block" />
-                </td>
-                <td className="p-3 text-center">
-                  <select value={rsvpStatus || 'PENDING'} onChange={e => setRsvpStatus(e.target.value as any)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white">
-                    <option value="PENDING">Pending</option>
-                    <option value="CONFIRMED">Confirmed</option>
-                    <option value="DECLINED">Declined</option>
-                  </select>
-                </td>
-                <td className="p-3">
-                  <div className="flex flex-wrap gap-1 mb-1">
-                    {availableTags.map(tag => (
-                      <label key={tag.id} className="flex items-center space-x-1 bg-white border border-light-gray px-1.5 py-0.5 rounded text-xs cursor-pointer hover:border-sage">
-                        <input type="checkbox" className="w-3 h-3 text-sage" checked={selectedTags.includes(tag.name)} onChange={e => {
-                          if (e.target.checked) setSelectedTags([...selectedTags, tag.name]);
-                          else setSelectedTags(selectedTags.filter(t => t !== tag.name));
-                        }} />
-                        <span className="text-gray-600 truncate max-w-[80px]" title={tag.name}>{tag.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </td>
-                <td className="p-3">
-                  <div className="flex items-center justify-end space-x-2">
-                    <button onClick={resetForm} className="p-1.5 text-mid-gray hover:bg-light-gray rounded"><X className="w-4 h-4" /></button>
-                    <button onClick={handleAddSubmit} disabled={!firstName} className="p-1.5 text-white bg-sage hover:bg-dark-sage rounded disabled:opacity-50"><Check className="w-4 h-4" /></button>
-                  </div>
-                </td>
-              </tr>
-            )}
+            {isAdding && !editingId && renderEditRows()}
 
-            {sortedGuests.map((guest) => (
-              editingId === guest.id ? (
-                <tr key={guest.id} className="bg-sage/5">
-                  <td className="p-3">
-                    <input type="text" placeholder="First Name" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
-                  </td>
-                  <td className="p-3">
-                    <input type="text" placeholder="Last Name" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
-                  </td>
-                  <td className="p-3">
-                    <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
-                  </td>
-                  <td className="p-3 text-center">
-                    <input type="number" min="1" value={maxGuests} onChange={e => setMaxGuests(parseInt(e.target.value) || 1)} className="w-16 p-2 border rounded text-sm focus:border-sage focus:outline-none text-center mx-auto block" disabled={!!guest.primaryGuestId} title={guest.primaryGuestId ? "Only primary guests set party size" : "Max Party Size"} />
-                  </td>
-                  <td className="p-3 text-center">
-                    <select value={rsvpStatus || 'PENDING'} onChange={e => setRsvpStatus(e.target.value as any)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white">
-                      <option value="PENDING">Pending</option>
-                      <option value="CONFIRMED">Confirmed</option>
-                      <option value="DECLINED">Declined</option>
-                    </select>
-                  </td>
-                  <td className="p-3">
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {availableTags.map(tag => (
-                        <label key={tag.id} className="flex items-center space-x-1 bg-white border border-light-gray px-1.5 py-0.5 rounded text-xs cursor-pointer hover:border-sage">
-                          <input type="checkbox" className="w-3 h-3 text-sage" checked={selectedTags.includes(tag.name)} onChange={e => {
-                            if (e.target.checked) setSelectedTags([...selectedTags, tag.name]);
-                            else setSelectedTags(selectedTags.filter(t => t !== tag.name));
-                          }} />
-                          <span className="text-gray-600 truncate max-w-[80px]" title={tag.name}>{tag.name}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {legacyTags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1 pt-1 border-t border-light-gray/50">
-                        {legacyTags.map(tag => (
-                          <span key={tag} className="flex items-center bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[10px]">
-                            {tag}
-                            <button onClick={() => removeLegacyTag(tag)} className="ml-1 text-gray-400 hover:text-red-500"><X className="w-3 h-3" /></button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </td>
-                  <td className="p-3">
-                    <div className="flex items-center justify-end space-x-2">
-                      <button onClick={resetForm} className="p-1.5 text-mid-gray hover:bg-light-gray rounded"><X className="w-4 h-4" /></button>
-                      <button onClick={handleUpdateSubmit} disabled={!firstName} className="p-1.5 text-white bg-sage hover:bg-dark-sage rounded disabled:opacity-50"><Check className="w-4 h-4" /></button>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
+            {sortedGuests.map((guest) => {
+              if (editingId === guest.id && !guest.primaryGuestId) {
+                return renderEditRows();
+              }
+              // If it's a sub-guest and its primary is being edited, don't render its display row (it's handled in renderEditRows)
+              if (editingId && guest.primaryGuestId === editingId) {
+                return null;
+              }
+
+              return (
                 <React.Fragment key={guest.id}>
                   <tr className={`hover:bg-ivory/30 transition-colors group ${guest.primaryGuestId ? 'bg-gray-50/50' : ''}`}>
                     <td className="p-4 flex items-center">
@@ -276,58 +398,14 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
                     </td>
                     <td className="p-4">
                       <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {!guest.primaryGuestId && (guests.filter(g => g.primaryGuestId === guest.id).length + 1 < (guest.maxGuests || 1)) && (
-                          <button onClick={() => { resetForm(); setAddingParentId(guest.id); }} className="p-1.5 text-sage hover:text-dark-sage" title="Add Party Member"><UserPlus className="w-4 h-4" /></button>
-                        )}
                         <button onClick={() => startEdit(guest)} className="p-1.5 text-mid-gray hover:text-sage"><Edit2 className="w-4 h-4" /></button>
                         <button onClick={() => onDelete(guest.id)} className="p-1.5 text-mid-gray hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </tr>
-                  {addingParentId === guest.id && (
-                    <tr className="bg-sage/5">
-                      <td className="p-3 pl-8 flex items-center">
-                        <div className="w-3 h-3 border-l-2 border-b-2 border-sage mr-2 mb-1" />
-                        <input type="text" placeholder="First Name" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
-                      </td>
-                      <td className="p-3">
-                        <input type="text" placeholder="Last Name" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
-                      </td>
-                      <td className="p-3">
-                        <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
-                      </td>
-                      <td className="p-3 text-center">-</td>
-                      <td className="p-3 text-center">
-                        <select value={rsvpStatus || 'PENDING'} onChange={e => setRsvpStatus(e.target.value as any)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white">
-                          <option value="PENDING">Pending</option>
-                          <option value="CONFIRMED">Confirmed</option>
-                          <option value="DECLINED">Declined</option>
-                        </select>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex flex-wrap gap-1 mb-1">
-                          {availableTags.map(tag => (
-                            <label key={tag.id} className="flex items-center space-x-1 bg-white border border-light-gray px-1.5 py-0.5 rounded text-xs cursor-pointer hover:border-sage">
-                              <input type="checkbox" className="w-3 h-3 text-sage" checked={selectedTags.includes(tag.name)} onChange={e => {
-                                if (e.target.checked) setSelectedTags([...selectedTags, tag.name]);
-                                else setSelectedTags(selectedTags.filter(t => t !== tag.name));
-                              }} />
-                              <span className="text-gray-600 truncate max-w-[80px]" title={tag.name}>{tag.name}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center justify-end space-x-2">
-                          <button onClick={resetForm} className="p-1.5 text-mid-gray hover:bg-light-gray rounded"><X className="w-4 h-4" /></button>
-                          <button onClick={handleAddSubmit} disabled={!firstName} className="p-1.5 text-white bg-sage hover:bg-dark-sage rounded disabled:opacity-50"><Check className="w-4 h-4" /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
                 </React.Fragment>
-              )
-            ))}
+              );
+            })}
             
             {!isAdding && filteredGuests.length === 0 && (
               <tr>
@@ -339,6 +417,13 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
           </tbody>
         </table>
       </div>
+
+      <TagSelectorModal 
+        isOpen={activeTagEditor !== null}
+        onClose={() => setActiveTagEditor(null)}
+        availableTags={availableTags}
+        {...getTagModalProps()}
+      />
     </div>
   );
 }
