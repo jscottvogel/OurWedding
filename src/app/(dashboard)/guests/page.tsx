@@ -27,7 +27,7 @@ export default function GuestsPage() {
         `"${(g.email || '').replace(/"/g, '""')}"`,
         `"${g.rsvpStatus || 'PENDING'}"`,
         `"${(g.notes || '').replace(/"/g, '""')}"`,
-        `"${(g.tags ? g.tags.filter(t => t !== null).join(', ') : '').replace(/"/g, '""')}"`
+        `"${(g.tags || '').replace(/"/g, '""')}"`
       ]);
       const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

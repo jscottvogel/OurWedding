@@ -73,7 +73,7 @@ export default function RSVPForm({ guests, onUpdate, wedding }: RSVPFormProps) {
         setEmail(match.email || '');
         setPhone(match.phone || '');
         
-        const currentGuestTags = (match.tags || []).filter((t): t is string => t !== null);
+        const currentGuestTags = match.tags ? match.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
         setSelectedTags(currentGuestTags.filter(t => pTagNames.includes(t)));
         
         setStep('RSVP');
@@ -90,7 +90,7 @@ export default function RSVPForm({ guests, onUpdate, wedding }: RSVPFormProps) {
     
     setIsSubmitting(true);
     try {
-      const currentGuestTags = (foundGuest.tags || []).filter((t): t is string => t !== null);
+      const currentGuestTags = foundGuest.tags ? foundGuest.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
       const publicTagNames = publicTags.map(t => t.name);
       
       // Keep private tags (those not in public tags list) and add selected public tags
@@ -103,7 +103,7 @@ export default function RSVPForm({ guests, onUpdate, wedding }: RSVPFormProps) {
         dietaryOther: isAttending ? dietaryRequirements : undefined,
         email: email || undefined,
         phone: phone || undefined,
-        tags: newTags.length > 0 ? newTags : [],
+        tags: newTags.length > 0 ? newTags.join(', ') : undefined,
       });
       setStep('SUCCESS');
     } catch (err) {

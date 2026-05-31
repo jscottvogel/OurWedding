@@ -69,7 +69,7 @@ export default function GuestBulkImport({ onImport, isOpen, onClose }: GuestBulk
             lastName: lastNameIdx !== -1 ? cols[lastNameIdx] : undefined,
             email: emailIdx !== -1 ? cols[emailIdx] : undefined,
             notes: notesIdx !== -1 ? cols[notesIdx] : undefined,
-            tags: tagIdx !== -1 && cols[tagIdx] ? cols[tagIdx].split(',').map(t => t.trim()).filter(Boolean) : undefined,
+            tags: tagIdx !== -1 ? cols[tagIdx] : undefined,
             rsvpStatus: rsvpIdx !== -1 ? (cols[rsvpIdx].toUpperCase() as any) : 'PENDING',
             attendingCount: 1,
           });
