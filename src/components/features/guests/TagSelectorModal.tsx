@@ -89,6 +89,7 @@ export default function TagSelectorModal({ isOpen, onClose, availableTags, initi
                 return (
                   <label 
                     key={tag.id} 
+                    onClick={(e) => { e.preventDefault(); toggleTag(tag.name); }}
                     className={`flex items-center p-3 rounded-lg border cursor-pointer transition-colors ${isSelected ? 'border-sage bg-sage/5' : 'border-light-gray bg-white hover:border-sage/30'}`}
                   >
                     <div className={`w-5 h-5 rounded border flex items-center justify-center mr-3 ${isSelected ? 'bg-sage border-sage text-white' : 'border-gray-300'}`}>

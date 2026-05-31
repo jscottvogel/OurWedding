@@ -203,6 +203,8 @@ const schema = a.schema({
       tags: a.string(),
       primaryGuestId: a.string(),
       maxGuests: a.integer().default(1),
+      bio: a.string(),
+      photoUrl: a.string(),
     })
     .secondaryIndexes((index) => [index('weddingId')])
     .authorization((allow) => [
@@ -295,6 +297,7 @@ const schema = a.schema({
       customJs: a.string(),
       headInjection: a.string(),
       viewCount: a.integer().default(0),
+      partyTags: a.string().array(),
     })
     .secondaryIndexes((index) => [index('weddingId'), index('subdomain')])
     .authorization((allow) => [

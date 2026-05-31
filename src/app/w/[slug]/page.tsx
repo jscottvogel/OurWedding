@@ -55,7 +55,8 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
     client.models.WebsiteStory.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' }),
     client.models.RunSheetItem.list({ filter: { weddingId: { eq: weddingId }, isPublic: { eq: true } }, authMode: 'apiKey' }),
     client.models.WebsiteTravel.list({ filter: { weddingId: { eq: weddingId }, isVisible: { eq: true } }, authMode: 'apiKey' }),
-    client.models.WebsitePartyMember.list({ filter: { weddingId: { eq: weddingId }, isVisible: { eq: true } }, authMode: 'apiKey' }),
+    // client.models.WebsitePartyMember.list is deprecated
+    Promise.resolve({ data: [] }),
     client.models.WebsiteRegistry.list({ filter: { weddingId: { eq: weddingId }, isVisible: { eq: true } }, authMode: 'apiKey' }),
     client.models.WebsiteFaq.list({ filter: { weddingId: { eq: weddingId }, isVisible: { eq: true } }, authMode: 'apiKey' }),
     client.models.Guest.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' }),
@@ -83,6 +84,18 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
     sectionOrder = [...defaultSections];
   }
 
+  const partyTags = config.partyTags || [];
+  const partyGroups = partyTags.map(tag => {
+    return {
+      role: tag,
+      members: guests.filter(g => {
+        if (!g.tags) return false;
+        const guestTags = g.tags.split(',').map(t => t.trim());
+        return guestTags.includes(tag);
+      })
+    };
+  }).filter(group => group.members.length > 0);
+
   return (
     <PublicSiteLayout 
       siteTitle={siteTitle}
@@ -99,7 +112,7 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
           case 'events': return <EventsSection key={section} events={events} />;
           case 'rsvp': return <RsvpSection key={section} slug={params.slug} guests={guests} wedding={wedding} />;
           case 'travel': return <TravelSection key={section} travels={travels} />;
-          case 'party': return <WeddingPartySection key={section} partyMembers={partyMembers} />;
+          case 'party': return <WeddingPartySection key={section} partyGroups={partyGroups} />;
           case 'gallery': return <GallerySection key={section} photos={gallery} slug={params.slug} />;
           case 'registry': return <RegistrySection key={section} registries={registries} />;
           case 'faq': return <FaqSection key={section} faqs={faqs} />;

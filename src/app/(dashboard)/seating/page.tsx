@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { toast } from 'sonner';
 
 export default function SeatingPage() {
-  const { tables, guests, loading, addTable, updateTable, deleteTable, assignGuestToTable } = useSeating();
+  const { tables, guests, loading, addTable, updateTable, deleteTable, assignPartyToTable } = useSeating();
   const { weddingId } = useAuth();
 
   const handleExport = async () => {
@@ -62,7 +62,7 @@ export default function SeatingPage() {
         onAddTable={addTable}
         onUpdateTable={updateTable}
         onDeleteTable={deleteTable}
-        onAssignGuest={assignGuestToTable}
+        onAssignParty={assignPartyToTable}
       />
     </div>
   );

@@ -11,16 +11,22 @@ interface SeatingCanvasProps {
   onAddTable: (table: any) => Promise<any>;
   onUpdateTable: (id: string, updates: any) => Promise<any>;
   onDeleteTable: (id: string) => Promise<void>;
-  onAssignGuest: (guestId: string, tableId: string | null) => Promise<any>;
+  onAssignParty: (partyId: string, tableId: string | null) => Promise<any>;
 }
 
-// Droppable Table Component
-function TableNode({ table, assignedGuests, onEdit, onDelete }: { table: Schema['SeatingTable']['type'], assignedGuests: Schema['Guest']['type'][], onEdit: () => void, onDelete: () => void }) {
+type GuestPartyType = {
+  id: string;
+  name: string;
+  count: number;
+  tableId: string | undefined;
+};
+
+function TableNode({ table, assignedParties, onEdit, onDelete }: { table: Schema['SeatingTable']['type'], assignedParties: GuestPartyType[], onEdit: () => void, onDelete: () => void }) {
   const { isOver, setNodeRef } = useDroppable({
     id: table.id,
   });
 
-  const seatedCount = assignedGuests.reduce((sum, g) => sum + (g.attendingCount || 1), 0);
+  const seatedCount = assignedParties.reduce((sum, p) => sum + p.count, 0);
 
   return (
     <div 
@@ -41,12 +47,12 @@ function TableNode({ table, assignedGuests, onEdit, onDelete }: { table: Schema[
       </div>
       
       <div className="min-h-[100px] flex flex-wrap gap-2 content-start">
-        {assignedGuests.map(guest => (
-          <DraggableGuest key={guest.id} guest={guest} />
+        {assignedParties.map(party => (
+          <DraggableParty key={party.id} party={party} />
         ))}
-        {assignedGuests.length === 0 && (
+        {assignedParties.length === 0 && (
           <div className="w-full h-full flex items-center justify-center text-xs text-light-gray font-medium uppercase tracking-wider">
-            Drag guests here
+            Drag parties here
           </div>
         )}
       </div>
@@ -54,10 +60,10 @@ function TableNode({ table, assignedGuests, onEdit, onDelete }: { table: Schema[
   );
 }
 
-// Draggable Guest Component
-function DraggableGuest({ guest, isOverlay }: { guest: Schema['Guest']['type'], isOverlay?: boolean }) {
+// Draggable Party Component
+function DraggableParty({ party, isOverlay }: { party: GuestPartyType, isOverlay?: boolean }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: guest.id,
+    id: party.id,
   });
 
   if (isDragging && !isOverlay) {
@@ -75,17 +81,17 @@ function DraggableGuest({ guest, isOverlay }: { guest: Schema['Guest']['type'], 
           : 'bg-ivory border-light-gray text-charcoal hover:border-sage/50 transition-colors'
       }`}
     >
-      {guest.firstName} {guest.lastName}
-      {(guest.attendingCount && guest.attendingCount > 1) && (
+      {party.name}
+      {party.count > 1 && (
         <span className="ml-1.5 px-1.5 py-0.5 rounded-md bg-black/10 text-xs font-semibold">
-          +{guest.attendingCount - 1}
+          +{party.count - 1}
         </span>
       )}
     </div>
   );
 }
 
-export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTable, onDeleteTable, onAssignGuest }: SeatingCanvasProps) {
+export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTable, onDeleteTable, onAssignParty }: SeatingCanvasProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   
   const sensors = useSensors(
@@ -108,11 +114,32 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
   const [tableName, setTableName] = useState('');
   const [capacity, setCapacity] = useState('8');
 
-  // Filter to only confirmed guests
+  // Group active guests into parties
   const activeGuests = guests.filter(g => g.rsvpStatus === 'CONFIRMED');
+  const partyMap = new Map<string, Schema['Guest']['type'][]>();
+  
+  activeGuests.forEach(g => {
+    const partyId = g.primaryGuestId || g.id;
+    if (!partyMap.has(partyId)) {
+      partyMap.set(partyId, []);
+    }
+    partyMap.get(partyId)!.push(g);
+  });
+
+  const parties: GuestPartyType[] = Array.from(partyMap.entries()).map(([id, members]) => {
+    // Try to find the primary guest among members to use as the name
+    const primary = members.find(m => !m.primaryGuestId) || members[0];
+    return {
+      id,
+      name: `${primary.firstName} ${primary.lastName || ''}`.trim(),
+      count: members.reduce((sum, g) => sum + (g.attendingCount || 1), 0),
+      tableId: primary.tableId || undefined
+    };
+  });
+
   const tableIds = new Set(tables.map(t => t.id));
-  const unassignedGuests = activeGuests.filter(g => !g.tableId || !tableIds.has(g.tableId));
-  const unassignedSeatsNeeded = unassignedGuests.reduce((sum, g) => sum + (g.attendingCount || 1), 0);
+  const unassignedParties = parties.filter(p => !p.tableId || !tableIds.has(p.tableId));
+  const unassignedSeatsNeeded = unassignedParties.reduce((sum, p) => sum + p.count, 0);
 
   const handleDragStart = (event: any) => {
     setActiveId(event.active.id);
@@ -124,17 +151,18 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
 
     if (over) {
       if (over.id === 'unassigned') {
-        onAssignGuest(active.id, null);
+        onAssignParty(active.id, null);
       } else {
         // Check capacity
         const table = tables.find(t => t.id === over.id);
-        const assignedGuests = guests.filter(g => g.tableId === over.id && g.id !== active.id);
-        const assignedCount = assignedGuests.reduce((sum, g) => sum + (g.attendingCount || 1), 0);
-        const activeGuest = guests.find(g => g.id === active.id);
-        const incomingCount = activeGuest?.attendingCount || 1;
+        const assignedPartiesCount = parties
+          .filter(p => p.tableId === over.id && p.id !== active.id)
+          .reduce((sum, p) => sum + p.count, 0);
+        const activeParty = parties.find(p => p.id === active.id);
+        const incomingCount = activeParty?.count || 1;
         
-        if (table && (assignedCount + incomingCount) <= (table.seatCount || 0)) {
-          onAssignGuest(active.id, over.id);
+        if (table && (assignedPartiesCount + incomingCount) <= (table.seatCount || 0)) {
+          onAssignParty(active.id, over.id);
         } else {
           alert('Table does not have enough capacity for this group!');
         }
@@ -165,7 +193,7 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
     setIsAddingTable(false);
   };
 
-  const activeGuestObj = activeId ? guests.find(g => g.id === activeId) : null;
+  const activePartyObj = activeId ? parties.find(p => p.id === activeId) : null;
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -182,10 +210,10 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
           
           <UnassignedDroppable>
             <div className="p-4 flex flex-wrap gap-2 content-start">
-              {unassignedGuests.map(guest => (
-                <DraggableGuest key={guest.id} guest={guest} />
+              {unassignedParties.map(party => (
+                <DraggableParty key={party.id} party={party} />
               ))}
-              {unassignedGuests.length === 0 && (
+              {unassignedParties.length === 0 && (
                 <p className="text-sm text-mid-gray text-center w-full mt-8">All guests seated!</p>
               )}
             </div>
@@ -243,7 +271,7 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
               <TableNode 
                 key={table.id} 
                 table={table} 
-                assignedGuests={activeGuests.filter(g => g.tableId === table.id)}
+                assignedParties={parties.filter(p => p.tableId === table.id)}
                 onEdit={() => startEditTable(table)}
                 onDelete={() => onDeleteTable(table.id)}
               />
@@ -260,7 +288,7 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
       </div>
 
       <DragOverlay>
-        {activeGuestObj ? <DraggableGuest guest={activeGuestObj} isOverlay /> : null}
+        {activePartyObj ? <DraggableParty party={activePartyObj} isOverlay /> : null}
       </DragOverlay>
     </DndContext>
   );

@@ -211,28 +211,36 @@ export function TravelSection({ travels }: { travels?: Schema['WebsiteTravel']['
   );
 }
 
-export function WeddingPartySection({ partyMembers }: { partyMembers?: Schema['WebsitePartyMember']['type'][] }) {
+export function WeddingPartySection({ partyGroups }: { partyGroups?: { role: string, members: Schema['Guest']['type'][] }[] }) {
   return (
     <section id="party" className="py-20 bg-transparent">
       <div className="max-w-6xl mx-auto px-4">
         <h2 className="text-3xl md:text-4xl font-heading text-center mb-12" style={{ color: 'var(--color-primary)' }}>Wedding Party</h2>
-        {!partyMembers || partyMembers.length === 0 ? (
+        {!partyGroups || partyGroups.length === 0 ? (
           <p className="text-center text-charcoal/70 text-lg">We are finalizing our wedding party details. Please check back later!</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {partyMembers.map(member => (
-              <div key={member.id} className="space-y-4">
-                <div className="w-32 h-32 mx-auto rounded-full bg-[var(--color-bg)]/50 overflow-hidden shadow-inner border-4 border-[var(--color-bg)]/80">
-                  {member.photoUrl ? (
-                    <img src={member.photoUrl} alt={member.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-2xl">{member.name.charAt(0)}</div>
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg" style={{ color: 'var(--color-primary)' }}>{member.name}</h3>
-                  <p className="font-medium text-sm" style={{ color: 'var(--color-accent)' }}>{member.role}</p>
-                  {member.bio && <p className="text-xs text-charcoal/70 mt-2 px-2">{member.bio}</p>}
+          <div className="space-y-16">
+            {partyGroups.map(group => (
+              <div key={group.role}>
+                <h3 className="text-2xl font-heading text-center mb-8 border-b border-black/10 pb-4 inline-block mx-auto w-full max-w-sm" style={{ color: 'var(--color-accent)' }}>{group.role}</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 text-center justify-center">
+                  {group.members.map(member => (
+                    <div key={member.id} className="space-y-4">
+                      <div className="w-32 h-32 mx-auto rounded-full bg-[var(--color-bg)]/50 overflow-hidden shadow-inner border-4 border-[var(--color-bg)]/80">
+                        {member.photoUrl ? (
+                          <img src={member.photoUrl} alt={member.firstName} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-3xl">
+                            {member.firstName.charAt(0)}{member.lastName?.charAt(0) || ''}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-lg" style={{ color: 'var(--color-primary)' }}>{member.firstName} {member.lastName}</h4>
+                        {member.bio && <p className="text-sm text-charcoal/70 mt-2 px-2">{member.bio}</p>}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}

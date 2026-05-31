@@ -95,15 +95,25 @@ export function useSeating() {
     await Promise.all(promises);
   };
   
-  const assignGuestToTable = async (guestId: string, tableId: string | null) => {
+  const assignPartyToTable = async (partyId: string, tableId: string | null) => {
+    // Find all guests in this party
+    const partyGuests = guests.filter(g => g.id === partyId || g.primaryGuestId === partyId);
+    // Filter only those who are CONFIRMED
+    const activePartyGuests = partyGuests.filter(g => g.rsvpStatus === 'CONFIRMED');
+    
+    const activeIds = new Set(activePartyGuests.map(g => g.id));
+    
     // Optimistic UI update
-    setGuests(prev => prev.map(g => g.id === guestId ? { ...g, tableId: tableId } : g));
+    setGuests(prev => prev.map(g => activeIds.has(g.id) ? { ...g, tableId: tableId === null ? undefined : tableId } : g));
 
-    return await client.models.Guest.update({
-      id: guestId,
-      tableId: tableId === null ? null : tableId
-    });
+    const promises = activePartyGuests.map(g => 
+      client.models.Guest.update({
+        id: g.id,
+        tableId: tableId === null ? null : tableId
+      })
+    );
+    await Promise.all(promises);
   };
 
-  return { tables, guests, loading, addTable, updateTable, deleteTable, assignGuestToTable };
+  return { tables, guests, loading, addTable, updateTable, deleteTable, assignPartyToTable };
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useWebsiteContent } from '@/lib/hooks/useWebsiteContent';
+import { useWebsiteConfig } from '@/lib/hooks/useWebsiteConfig';
 import { useWedding } from '@/lib/hooks/useWedding';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../../../amplify/data/resource';
@@ -13,8 +14,9 @@ const client = generateClient<Schema>();
 export function WebsiteEditorPanel({ section }: { section: string }) {
   const { wedding } = useWedding();
   const website = useWebsiteContent();
+  const { config, updateConfig } = useWebsiteConfig();
 
-  if (!wedding || !website) return null;
+  if (!wedding || !website || !config) return null;
 
   switch (section) {
     case 'hero':
@@ -42,7 +44,7 @@ export function WebsiteEditorPanel({ section }: { section: string }) {
     case 'travel':
       return <TravelEditor weddingId={wedding.id} items={website.travels} />;
     case 'party':
-      return <PartyEditor weddingId={wedding.id} items={website.partyMembers} />;
+      return <PartyEditor weddingId={wedding.id} config={config} updateConfig={updateConfig} />;
     case 'registry':
       return <RegistryEditor weddingId={wedding.id} items={website.registries} />;
     case 'faq':
@@ -213,39 +215,126 @@ function TravelEditor({ weddingId, items }: { weddingId: string, items: Schema['
   );
 }
 
-function PartyEditor({ weddingId, items }: { weddingId: string, items: Schema['WebsitePartyMember']['type'][] }) {
-  const [name, setName] = useState('');
-  const [role, setRole] = useState('');
+import { ArrowUp, ArrowDown } from 'lucide-react';
+import { SYSTEM_TAGS } from '@/lib/constants/tags';
 
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name || !role) return;
-    await client.models.WebsitePartyMember.create({ weddingId, name, role, isVisible: true });
-    setName(''); setRole('');
+function PartyEditor({ weddingId, config, updateConfig }: { weddingId: string, config: Schema['WebsiteConfig']['type'], updateConfig: (updates: any) => Promise<void> }) {
+  const [availableTags, setAvailableTags] = useState<string[]>(SYSTEM_TAGS);
+  const [selectedTags, setSelectedTags] = useState<string[]>(config.partyTags || []);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    // Fetch custom tags to merge with SYSTEM_TAGS
+    const sub = client.models.GuestTag.observeQuery({
+      filter: { weddingId: { eq: weddingId } }
+    }).subscribe({
+      next: ({ items }) => {
+        const itemNames = items.map(t => t.name);
+        setAvailableTags(Array.from(new Set([...SYSTEM_TAGS, ...itemNames])));
+      }
+    });
+    return () => sub.unsubscribe();
+  }, [weddingId]);
+
+  // Sync with config if it changes
+  useEffect(() => {
+    setSelectedTags(config.partyTags || []);
+  }, [config.partyTags]);
+
+  const toggleTag = (tag: string) => {
+    let newTags;
+    if (selectedTags.includes(tag)) {
+      newTags = selectedTags.filter(t => t !== tag);
+    } else {
+      newTags = [...selectedTags, tag];
+    }
+    setSelectedTags(newTags);
+    saveChanges(newTags);
   };
+
+  const moveTag = (index: number, direction: 'up' | 'down') => {
+    const newTags = [...selectedTags];
+    if (direction === 'up' && index > 0) {
+      [newTags[index - 1], newTags[index]] = [newTags[index], newTags[index - 1]];
+    } else if (direction === 'down' && index < newTags.length - 1) {
+      [newTags[index + 1], newTags[index]] = [newTags[index], newTags[index + 1]];
+    } else {
+      return;
+    }
+    setSelectedTags(newTags);
+    saveChanges(newTags);
+  };
+
+  const saveChanges = async (tagsToSave: string[]) => {
+    setIsSaving(true);
+    try {
+      await updateConfig({ partyTags: tagsToSave });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const unselectedTags = availableTags.filter(t => !selectedTags.includes(t));
 
   return (
     <div className="bg-white p-6 rounded-xl border border-light-gray">
-      <h3 className="text-lg font-bold text-charcoal mb-4">Wedding Party</h3>
-      <div className="space-y-3 mb-6">
-        {items.map(p => (
-          <div key={p.id} className="flex justify-between items-center p-3 bg-gray-50 rounded border border-light-gray">
-            <div>
-              <p className="font-bold text-sm text-charcoal">{p.name}</p>
-              <p className="text-xs text-sage">{p.role}</p>
-            </div>
-            <button onClick={() => client.models.WebsitePartyMember.delete({ id: p.id })} className="text-red-500 hover:text-red-700">
-              <Trash2 className="w-4 h-4" />
-            </button>
+      <h3 className="text-lg font-bold text-charcoal mb-2">Wedding Party</h3>
+      <p className="text-sm text-mid-gray mb-6">
+        Select which guest tags represent your wedding party. The website will automatically group guests by these tags.
+      </p>
+
+      <div className="space-y-4 mb-6">
+        <h4 className="text-sm font-bold text-charcoal border-b border-light-gray pb-2">Selected Tags (Order displayed on site)</h4>
+        {selectedTags.length === 0 ? (
+          <p className="text-sm text-mid-gray italic">No tags selected yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {selectedTags.map((tag, idx) => (
+              <div key={tag} className="flex justify-between items-center p-3 bg-sage/5 rounded border border-sage/20">
+                <span className="font-medium text-sage text-sm">{tag}</span>
+                <div className="flex items-center space-x-1">
+                  <button 
+                    onClick={() => moveTag(idx, 'up')} 
+                    disabled={idx === 0}
+                    className="p-1 text-mid-gray hover:text-charcoal disabled:opacity-30"
+                  >
+                    <ArrowUp className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => moveTag(idx, 'down')} 
+                    disabled={idx === selectedTags.length - 1}
+                    className="p-1 text-mid-gray hover:text-charcoal disabled:opacity-30"
+                  >
+                    <ArrowDown className="w-4 h-4" />
+                  </button>
+                  <div className="w-px h-4 bg-light-gray mx-2" />
+                  <button onClick={() => toggleTag(tag)} className="p-1 text-red-500 hover:text-red-700 ml-1">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
-      <form onSubmit={handleAdd} className="space-y-3 pt-4 border-t border-light-gray">
-        <h4 className="text-sm font-bold text-charcoal">Add Member</h4>
-        <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Name" className="w-full text-sm border-light-gray rounded" required />
-        <input type="text" value={role} onChange={e => setRole(e.target.value)} placeholder="Role (e.g. Best Man, Bridesmaid)" className="w-full text-sm border-light-gray rounded" required />
-        <button type="submit" className="w-full bg-sage text-white py-2 rounded text-sm font-medium"><Plus className="w-4 h-4 inline mr-1" /> Add Member</button>
-      </form>
+
+      <div className="space-y-4 pt-4 border-t border-light-gray">
+        <h4 className="text-sm font-bold text-charcoal border-b border-light-gray pb-2">Available Tags to Add</h4>
+        <div className="flex flex-wrap gap-2">
+          {unselectedTags.map(tag => (
+            <button 
+              key={tag} 
+              onClick={() => toggleTag(tag)}
+              className="flex items-center bg-gray-50 hover:bg-sage/10 text-charcoal hover:text-sage border border-light-gray px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+            >
+              <Plus className="w-3 h-3 mr-1" /> {tag}
+            </button>
+          ))}
+          {unselectedTags.length === 0 && (
+            <p className="text-xs text-mid-gray">All tags have been added.</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -194,7 +194,10 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
     }
     const nameA = (pA.lastName || '') + pA.firstName;
     const nameB = (pB.lastName || '') + pB.firstName;
-    return nameA.localeCompare(nameB);
+    const cmp = nameA.localeCompare(nameB);
+    if (cmp !== 0) return cmp;
+    // Tie-break identical names by their IDs so distinct primary guests with the same name do not interleave
+    return pA.id.localeCompare(pB.id);
   });
 
   const getTagModalProps = () => {
