@@ -65,19 +65,21 @@ export default function ChecklistCategory({
       {expanded && (
         <div className="p-4">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-0 border border-light-gray rounded-lg overflow-hidden mb-4">
-                {tasks.map(task => (
-                  <TaskItem 
-                    key={task.id} 
-                    task={task} 
-                    onToggle={onToggleTask} 
-                    onUpdate={onUpdateTask}
-                    onDelete={onDeleteTask} 
-                  />
-                ))}
-              </div>
-            </SortableContext>
+            <div className="overflow-x-auto w-full mb-4 pb-2">
+              <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-0 border border-light-gray rounded-lg overflow-hidden min-w-[700px]">
+                  {tasks.map(task => (
+                    <TaskItem 
+                      key={task.id} 
+                      task={task} 
+                      onToggle={onToggleTask} 
+                      onUpdate={onUpdateTask}
+                      onDelete={onDeleteTask} 
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </div>
           </DndContext>
           
           <AddTaskForm category={category} onAdd={onAddTask} />

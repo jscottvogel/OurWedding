@@ -194,7 +194,7 @@ export default function CoupleHero() {
             <h2 className="text-2xl font-display text-sage mb-6">Edit Wedding Details</h2>
             
             <div className="space-y-4 text-charcoal">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Partner 1</label>
                   <input 
@@ -215,8 +215,8 @@ export default function CoupleHero() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-12 gap-4 items-end">
-                <div className="col-span-5">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                <div className="md:col-span-5">
                   <label className="block text-sm font-medium mb-1 truncate" title="Wedding Date">Wedding Date</label>
                   <input 
                     type="date" 
@@ -225,7 +225,7 @@ export default function CoupleHero() {
                     className="w-full border border-light-gray rounded px-3 py-2 text-sm"
                   />
                 </div>
-                <div className="col-span-4">
+                <div className="md:col-span-4">
                   <label className="block text-sm font-medium mb-1 truncate" title="Arrival Time">Arrival Time</label>
                   <input 
                     type="time" 
@@ -234,7 +234,7 @@ export default function CoupleHero() {
                     className="w-full border border-light-gray rounded px-3 py-2 text-sm font-mono"
                   />
                 </div>
-                <div className="col-span-3">
+                <div className="md:col-span-3">
                   <label className="block text-sm font-medium mb-1">Timezone</label>
                   <select
                     value={editData.timezone}

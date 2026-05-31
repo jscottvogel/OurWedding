@@ -384,7 +384,7 @@ export default function IvyChat() {
 
       {/* Chat Window */}
       <div 
-        className={`fixed bottom-6 right-6 w-[350px] sm:w-[400px] h-[500px] bg-white rounded-2xl shadow-2xl border border-light-gray flex flex-col z-50 transition-all duration-300 transform origin-bottom-right ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}
+        className={`fixed bottom-6 right-6 w-[calc(100vw-3rem)] sm:w-[400px] h-[calc(100vh-6rem)] sm:h-[500px] max-h-[80vh] sm:max-h-none bg-white rounded-2xl shadow-2xl border border-light-gray flex flex-col z-50 transition-all duration-300 transform origin-bottom-right ${isOpen ? 'scale-100 opacity-100' : 'scale-0 opacity-0 pointer-events-none'}`}
       >
         {/* Header */}
         <div className="bg-sage p-4 rounded-t-2xl flex justify-between items-center text-white">

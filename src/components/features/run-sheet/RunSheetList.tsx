@@ -95,7 +95,7 @@ export default function RunSheetList({
       )}
 
       {/* Scrollable List and Add Button */}
-      <div className="flex-1 overflow-y-auto min-h-0 pr-2 pb-4">
+      <div className="flex-1 overflow-auto min-h-0 pr-2 pb-4">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -106,7 +106,7 @@ export default function RunSheetList({
             items={items.map(i => i.id)}
             strategy={verticalListSortingStrategy}
           >
-            <div className="space-y-0 relative min-h-[50px]">
+            <div className="space-y-0 relative min-h-[50px] min-w-[700px]">
               {items.map((item) => (
                 <RunSheetItemRow
                   key={item.id}

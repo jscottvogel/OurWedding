@@ -19,6 +19,7 @@ interface EditingPartyMember {
   firstName: string;
   lastName: string;
   email: string;
+  notes: string;
   rsvpStatus: Schema['Guest']['type']['rsvpStatus'];
   selectedTags: string[];
   legacyTags: string[];
@@ -64,7 +65,7 @@ function GuestRow({
   if (isDragging && !isOverlay) {
     return (
       <tr className="opacity-50 bg-light-gray/20">
-        <td colSpan={7} className="p-4 text-center text-sm text-mid-gray border-dashed border-2 border-sage/50">Dragging {guest.firstName}...</td>
+        <td colSpan={8} className="p-4 text-center text-sm text-mid-gray border-dashed border-2 border-sage/50">Dragging {guest.firstName}...</td>
       </tr>
     );
   }
@@ -108,6 +109,9 @@ function GuestRow({
             );
           }) : '-'}
         </div>
+      </td>
+      <td className="p-4 text-mid-gray text-sm max-w-[200px] truncate" title={guest.notes || ''}>
+        {guest.notes || '-'}
       </td>
       <td className="p-4">
         <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -245,6 +249,7 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
           firstName: pm.firstName, 
           lastName: pm.lastName, 
           email: pm.email, 
+          notes: pm.notes,
           tags: pmTags, 
           rsvpStatus: pm.rsvpStatus, 
           primaryGuestId: newId, 
@@ -271,12 +276,13 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
       const pmTags = [...pm.legacyTags, ...pm.selectedTags].join(', ');
       
       if (pm.id) {
-        await onUpdate(pm.id, { firstName: pm.firstName, lastName: pm.lastName, email: pm.email, tags: pmTags, rsvpStatus: pm.rsvpStatus });
+        await onUpdate(pm.id, { firstName: pm.firstName, lastName: pm.lastName, email: pm.email, notes: pm.notes, tags: pmTags, rsvpStatus: pm.rsvpStatus });
       } else {
         await onAdd({ 
           firstName: pm.firstName, 
           lastName: pm.lastName, 
           email: pm.email, 
+          notes: pm.notes,
           tags: pmTags, 
           rsvpStatus: pm.rsvpStatus, 
           primaryGuestId: editingId, 
@@ -320,6 +326,7 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
         firstName: sg.firstName,
         lastName: sg.lastName || '',
         email: sg.email || '',
+        notes: sg.notes || '',
         rsvpStatus: sg.rsvpStatus || 'PENDING',
         selectedTags: pmTags.filter(t => availableTagNames.includes(t)),
         legacyTags: pmTags.filter(t => !availableTagNames.includes(t))
@@ -433,6 +440,9 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
           </button>
         </td>
         <td className="p-3">
+          <input type="text" placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white" />
+        </td>
+        <td className="p-3">
           <div className="flex items-center justify-end space-x-2">
             <button onClick={resetForm} className="p-1.5 text-mid-gray hover:bg-light-gray rounded"><X className="w-4 h-4" /></button>
             <button onClick={editingId ? handleUpdateSubmit : handleAddSubmit} disabled={!firstName} className="p-1.5 text-white bg-sage hover:bg-dark-sage rounded disabled:opacity-50"><Check className="w-4 h-4" /></button>
@@ -472,6 +482,9 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
             </button>
           </td>
           <td className="p-3">
+            <input type="text" placeholder="Notes" value={pm.notes || ''} onChange={e => updatePartyMember(idx, { notes: e.target.value })} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white" />
+          </td>
+          <td className="p-3">
             <div className="flex items-center justify-end space-x-2">
               <button onClick={() => removePartyMemberRow(idx)} className="p-1.5 text-mid-gray hover:text-red-500 rounded" title="Remove Party Member"><Trash2 className="w-4 h-4" /></button>
             </div>
@@ -479,10 +492,10 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
         </tr>
       ))}
       <tr className="bg-sage/5">
-        <td colSpan={7} className="p-3 text-center border-t border-dashed border-light-gray/50">
+        <td colSpan={8} className="p-3 text-center border-t border-dashed border-light-gray/50">
           <button 
             type="button" 
-            onClick={() => setPartyMembers([...partyMembers, { firstName: '', lastName: '', email: '', rsvpStatus: 'PENDING', selectedTags: [], legacyTags: [] }])}
+            onClick={() => setPartyMembers([...partyMembers, { firstName: '', lastName: '', email: '', notes: '', rsvpStatus: 'PENDING', selectedTags: [], legacyTags: [] }])}
             className="text-sm text-sage hover:text-dark-sage font-medium inline-flex items-center"
           >
             <Plus className="w-4 h-4 mr-1" /> Add Party Member
@@ -523,7 +536,7 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
       </div>
 
       <div className="flex-1 overflow-auto">
-        <table className="w-full min-w-[800px] text-left border-collapse">
+        <table className="w-full min-w-[1000px] text-left border-collapse">
           <thead className="sticky top-0 bg-white z-10 shadow-sm">
             <tr className="border-b border-light-gray text-xs font-medium text-mid-gray uppercase tracking-wider">
               <th className="p-4 w-[15%] min-w-[120px] cursor-pointer hover:bg-light-gray/20 transition-colors" onClick={() => handleSort('firstName')}>
@@ -543,6 +556,9 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
               </th>
               <th className="p-4 w-[15%] min-w-[150px] cursor-pointer hover:bg-light-gray/20 transition-colors" onClick={() => handleSort('tags')}>
                 <div className="flex items-center">Tags {sortConfig?.key === 'tags' ? (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />) : <ChevronDown className="w-3 h-3 ml-1 opacity-0" />}</div>
+              </th>
+              <th className="p-4 w-[15%] min-w-[150px] cursor-pointer hover:bg-light-gray/20 transition-colors" onClick={() => handleSort('notes')}>
+                <div className="flex items-center">Notes {sortConfig?.key === 'notes' ? (sortConfig.direction === 'asc' ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />) : <ChevronDown className="w-3 h-3 ml-1 opacity-0" />}</div>
               </th>
               <th className="p-4 w-28"></th>
             </tr>
@@ -576,7 +592,7 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
             
             {!isAdding && filteredGuests.length === 0 && (
               <tr>
-                <td colSpan={7} className="p-12 text-center text-mid-gray">
+                <td colSpan={8} className="p-12 text-center text-mid-gray">
                   {searchTerm ? 'No guests match your search.' : 'No guests added yet.'}
                 </td>
               </tr>
