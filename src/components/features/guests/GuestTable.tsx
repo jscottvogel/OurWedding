@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Plus, Trash2, Edit2, Check, X, Search, Filter, UserPlus } from 'lucide-react';
 import type { Schema } from '../../../../amplify/data/resource';
 
