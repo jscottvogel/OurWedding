@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { generateClient } from 'aws-amplify/data';
+import type { Schema } from '../../../../amplify/data/resource';
 
 import { useGuests } from '@/lib/hooks/useGuests';
 import GuestTable from '@/components/features/guests/GuestTable';
@@ -16,6 +18,19 @@ export default function GuestsPage() {
   const { weddingId } = useAuth();
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
+  const [availableTags, setAvailableTags] = useState<Schema['GuestTag']['type'][]>([]);
+
+  useEffect(() => {
+    if (!weddingId) return;
+    const client = generateClient<Schema>();
+    const sub = client.models.GuestTag.observeQuery({
+      filter: { weddingId: { eq: weddingId } }
+    }).subscribe({
+      next: ({ items }) => setAvailableTags(items),
+      error: (e) => console.error(e)
+    });
+    return () => sub.unsubscribe();
+  }, [weddingId]);
 
   const handleExport = () => {
     if (!weddingId || guests.length === 0) return;
@@ -136,6 +151,7 @@ export default function GuestsPage() {
       <div className="flex-1 min-h-0">
         <GuestTable 
           guests={guests}
+          availableTags={availableTags}
           onAdd={addGuest}
           onUpdate={updateGuest}
           onDelete={deleteGuest}

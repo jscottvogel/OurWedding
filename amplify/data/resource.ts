@@ -201,6 +201,8 @@ const schema = a.schema({
       dietaryNutFree: a.boolean(),
       tableId: a.string(),
       tags: a.string(),
+      primaryGuestId: a.string(),
+      maxGuests: a.integer().default(1),
     })
     .secondaryIndexes((index) => [index('weddingId')])
     .authorization((allow) => [

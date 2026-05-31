@@ -6,12 +6,13 @@ import type { Schema } from '../../../../amplify/data/resource';
 
 interface GuestTableProps {
   guests: Schema['Guest']['type'][];
+  availableTags?: Schema['GuestTag']['type'][];
   onAdd: (guest: any) => Promise<any>;
   onUpdate: (id: string, updates: any) => Promise<any>;
   onDelete: (id: string) => Promise<void>;
 }
 
-export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestTableProps) {
+export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate, onDelete }: GuestTableProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -21,29 +22,37 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [notes, setNotes] = useState('');
-  const [tags, setTags] = useState('');
   const [rsvpStatus, setRsvpStatus] = useState<Schema['Guest']['type']['rsvpStatus']>('PENDING');
+  
+  // New Form states for Tags and Party
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [legacyTags, setLegacyTags] = useState<string[]>([]);
+  const [maxGuests, setMaxGuests] = useState<number>(1);
 
   const resetForm = () => {
     setFirstName('');
     setLastName('');
     setEmail('');
     setNotes('');
-    setTags('');
     setRsvpStatus('PENDING');
+    setSelectedTags([]);
+    setLegacyTags([]);
+    setMaxGuests(1);
     setIsAdding(false);
     setEditingId(null);
   };
 
   const handleAddSubmit = async () => {
     if (!firstName) return;
-    await onAdd({ firstName, lastName, email, notes, tags: tags.trim(), rsvpStatus, attendingCount: 1 });
+    const tagsStr = [...legacyTags, ...selectedTags].join(', ');
+    await onAdd({ firstName, lastName, email, notes, tags: tagsStr, rsvpStatus, maxGuests, attendingCount: 1 });
     resetForm();
   };
 
   const handleUpdateSubmit = async () => {
     if (!editingId || !firstName) return;
-    await onUpdate(editingId, { firstName, lastName, email, notes, tags: tags.trim(), rsvpStatus });
+    const tagsStr = [...legacyTags, ...selectedTags].join(', ');
+    await onUpdate(editingId, { firstName, lastName, email, notes, tags: tagsStr, rsvpStatus, maxGuests });
     resetForm();
   };
 
@@ -52,9 +61,20 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
     setLastName(guest.lastName || '');
     setEmail(guest.email || '');
     setNotes(guest.notes || '');
-    setTags(guest.tags || '');
     setRsvpStatus(guest.rsvpStatus || 'PENDING');
+    
+    const allTags = guest.tags ? guest.tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+    const availableTagNames = availableTags.map(t => t.name);
+    
+    setSelectedTags(allTags.filter(t => availableTagNames.includes(t)));
+    setLegacyTags(allTags.filter(t => !availableTagNames.includes(t)));
+    setMaxGuests(guest.maxGuests || 1);
+    
     setEditingId(guest.id);
+  };
+
+  const removeLegacyTag = (tagToRemove: string) => {
+    setLegacyTags(legacyTags.filter(t => t !== tagToRemove));
   };
 
   const filteredGuests = guests.filter(g => 
@@ -62,6 +82,22 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
     (g.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (g.tags || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const getPrimaryGuest = (g: Schema['Guest']['type']) => 
+    g.primaryGuestId ? guests.find(p => p.id === g.primaryGuestId) || g : g;
+
+  const sortedGuests = [...filteredGuests].sort((a, b) => {
+    const pA = getPrimaryGuest(a);
+    const pB = getPrimaryGuest(b);
+    if (pA.id === pB.id) {
+      if (!a.primaryGuestId) return -1; // Primary comes first
+      if (!b.primaryGuestId) return 1;
+      return a.firstName.localeCompare(b.firstName);
+    }
+    const nameA = (pA.lastName || '') + pA.firstName;
+    const nameB = (pB.lastName || '') + pB.firstName;
+    return nameA.localeCompare(nameB);
+  });
 
   return (
     <div className="bg-white rounded-xl border border-light-gray shadow-sm overflow-hidden flex flex-col h-[600px]">
@@ -99,9 +135,9 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
               <th className="p-4 w-[15%]">First Name</th>
               <th className="p-4 w-[15%] hidden md:table-cell">Last Name</th>
               <th className="p-4 w-[20%] hidden md:table-cell">Email</th>
-              <th className="p-4 w-[15%] text-center">RSVP Status</th>
-              <th className="p-4 w-[15%] hidden lg:table-cell">Notes</th>
-              <th className="p-4 w-[10%] text-center hidden xl:table-cell">Tag</th>
+              <th className="p-4 w-[10%] text-center" title="Max allowed party size including this guest">Party</th>
+              <th className="p-4 w-[15%] text-center">RSVP</th>
+              <th className="p-4 w-[15%] hidden xl:table-cell">Tags</th>
               <th className="p-4 w-24"></th>
             </tr>
           </thead>
@@ -118,17 +154,27 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
                   <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
                 </td>
                 <td className="p-3 text-center">
+                  <input type="number" min="1" value={maxGuests} onChange={e => setMaxGuests(parseInt(e.target.value) || 1)} className="w-16 p-2 border rounded text-sm focus:border-sage focus:outline-none text-center mx-auto block" />
+                </td>
+                <td className="p-3 text-center">
                   <select value={rsvpStatus || 'PENDING'} onChange={e => setRsvpStatus(e.target.value as any)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white">
                     <option value="PENDING">Pending</option>
                     <option value="CONFIRMED">Confirmed</option>
                     <option value="DECLINED">Declined</option>
                   </select>
                 </td>
-                <td className="p-3 hidden lg:table-cell">
-                  <input type="text" placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
-                </td>
-                <td className="p-3 hidden xl:table-cell text-center">
-                  <input type="text" placeholder="Tag" value={tags} onChange={e => setTags(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
+                <td className="p-3 hidden xl:table-cell">
+                  <div className="flex flex-wrap gap-1 mb-1">
+                    {availableTags.map(tag => (
+                      <label key={tag.id} className="flex items-center space-x-1 bg-white border border-light-gray px-1.5 py-0.5 rounded text-xs cursor-pointer hover:border-sage">
+                        <input type="checkbox" className="w-3 h-3 text-sage" checked={selectedTags.includes(tag.name)} onChange={e => {
+                          if (e.target.checked) setSelectedTags([...selectedTags, tag.name]);
+                          else setSelectedTags(selectedTags.filter(t => t !== tag.name));
+                        }} />
+                        <span className="text-gray-600 truncate max-w-[80px]" title={tag.name}>{tag.name}</span>
+                      </label>
+                    ))}
+                  </div>
                 </td>
                 <td className="p-3">
                   <div className="flex items-center justify-end space-x-2">
@@ -139,7 +185,7 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
               </tr>
             )}
 
-            {filteredGuests.map((guest) => (
+            {sortedGuests.map((guest) => (
               editingId === guest.id ? (
                 <tr key={guest.id} className="bg-sage/5">
                   <td className="p-3">
@@ -152,17 +198,37 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
                     <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
                   </td>
                   <td className="p-3 text-center">
+                    <input type="number" min="1" value={maxGuests} onChange={e => setMaxGuests(parseInt(e.target.value) || 1)} className="w-16 p-2 border rounded text-sm focus:border-sage focus:outline-none text-center mx-auto block" disabled={!!guest.primaryGuestId} title={guest.primaryGuestId ? "Only primary guests set party size" : "Max Party Size"} />
+                  </td>
+                  <td className="p-3 text-center">
                     <select value={rsvpStatus || 'PENDING'} onChange={e => setRsvpStatus(e.target.value as any)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none bg-white">
                       <option value="PENDING">Pending</option>
                       <option value="CONFIRMED">Confirmed</option>
                       <option value="DECLINED">Declined</option>
                     </select>
                   </td>
-                  <td className="p-3 hidden lg:table-cell">
-                    <input type="text" placeholder="Notes" value={notes} onChange={e => setNotes(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
-                  </td>
-                  <td className="p-3 hidden xl:table-cell text-center">
-                    <input type="text" placeholder="Tag" value={tags} onChange={e => setTags(e.target.value)} className="w-full p-2 border rounded text-sm focus:border-sage focus:outline-none" />
+                  <td className="p-3 hidden xl:table-cell">
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {availableTags.map(tag => (
+                        <label key={tag.id} className="flex items-center space-x-1 bg-white border border-light-gray px-1.5 py-0.5 rounded text-xs cursor-pointer hover:border-sage">
+                          <input type="checkbox" className="w-3 h-3 text-sage" checked={selectedTags.includes(tag.name)} onChange={e => {
+                            if (e.target.checked) setSelectedTags([...selectedTags, tag.name]);
+                            else setSelectedTags(selectedTags.filter(t => t !== tag.name));
+                          }} />
+                          <span className="text-gray-600 truncate max-w-[80px]" title={tag.name}>{tag.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {legacyTags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1 pt-1 border-t border-light-gray/50">
+                        {legacyTags.map(tag => (
+                          <span key={tag} className="flex items-center bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[10px]">
+                            {tag}
+                            <button onClick={() => removeLegacyTag(tag)} className="ml-1 text-gray-400 hover:text-red-500"><X className="w-3 h-3" /></button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </td>
                   <td className="p-3">
                     <div className="flex items-center justify-end space-x-2">
@@ -172,12 +238,18 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
                   </td>
                 </tr>
               ) : (
-                <tr key={guest.id} className="hover:bg-ivory/30 transition-colors group">
-                  <td className="p-4">
-                    <p className="font-medium text-charcoal">{guest.firstName}</p>
+                <tr key={guest.id} className={`hover:bg-ivory/30 transition-colors group ${guest.primaryGuestId ? 'bg-gray-50/50' : ''}`}>
+                  <td className="p-4 flex items-center">
+                    {guest.primaryGuestId && (
+                      <div className="w-3 h-3 border-l-2 border-b-2 border-light-gray mr-2 mb-1" />
+                    )}
+                    <p className={`font-medium text-charcoal ${guest.primaryGuestId ? 'text-sm' : ''}`}>{guest.firstName}</p>
                   </td>
                   <td className="p-4 hidden md:table-cell text-mid-gray text-sm">{guest.lastName || '-'}</td>
                   <td className="p-4 hidden md:table-cell text-mid-gray text-sm">{guest.email || '-'}</td>
+                  <td className="p-4 text-center text-sm font-medium text-charcoal">
+                    {!guest.primaryGuestId ? guest.maxGuests || 1 : '-'}
+                  </td>
                   <td className="p-4 text-center">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       guest.rsvpStatus === 'CONFIRMED' ? 'bg-sage/20 text-dark-sage' :
@@ -187,15 +259,17 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
                       {guest.rsvpStatus}
                     </span>
                   </td>
-                  <td className="p-4 hidden lg:table-cell text-sm text-charcoal truncate max-w-[150px]">
-                    {guest.notes || '-'}
-                  </td>
-                  <td className="p-4 hidden xl:table-cell text-center text-sm text-charcoal">
-                    {guest.tags ? (
-                      <span className="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600 border border-gray-200">
-                        {guest.tags.split(',')[0].trim()}
-                      </span>
-                    ) : '-'}
+                  <td className="p-4 hidden xl:table-cell">
+                    <div className="flex flex-wrap gap-1">
+                      {guest.tags ? guest.tags.split(',').map(t => t.trim()).filter(Boolean).map(tag => {
+                        const isPredefined = availableTags.some(at => at.name === tag);
+                        return (
+                          <span key={tag} className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${isPredefined ? 'bg-sage/10 text-sage border-sage/20' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                            {tag}
+                          </span>
+                        );
+                      }) : '-'}
+                    </div>
                   </td>
                   <td className="p-4">
                     <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -209,7 +283,7 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
             
             {!isAdding && filteredGuests.length === 0 && (
               <tr>
-                <td colSpan={5} className="p-12 text-center text-mid-gray">
+                <td colSpan={7} className="p-12 text-center text-mid-gray">
                   {searchTerm ? 'No guests match your search.' : 'No guests added yet.'}
                 </td>
               </tr>
