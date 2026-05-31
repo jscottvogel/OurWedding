@@ -220,30 +220,39 @@ export function WeddingPartySection({ partyGroups }: { partyGroups?: { role: str
           <p className="text-center text-charcoal/70 text-lg">We are finalizing our wedding party details. Please check back later!</p>
         ) : (
           <div className="space-y-16">
-            {partyGroups.map(group => (
-              <div key={group.role}>
-                <h3 className="text-2xl font-heading text-center mb-8 border-b border-black/10 pb-4 inline-block mx-auto w-full max-w-sm" style={{ color: 'var(--color-accent)' }}>{group.role}</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 text-center justify-center">
-                  {group.members.map(member => (
-                    <div key={member.id} className="space-y-4">
-                      <div className="w-32 h-32 mx-auto rounded-full bg-[var(--color-bg)]/50 overflow-hidden shadow-inner border-4 border-[var(--color-bg)]/80">
-                        {member.photoUrl ? (
-                          <img src={member.photoUrl} alt={member.firstName} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-3xl">
-                            {member.firstName.charAt(0)}{member.lastName?.charAt(0) || ''}
+            {partyGroups.map(group => {
+              let roleName = group.role;
+              if (group.members.length > 1) {
+                if (roleName === 'Bridesmaid') roleName = 'Bridesmaids';
+                else if (roleName === 'Groomsman') roleName = 'Groomsmen';
+                else if (roleName === 'Usher') roleName = 'Ushers';
+                else if (roleName === 'Reader') roleName = 'Readers';
+                else if (roleName === 'Flower Girl') roleName = 'Flower Girls';
+                else if (roleName === 'Ring Bearer') roleName = 'Ring Bearers';
+                else if (roleName === 'Candle Lighter') roleName = 'Candle Lighters';
+              }
+              
+              return (
+                <div key={group.role}>
+                  <h3 className="text-2xl font-heading text-center mb-8 border-b border-black/10 pb-4 inline-block mx-auto w-full max-w-sm" style={{ color: 'var(--color-accent)' }}>{roleName}</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 text-center justify-center">
+                    {group.members.map(member => (
+                      <div key={member.id} className="space-y-4">
+                        {member.photoUrl && (
+                          <div className="w-32 h-32 mx-auto rounded-full bg-[var(--color-bg)]/50 overflow-hidden shadow-inner border-4 border-[var(--color-bg)]/80">
+                            <img src={member.photoUrl} alt={member.firstName} className="w-full h-full object-cover" />
                           </div>
                         )}
+                        <div>
+                          <h4 className="font-bold text-lg" style={{ color: 'var(--color-primary)' }}>{member.firstName} {member.lastName}</h4>
+                          {member.bio && <p className="text-sm text-charcoal/70 mt-2 px-2">{member.bio}</p>}
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-bold text-lg" style={{ color: 'var(--color-primary)' }}>{member.firstName} {member.lastName}</h4>
-                        {member.bio && <p className="text-sm text-charcoal/70 mt-2 px-2">{member.bio}</p>}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

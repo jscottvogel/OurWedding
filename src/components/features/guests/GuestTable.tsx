@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Trash2, Edit2, Check, X, Search, Filter, Tags } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Search, Filter, Tags, GripVertical, UserMinus } from 'lucide-react';
+import { DndContext, useDraggable, useDroppable, DragOverlay, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
 import type { Schema } from '../../../../amplify/data/resource';
 import TagSelectorModal from './TagSelectorModal';
 
@@ -21,6 +22,111 @@ interface EditingPartyMember {
   rsvpStatus: Schema['Guest']['type']['rsvpStatus'];
   selectedTags: string[];
   legacyTags: string[];
+}
+
+function GuestRow({
+  guest,
+  availableTags,
+  onStartEdit,
+  onDelete,
+  onUngroup,
+  isOverlay
+}: {
+  guest: Schema['Guest']['type'];
+  availableTags: Schema['GuestTag']['type'][];
+  onStartEdit: (guest: Schema['Guest']['type']) => void;
+  onDelete: (id: string) => void;
+  onUngroup: (id: string) => void;
+  isOverlay?: boolean;
+}) {
+  const { attributes, listeners, setNodeRef: setDraggableRef, isDragging } = useDraggable({
+    id: guest.id,
+    data: guest
+  });
+
+  const { isOver, setNodeRef: setDroppableRef } = useDroppable({
+    id: guest.id,
+    data: guest
+  });
+
+  const setNodeRef = (element: HTMLElement | null) => {
+    if (!isOverlay) {
+      setDroppableRef(element);
+    }
+  };
+
+  const setDragHandleRef = (element: HTMLElement | null) => {
+    setDraggableRef(element);
+  };
+
+  if (isDragging && !isOverlay) {
+    return (
+      <tr className="opacity-50 bg-light-gray/20">
+        <td colSpan={7} className="p-4 text-center text-sm text-mid-gray border-dashed border-2 border-sage/50">Dragging {guest.firstName}...</td>
+      </tr>
+    );
+  }
+
+  return (
+    <tr 
+      ref={setNodeRef}
+      className={`group transition-colors ${guest.primaryGuestId ? 'bg-gray-50/50' : ''} ${isOver && !isOverlay ? 'bg-sage/10 ring-2 ring-sage ring-inset' : 'hover:bg-ivory/30'}`}
+    >
+      <td className="p-4 flex items-center">
+        <div ref={setDragHandleRef} {...listeners} {...attributes} className="cursor-grab active:cursor-grabbing p-1 mr-1 text-light-gray hover:text-mid-gray rounded opacity-0 group-hover:opacity-100 transition-opacity">
+          <GripVertical className="w-4 h-4" />
+        </div>
+        {guest.primaryGuestId && (
+          <div className="w-3 h-3 border-l-2 border-b-2 border-light-gray mr-2 mb-1" />
+        )}
+        <p className={`font-medium text-charcoal ${guest.primaryGuestId ? 'text-sm' : ''}`}>{guest.firstName}</p>
+      </td>
+      <td className="p-4 text-mid-gray text-sm">{guest.lastName || '-'}</td>
+      <td className="p-4 text-mid-gray text-sm">{guest.email || '-'}</td>
+      <td className="p-4 text-center text-sm font-medium text-charcoal">
+        {!guest.primaryGuestId ? guest.maxGuests || 1 : '-'}
+      </td>
+      <td className="p-4 text-center">
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+          guest.rsvpStatus === 'CONFIRMED' ? 'bg-sage/20 text-dark-sage' :
+          guest.rsvpStatus === 'DECLINED' ? 'bg-red-100 text-red-700' :
+          'bg-light-gray text-mid-gray'
+        }`}>
+          {guest.rsvpStatus}
+        </span>
+      </td>
+      <td className="p-4">
+        <div className="flex flex-wrap gap-1">
+          {guest.tags ? guest.tags.split(',').map(t => t.trim()).filter(Boolean).map(tag => {
+            const isPredefined = availableTags.some(at => at.name === tag);
+            return (
+              <span key={tag} className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${isPredefined ? 'bg-sage/10 text-sage border-sage/20' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
+                {tag}
+              </span>
+            );
+          }) : '-'}
+        </div>
+      </td>
+      <td className="p-4">
+        <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          {guest.primaryGuestId && (
+            <button onClick={() => onUngroup(guest.id)} className="p-1.5 text-mid-gray hover:text-sage" title="Ungroup from party"><UserMinus className="w-4 h-4" /></button>
+          )}
+          <button onClick={() => onStartEdit(guest)} className="p-1.5 text-mid-gray hover:text-sage" title="Edit"><Edit2 className="w-4 h-4" /></button>
+          <button onClick={() => onDelete(guest.id)} className="p-1.5 text-mid-gray hover:text-red-500" title="Delete"><Trash2 className="w-4 h-4" /></button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+function GuestOverlay({ guest }: { guest: Schema['Guest']['type'] }) {
+  return (
+    <div className="bg-white border-2 border-sage shadow-xl px-4 py-3 rounded-lg flex items-center gap-3 w-64 opacity-95">
+      <GripVertical className="w-4 h-4 text-sage" />
+      <span className="font-medium text-sage">{guest.firstName} {guest.lastName || ''}</span>
+    </div>
+  );
 }
 
 export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate, onDelete }: GuestTableProps) {
@@ -44,6 +150,48 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
   // Tag Modal state
   // null = closed, 'primary' = editing primary, number = editing party member at index
   const [activeTagEditor, setActiveTagEditor] = useState<'primary' | number | null>(null);
+
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    })
+  );
+
+  const handleDragStart = (event: any) => {
+    setActiveDragId(event.active.id);
+  };
+
+  const handleDragEnd = async (event: any) => {
+    const { active, over } = event;
+    setActiveDragId(null);
+
+    if (over && active.id !== over.id) {
+      const activeGuest = guests.find(g => g.id === active.id);
+      const overGuest = guests.find(g => g.id === over.id);
+
+      if (activeGuest && overGuest) {
+        const targetPrimaryId = overGuest.primaryGuestId || overGuest.id;
+
+        if (activeGuest.id !== targetPrimaryId && activeGuest.primaryGuestId !== targetPrimaryId) {
+          await onUpdate(activeGuest.id, { primaryGuestId: targetPrimaryId });
+        }
+      }
+    }
+  };
+
+  const handleUngroup = async (id: string) => {
+    await onUpdate(id, { primaryGuestId: null });
+  };
 
   const resetForm = () => {
     setFirstName('');
@@ -311,8 +459,9 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
   );
 
   return (
-    <div className="bg-white rounded-xl border border-light-gray shadow-sm overflow-hidden flex flex-col h-[600px]">
-      <div className="p-4 border-b border-light-gray flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-ivory">
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <div className="bg-white rounded-xl border border-light-gray shadow-sm overflow-hidden flex flex-col h-[600px]">
+        <div className="p-4 border-b border-light-gray flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-ivory">
         <div className="relative w-full md:w-64">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-mid-gray" />
           <input 
@@ -365,48 +514,14 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
               }
 
               return (
-                <React.Fragment key={guest.id}>
-                  <tr className={`hover:bg-ivory/30 transition-colors group ${guest.primaryGuestId ? 'bg-gray-50/50' : ''}`}>
-                    <td className="p-4 flex items-center">
-                      {guest.primaryGuestId && (
-                        <div className="w-3 h-3 border-l-2 border-b-2 border-light-gray mr-2 mb-1" />
-                      )}
-                      <p className={`font-medium text-charcoal ${guest.primaryGuestId ? 'text-sm' : ''}`}>{guest.firstName}</p>
-                    </td>
-                    <td className="p-4 text-mid-gray text-sm">{guest.lastName || '-'}</td>
-                    <td className="p-4 text-mid-gray text-sm">{guest.email || '-'}</td>
-                    <td className="p-4 text-center text-sm font-medium text-charcoal">
-                      {!guest.primaryGuestId ? guest.maxGuests || 1 : '-'}
-                    </td>
-                    <td className="p-4 text-center">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        guest.rsvpStatus === 'CONFIRMED' ? 'bg-sage/20 text-dark-sage' :
-                        guest.rsvpStatus === 'DECLINED' ? 'bg-red-100 text-red-700' :
-                        'bg-light-gray text-mid-gray'
-                      }`}>
-                        {guest.rsvpStatus}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex flex-wrap gap-1">
-                        {guest.tags ? guest.tags.split(',').map(t => t.trim()).filter(Boolean).map(tag => {
-                          const isPredefined = availableTags.some(at => at.name === tag);
-                          return (
-                            <span key={tag} className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${isPredefined ? 'bg-sage/10 text-sage border-sage/20' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-                              {tag}
-                            </span>
-                          );
-                        }) : '-'}
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex items-center justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => startEdit(guest)} className="p-1.5 text-mid-gray hover:text-sage"><Edit2 className="w-4 h-4" /></button>
-                        <button onClick={() => onDelete(guest.id)} className="p-1.5 text-mid-gray hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
-                      </div>
-                    </td>
-                  </tr>
-                </React.Fragment>
+                <GuestRow 
+                  key={guest.id} 
+                  guest={guest} 
+                  availableTags={availableTags}
+                  onStartEdit={startEdit}
+                  onDelete={onDelete}
+                  onUngroup={handleUngroup}
+                />
               );
             })}
             
@@ -421,12 +536,16 @@ export default function GuestTable({ guests, availableTags = [], onAdd, onUpdate
         </table>
       </div>
 
-      <TagSelectorModal 
-        isOpen={activeTagEditor !== null}
-        onClose={() => setActiveTagEditor(null)}
-        availableTags={availableTags}
-        {...getTagModalProps()}
-      />
-    </div>
+        <TagSelectorModal 
+          isOpen={activeTagEditor !== null}
+          onClose={() => setActiveTagEditor(null)}
+          availableTags={availableTags}
+          {...getTagModalProps()}
+        />
+        <DragOverlay>
+          {activeDragId && <GuestOverlay guest={guests.find(g => g.id === activeDragId)!} />}
+        </DragOverlay>
+      </div>
+    </DndContext>
   );
 }
