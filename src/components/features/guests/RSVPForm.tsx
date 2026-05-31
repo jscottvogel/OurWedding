@@ -3,7 +3,10 @@
 import { useState } from 'react';
 import { Search, CheckCircle2, UserCheck, UserX, Loader2 } from 'lucide-react';
 import type { Schema } from '../../../../amplify/data/resource';
+import { generateClient } from 'aws-amplify/data';
 import { toast } from 'sonner';
+
+const client = generateClient<Schema>();
 
 interface RSVPFormProps {
   guests: Schema['Guest']['type'][];
@@ -22,7 +25,25 @@ export default function RSVPForm({ guests, onUpdate, wedding }: RSVPFormProps) {
   const [isAttending, setIsAttending] = useState<boolean | null>(null);
   const [mealChoice, setMealChoice] = useState('');
   const [dietaryRequirements, setDietaryRequirements] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [publicTags, setPublicTags] = useState<Schema['GuestTag']['type'][]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch public tags when a guest is found
+  const fetchPublicTags = async (weddingId: string) => {
+    try {
+      const { data } = await client.models.GuestTag.list({
+        filter: { weddingId: { eq: weddingId }, isPublic: { eq: true } }
+      });
+      setPublicTags(data);
+      return data;
+    } catch (e) {
+      console.error('Failed to fetch tags', e);
+      return [];
+    }
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +52,7 @@ export default function RSVPForm({ guests, onUpdate, wedding }: RSVPFormProps) {
     setIsSearching(true);
     
     // Simulate network delay for UX
-    setTimeout(() => {
+    setTimeout(async () => {
       const match = guests.find(g => {
         const dbFirst = (g.firstName || '').toLowerCase().trim();
         const dbLast = (g.lastName || '').toLowerCase().trim();
@@ -42,10 +63,19 @@ export default function RSVPForm({ guests, onUpdate, wedding }: RSVPFormProps) {
       });
       
       if (match) {
+        const pTags = await fetchPublicTags(match.weddingId);
+        const pTagNames = pTags.map(t => t.name);
+        
         setFoundGuest(match);
         setIsAttending(match.rsvpStatus === 'CONFIRMED' ? true : match.rsvpStatus === 'DECLINED' ? false : null);
         setMealChoice(match.mealChoice || '');
         setDietaryRequirements(match.dietaryOther || '');
+        setEmail(match.email || '');
+        setPhone(match.phone || '');
+        
+        const currentGuestTags = (match.tags || []).filter((t): t is string => t !== null);
+        setSelectedTags(currentGuestTags.filter(t => pTagNames.includes(t)));
+        
         setStep('RSVP');
       } else {
         toast.error('We couldn\'t find your invitation. Please check the spelling or contact the couple.');
@@ -60,10 +90,20 @@ export default function RSVPForm({ guests, onUpdate, wedding }: RSVPFormProps) {
     
     setIsSubmitting(true);
     try {
+      const currentGuestTags = (foundGuest.tags || []).filter((t): t is string => t !== null);
+      const publicTagNames = publicTags.map(t => t.name);
+      
+      // Keep private tags (those not in public tags list) and add selected public tags
+      const privateTags = currentGuestTags.filter(t => !publicTagNames.includes(t));
+      const newTags = [...privateTags, ...selectedTags];
+
       await onUpdate(foundGuest.id, {
         rsvpStatus: isAttending ? 'CONFIRMED' : 'DECLINED',
         mealChoice: isAttending ? mealChoice : undefined,
         dietaryOther: isAttending ? dietaryRequirements : undefined,
+        email: email || undefined,
+        phone: phone || undefined,
+        tags: newTags.length > 0 ? newTags : [],
       });
       setStep('SUCCESS');
     } catch (err) {
@@ -160,6 +200,53 @@ export default function RSVPForm({ guests, onUpdate, wedding }: RSVPFormProps) {
                   className="w-full border border-light-gray rounded-lg p-3 focus:border-sage focus:outline-none"
                 />
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-charcoal mb-1">Email</label>
+                  <input 
+                    type="email" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Update your email..."
+                    className="w-full border border-light-gray rounded-lg p-3 focus:border-sage focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-charcoal mb-1">Phone</label>
+                  <input 
+                    type="tel" 
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Update your phone..."
+                    className="w-full border border-light-gray rounded-lg p-3 focus:border-sage focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {publicTags.length > 0 && (
+                <div className="pt-2">
+                  <label className="block text-sm font-medium text-charcoal mb-2">Additional Details</label>
+                  <div className="space-y-2">
+                    {publicTags.map(tag => (
+                      <label key={tag.id} className="flex items-center space-x-3 p-3 border border-light-gray rounded-lg hover:bg-ivory/30 cursor-pointer">
+                        <input 
+                          type="checkbox"
+                          checked={selectedTags.includes(tag.name)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedTags([...selectedTags, tag.name]);
+                            } else {
+                              setSelectedTags(selectedTags.filter(t => t !== tag.name));
+                            }
+                          }}
+                          className="w-5 h-5 rounded border-gray-300 text-sage focus:ring-sage"
+                        />
+                        <span className="text-charcoal">{tag.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

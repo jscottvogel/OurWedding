@@ -169,6 +169,19 @@ const schema = a.schema({
       allow.publicApiKey().to(['read', 'create']),
     ]),
 
+  GuestTag: a
+    .model({
+      weddingId: a.string().required(),
+      name: a.string().required(),
+      isPublic: a.boolean().default(false),
+    })
+    .secondaryIndexes((index) => [index('weddingId')])
+    .authorization((allow) => [
+      allow.authenticated().to(['create', 'read', 'update', 'delete']),
+      allow.guest().to(['read']),
+      allow.publicApiKey().to(['read']),
+    ]),
+
   Guest: a
     .model({
       weddingId: a.string().required(),
@@ -187,7 +200,7 @@ const schema = a.schema({
       dietaryGlutenFree: a.boolean(),
       dietaryNutFree: a.boolean(),
       tableId: a.string(),
-      tags: a.string(),
+      tags: a.string().array(),
     })
     .secondaryIndexes((index) => [index('weddingId')])
     .authorization((allow) => [

@@ -37,13 +37,13 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
 
   const handleAddSubmit = async () => {
     if (!firstName) return;
-    await onAdd({ firstName, lastName, email, notes, tags, rsvpStatus, attendingCount: 1 });
+    await onAdd({ firstName, lastName, email, notes, tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [], rsvpStatus, attendingCount: 1 });
     resetForm();
   };
 
   const handleUpdateSubmit = async () => {
     if (!editingId || !firstName) return;
-    await onUpdate(editingId, { firstName, lastName, email, notes, tags, rsvpStatus });
+    await onUpdate(editingId, { firstName, lastName, email, notes, tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [], rsvpStatus });
     resetForm();
   };
 
@@ -52,7 +52,7 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
     setLastName(guest.lastName || '');
     setEmail(guest.email || '');
     setNotes(guest.notes || '');
-    setTags(guest.tags || '');
+    setTags(guest.tags ? guest.tags.filter((t): t is string => t !== null).join(', ') : '');
     setRsvpStatus(guest.rsvpStatus || 'PENDING');
     setEditingId(guest.id);
   };
@@ -60,7 +60,7 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
   const filteredGuests = guests.filter(g => 
     (g.firstName.toLowerCase() + ' ' + (g.lastName || '').toLowerCase()).includes(searchTerm.toLowerCase()) ||
     (g.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (g.tags || '').toLowerCase().includes(searchTerm.toLowerCase())
+    (g.tags?.filter((t): t is string => t !== null).join(', ') || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -191,9 +191,10 @@ export default function GuestTable({ guests, onAdd, onUpdate, onDelete }: GuestT
                     {guest.notes || '-'}
                   </td>
                   <td className="p-4 hidden xl:table-cell text-center text-sm text-charcoal">
-                    {guest.tags ? (
+                    {guest.tags && guest.tags.length > 0 ? (
                       <span className="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600 border border-gray-200">
-                        {guest.tags.split(',')[0].trim()}
+                        {guest.tags[0]}
+                        {guest.tags.length > 1 && <span className="ml-1 text-gray-400">+{guest.tags.length - 1}</span>}
                       </span>
                     ) : '-'}
                   </td>

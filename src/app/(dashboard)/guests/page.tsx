@@ -8,11 +8,14 @@ import GuestBulkImport from '@/components/features/guests/GuestBulkImport';
 import { Download, Upload, Users, UserCheck, UserX, Clock } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { toast } from 'sonner';
+import GuestTagManager from '@/components/features/guests/GuestTagManager';
+import { Tag } from 'lucide-react';
 
 export default function GuestsPage() {
   const { guests, loading, addGuest, updateGuest, deleteGuest } = useGuests();
   const { weddingId } = useAuth();
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
 
   const handleExport = () => {
     if (!weddingId || guests.length === 0) return;
@@ -24,7 +27,7 @@ export default function GuestsPage() {
         `"${(g.email || '').replace(/"/g, '""')}"`,
         `"${g.rsvpStatus || 'PENDING'}"`,
         `"${(g.notes || '').replace(/"/g, '""')}"`,
-        `"${(g.tags || '').replace(/"/g, '""')}"`
+        `"${(g.tags ? g.tags.filter(t => t !== null).join(', ') : '').replace(/"/g, '""')}"`
       ]);
       const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -70,6 +73,12 @@ export default function GuestsPage() {
           <p className="text-mid-gray">Manage your invitations and track responses.</p>
         </div>
         <div className="flex space-x-3">
+          <button 
+            onClick={() => setIsTagManagerOpen(true)}
+            className="bg-white border border-light-gray text-charcoal px-4 py-2 rounded-lg font-medium hover:bg-light-gray transition-colors flex items-center shadow-sm"
+          >
+            <Tag className="w-5 h-5 mr-2 text-sage" /> Manage Tags
+          </button>
           <button 
             onClick={() => setIsImportOpen(true)}
             className="bg-ivory border border-sage text-sage px-4 py-2 rounded-lg font-medium hover:bg-sage hover:text-white transition-colors flex items-center shadow-sm"
@@ -137,6 +146,11 @@ export default function GuestsPage() {
         isOpen={isImportOpen} 
         onClose={() => setIsImportOpen(false)} 
         onImport={handleBulkImport} 
+      />
+
+      <GuestTagManager 
+        isOpen={isTagManagerOpen} 
+        onClose={() => setIsTagManagerOpen(false)} 
       />
     </div>
   );

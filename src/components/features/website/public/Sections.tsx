@@ -31,7 +31,7 @@ export function HeroSection({ wedding, venueVendor }: { wedding?: Schema['Weddin
     }
   };
 
-  const timeString = formatTime(wedding.weddingTime, wedding.timezone || undefined);
+  const timeString = formatTime(wedding.weddingTime || undefined, wedding.timezone || undefined);
   
   return (
     <section id="hero" className={`relative min-h-[90vh] w-full overflow-hidden flex flex-col justify-end group ${hasHeroImage ? 'bg-dark-sage' : 'bg-transparent'}`}>
