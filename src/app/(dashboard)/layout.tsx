@@ -5,6 +5,18 @@ import AuthGuard from '@/components/layout/AuthGuard';
 import IvyChat from '@/components/features/ai/IvyChat';
 import { RunSheetProvider } from '@/lib/hooks/useRunSheet';
 
+/**
+ * The layout for all dashboard routes.
+ * 
+ * This layout provides the core authenticated experience for users:
+ * - Secures routes using `AuthGuard` (restricts to 'admin' and 'planner' roles).
+ * - Provides the `RunSheetProvider` context to manage run-sheet state globally across the dashboard.
+ * - Renders the main sidebar and the top `CoupleHero` banner.
+ * - Injects the `IvyChat` component, a persistent AI assistant available throughout the dashboard.
+ *
+ * @param props.children - The child components or route pages to be rendered within the dashboard.
+ * @returns The authenticated dashboard view.
+ */
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <AuthGuard allowedRoles={['admin', 'planner']}>

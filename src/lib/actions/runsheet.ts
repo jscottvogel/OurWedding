@@ -5,7 +5,18 @@ import type { Schema } from '../../../amplify/data/resource';
 import { runWithAmplifyServerContext } from '@/lib/amplify/server';
 import { cookies } from 'next/headers';
 
-// In a real application, this would invoke the pdf-export Lambda function
+/**
+ * Generates a PDF export of the run-sheet for a specific wedding.
+ * 
+ * This is a Next.js Server Action (`'use server'`). It safely accesses the AWS Amplify 
+ * backend context by injecting server-side cookies, which ensures the operation is 
+ * authenticated. It invokes a custom mutation on the backend to trigger a PDF generation 
+ * Lambda function.
+ *
+ * @param weddingId - The unique identifier of the wedding for which to generate the run-sheet.
+ * @returns A promise resolving to the URL of the generated PDF file.
+ * @throws Will throw an error if the PDF generation fails.
+ */
 export async function generateRunSheetPDF(weddingId: string) {
   try {
     // Call the custom mutation defined in our schema that maps to the pdf-export Lambda
