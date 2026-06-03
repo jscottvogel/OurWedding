@@ -87,10 +87,10 @@ export default function GuestsPage() {
     return <div className="p-8 animate-pulse text-sage font-medium text-lg">Loading guest list...</div>;
   }
 
-  const totalGuests = guests.reduce((sum, g) => sum + (g.attendingCount != null && g.attendingCount !== '' ? Number(g.attendingCount) : 1), 0);
-  const confirmed = guests.filter(g => g.rsvpStatus === 'CONFIRMED').reduce((sum, g) => sum + (g.attendingCount != null && g.attendingCount !== '' ? Number(g.attendingCount) : 1), 0);
-  const declined = guests.filter(g => g.rsvpStatus === 'DECLINED').reduce((sum, g) => sum + (g.attendingCount != null && g.attendingCount !== '' ? Number(g.attendingCount) : 1), 0);
-  const pending = guests.filter(g => g.rsvpStatus === 'PENDING').reduce((sum, g) => sum + (g.attendingCount != null && g.attendingCount !== '' ? Number(g.attendingCount) : 1), 0);
+  const totalGuests = guests.length;
+  const confirmed = guests.filter(g => g.rsvpStatus === 'CONFIRMED').length;
+  const declined = guests.filter(g => g.rsvpStatus === 'DECLINED').length;
+  const pending = guests.filter(g => g.rsvpStatus === 'PENDING').length;
 
   return (
     <div className="flex flex-col h-full">
