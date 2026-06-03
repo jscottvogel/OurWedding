@@ -24,7 +24,6 @@ const navItems = [
   { href: '/email-studio', label: 'Email Studio', icon: FileText },
   { href: '/gallery', label: 'Gallery', icon: ImageIcon },
   { href: '/guestbook', label: 'Guestbook', icon: BookOpen },
-  { href: '/qr-code', label: 'QR Code', icon: QrCode },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
