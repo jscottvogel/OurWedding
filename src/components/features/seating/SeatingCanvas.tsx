@@ -115,7 +115,7 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
   const [capacity, setCapacity] = useState('8');
 
   // Group active guests into parties
-  const activeGuests = guests.filter(g => g.rsvpStatus === 'CONFIRMED');
+  const activeGuests = guests.filter(g => g.rsvpStatus !== 'DECLINED');
   const partyMap = new Map<string, Schema['Guest']['type'][]>();
   
   activeGuests.forEach(g => {
