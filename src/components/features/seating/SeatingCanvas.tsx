@@ -132,7 +132,7 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
     return {
       id,
       name: `${primary.firstName} ${primary.lastName || ''}`.trim(),
-      count: members.reduce((sum, m) => sum + (m.attendingCount || 1), 0),
+      count: Math.max(primary.maxGuests || 1, members.length),
       tableId: primary.tableId || undefined
     };
   });

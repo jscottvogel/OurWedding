@@ -28,9 +28,25 @@ export default function SeatingPage() {
   }
 
   const activeGuests = guests.filter(g => g.rsvpStatus === 'CONFIRMED');
-  const totalSeatsNeeded = activeGuests.reduce((sum, g) => sum + (g.attendingCount || 1), 0);
+  const partyMap = new Map<string, typeof guests>();
+  activeGuests.forEach(g => {
+    const partyId = g.primaryGuestId || g.id;
+    if (!partyMap.has(partyId)) partyMap.set(partyId, []);
+    partyMap.get(partyId)!.push(g);
+  });
+  
+  let totalSeatsNeeded = 0;
+  let seatedGuests = 0;
   const tableIds = new Set(tables.map(t => t.id));
-  const seatedGuests = activeGuests.filter(g => g.tableId && tableIds.has(g.tableId)).reduce((sum, g) => sum + (g.attendingCount || 1), 0);
+
+  Array.from(partyMap.values()).forEach(members => {
+    const primary = members.find(m => !m.primaryGuestId) || members[0];
+    const partySize = Math.max(primary.maxGuests || 1, members.length);
+    totalSeatsNeeded += partySize;
+    if (primary.tableId && tableIds.has(primary.tableId)) {
+      seatedGuests += partySize;
+    }
+  });
 
   return (
     <div className="flex flex-col">
