@@ -59,7 +59,7 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
     Promise.resolve({ data: [] }),
     client.models.WebsiteRegistry.list({ filter: { weddingId: { eq: weddingId }, isVisible: { eq: true } }, authMode: 'apiKey' }),
     client.models.WebsiteFaq.list({ filter: { weddingId: { eq: weddingId }, isVisible: { eq: true } }, authMode: 'apiKey' }),
-    client.models.Guest.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' }),
+    client.models.Guest.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey', limit: 1000 }),
     client.models.Vendor.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' }),
     client.models.GalleryUpload.list({ filter: { weddingId: { eq: weddingId }, showOnWebsite: { eq: true } }, authMode: 'apiKey' }),
     client.models.WebsiteGuestbook.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' })

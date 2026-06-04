@@ -22,7 +22,8 @@ export function useGuests(publicWeddingId?: string) {
     }
 
     const sub = client.models.Guest.observeQuery({
-      filter: { weddingId: { eq: weddingId } }
+      filter: { weddingId: { eq: weddingId } },
+      limit: 1000
     }).subscribe({
       next: ({ items }) => {
         setGuests([...items].sort((a, b) => a.firstName.localeCompare(b.firstName)));
@@ -36,6 +37,7 @@ export function useGuests(publicWeddingId?: string) {
 
     return () => sub.unsubscribe();
   }, [weddingId, authLoading, publicWeddingId]);
+
 
   const addGuest = async (guest: Omit<Schema['Guest']['type'], 'id' | 'createdAt' | 'updatedAt' | 'weddingId'>) => {
     if (!weddingId) return;

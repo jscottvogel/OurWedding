@@ -5,10 +5,12 @@ import { useEmailStudio } from './EmailStudioProvider';
 import { AlertTriangle, Send, X, Loader2 } from 'lucide-react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../../../amplify/data/resource';
+import { useAuth } from '@/lib/hooks/useAuth';
 
 const client = generateClient<Schema>();
 
 export default function SendConfirmModal({ onClose }: { onClose: () => void }) {
+  const { weddingId } = useAuth();
   const { 
     activeType, 
     subjectLine, 
@@ -47,7 +49,10 @@ export default function SendConfirmModal({ onClose }: { onClose: () => void }) {
       // So let's fetch the guests real quick or rely on the Lambda fetching them.
       // Wait, our Lambda takes recipientEmails. We should pass the emails!
       // To do this properly, the frontend can query the guests.
-      const { data: guests } = await client.models.Guest.list();
+      const { data: guests } = await client.models.Guest.list({
+        filter: weddingId ? { weddingId: { eq: weddingId } } : undefined,
+        limit: 1000
+      });
       const guestEmails = guests
         .filter(g => selectedGuestIds.includes(g.id) && g.email)
         .map(g => g.email as string);

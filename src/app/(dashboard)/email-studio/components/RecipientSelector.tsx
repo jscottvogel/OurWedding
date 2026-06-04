@@ -19,7 +19,8 @@ export default function RecipientSelector() {
     if (!weddingId) return;
     const fetchGuests = async () => {
       const { data } = await client.models.Guest.list({
-        filter: { weddingId: { eq: weddingId } }
+        filter: { weddingId: { eq: weddingId } },
+        limit: 1000
       });
       // only keep guests with emails
       setGuests(data.filter(g => !!g.email) || []);
