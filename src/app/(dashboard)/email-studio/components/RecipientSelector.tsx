@@ -47,9 +47,11 @@ export default function RecipientSelector() {
 
   return (
     <div className="mb-6 space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
         <label className="block text-sm font-medium text-charcoal">Recipients</label>
-        <span className="text-xs text-mid-gray">{selectedGuestIds.length} guests selected</span>
+        <span className="text-xs text-mid-gray">
+          {selectedGuestIds.length} selected | {guests.length} with email (out of {queryGuests.length} total)
+        </span>
       </div>
 
       <div className="border border-light-gray rounded-md overflow-hidden bg-white">
