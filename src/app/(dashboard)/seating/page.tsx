@@ -28,9 +28,9 @@ export default function SeatingPage() {
   }
 
   const activeGuests = guests.filter(g => g.rsvpStatus === 'CONFIRMED');
-  const totalSeatsNeeded = activeGuests.length;
+  const totalSeatsNeeded = activeGuests.reduce((sum, g) => sum + (g.attendingCount || 1), 0);
   const tableIds = new Set(tables.map(t => t.id));
-  const seatedGuests = activeGuests.filter(g => g.tableId && tableIds.has(g.tableId)).length;
+  const seatedGuests = activeGuests.filter(g => g.tableId && tableIds.has(g.tableId)).reduce((sum, g) => sum + (g.attendingCount || 1), 0);
 
   return (
     <div className="flex flex-col">
