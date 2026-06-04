@@ -115,7 +115,7 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
   const [capacity, setCapacity] = useState('8');
 
   // Group active guests into parties
-  const activeGuests = guests.filter(g => g.rsvpStatus !== 'DECLINED');
+  const activeGuests = guests.filter(g => g.rsvpStatus === 'CONFIRMED');
   const partyMap = new Map<string, Schema['Guest']['type'][]>();
   
   activeGuests.forEach(g => {
@@ -132,7 +132,7 @@ export default function SeatingCanvas({ tables, guests, onAddTable, onUpdateTabl
     return {
       id,
       name: `${primary.firstName} ${primary.lastName || ''}`.trim(),
-      count: Math.max(primary.maxGuests || 1, members.length),
+      count: members.length,
       tableId: primary.tableId || undefined
     };
   });

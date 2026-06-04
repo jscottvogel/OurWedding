@@ -27,7 +27,7 @@ export default function SeatingPage() {
     return <div className="p-8 animate-pulse text-sage font-medium text-lg">Loading seating chart...</div>;
   }
 
-  const activeGuests = guests.filter(g => g.rsvpStatus !== 'DECLINED');
+  const activeGuests = guests.filter(g => g.rsvpStatus === 'CONFIRMED');
   const partyMap = new Map<string, typeof guests>();
   activeGuests.forEach(g => {
     const partyId = g.primaryGuestId || g.id;
@@ -41,7 +41,7 @@ export default function SeatingPage() {
 
   Array.from(partyMap.values()).forEach(members => {
     const primary = members.find(m => !m.primaryGuestId) || members[0];
-    const partySize = Math.max(primary.maxGuests || 1, members.length);
+    const partySize = members.length;
     totalSeatsNeeded += partySize;
     if (primary.tableId && tableIds.has(primary.tableId)) {
       seatedGuests += partySize;
