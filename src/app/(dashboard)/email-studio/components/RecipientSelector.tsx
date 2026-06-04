@@ -2,31 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import { useEmailStudio } from './EmailStudioProvider';
-import { useAuth } from '@/lib/hooks/useAuth';
-import { generateClient } from 'aws-amplify/data';
+import { useGuests } from '@/lib/hooks/useGuests';
 import type { Schema } from '../../../../../amplify/data/resource';
 import { Users, Filter } from 'lucide-react';
 
-const client = generateClient<Schema>();
-
 export default function RecipientSelector() {
-  const { weddingId } = useAuth();
   const { manualEmails, setManualEmails, selectedGuestIds, setSelectedGuestIds } = useEmailStudio();
+  const { guests: queryGuests, loading } = useGuests();
   const [guests, setGuests] = useState<Array<Schema['Guest']['type']>>([]);
   const [filter, setFilter] = useState<'ALL' | 'ATTENDING' | 'AWAITING'>('ALL');
 
   useEffect(() => {
-    if (!weddingId) return;
-    const fetchGuests = async () => {
-      const { data } = await client.models.Guest.list({
-        filter: { weddingId: { eq: weddingId } },
-        limit: 1000
-      });
-      // only keep guests with emails
-      setGuests(data.filter(g => !!g.email) || []);
-    };
-    fetchGuests();
-  }, [weddingId]);
+    // only keep guests with emails
+    setGuests(queryGuests.filter(g => !!g.email) || []);
+  }, [queryGuests]);
+
+  if (loading) {
+    return <div className="p-4 text-center text-sm text-mid-gray animate-pulse">Loading recipients...</div>;
+  }
+
 
   const filteredGuests = guests.filter(g => {
     if (filter === 'ALL') return true;
