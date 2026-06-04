@@ -1,7 +1,6 @@
 'use client';
 
 import { useSeating } from '@/lib/hooks/useSeating';
-import { useGuests } from '@/lib/hooks/useGuests';
 import SeatingCanvas from '@/components/features/seating/SeatingCanvas';
 import { Download } from 'lucide-react';
 import { exportSeatingPlan } from '@/lib/actions/seating';
@@ -9,8 +8,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { toast } from 'sonner';
 
 export default function SeatingPage() {
-  const { tables, guests: seatingGuests, loading: seatingLoading, addTable, updateTable, deleteTable, assignPartyToTable } = useSeating();
-  const { guests: listGuests, loading: listLoading } = useGuests();
+  const { tables, guests, loading, addTable, updateTable, deleteTable, assignPartyToTable } = useSeating();
   const { weddingId } = useAuth();
 
   const handleExport = async () => {
@@ -25,13 +23,12 @@ export default function SeatingPage() {
     }
   };
 
-  if (seatingLoading || listLoading) {
+  if (loading) {
     return <div className="p-8 animate-pulse text-sage font-medium text-lg">Loading seating chart...</div>;
   }
 
-  // Use listGuests for seating if it has the correct list, or analyze discrepancy
-  const activeGuests = seatingGuests.filter(g => g.rsvpStatus === 'CONFIRMED');
-  const partyMap = new Map<string, typeof seatingGuests>();
+  const activeGuests = guests.filter(g => g.rsvpStatus === 'CONFIRMED');
+  const partyMap = new Map<string, typeof guests>();
   activeGuests.forEach(g => {
     const partyId = g.primaryGuestId || g.id;
     if (!partyMap.has(partyId)) partyMap.set(partyId, []);
@@ -51,44 +48,8 @@ export default function SeatingPage() {
     }
   });
 
-  // Discrepancy analysis
-  const confirmedSeating = seatingGuests.filter(g => g.rsvpStatus === 'CONFIRMED');
-  const confirmedList = listGuests.filter(g => g.rsvpStatus === 'CONFIRMED');
-  
-  const seatingIds = new Set(confirmedSeating.map(g => g.id));
-  const listIds = new Set(confirmedList.map(g => g.id));
-  
-  const missingInSeating = confirmedList.filter(g => !seatingIds.has(g.id));
-  const extraInSeating = confirmedSeating.filter(g => !listIds.has(g.id));
-
   return (
     <div className="flex flex-col">
-      {/* Discrepancy Banner */}
-      {(missingInSeating.length > 0 || extraInSeating.length > 0 || confirmedSeating.length !== confirmedList.length) && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-xl">
-          <div className="flex">
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">
-                Seating Chart Data Discrepancy Detected!
-              </h3>
-              <div className="mt-2 text-sm text-red-700">
-                <p>useSeating Confirmed: {confirmedSeating.length} | useGuests Confirmed: {confirmedList.length}</p>
-                {missingInSeating.length > 0 && (
-                  <p className="mt-1">
-                    Missing in useSeating ({missingInSeating.length}): {missingInSeating.map(g => `${g.firstName} ${g.lastName || ''} (ID: ${g.id})`).join(', ')}
-                  </p>
-                )}
-                {extraInSeating.length > 0 && (
-                  <p className="mt-1">
-                    Extra in useSeating ({extraInSeating.length}): {extraInSeating.map(g => `${g.firstName} ${g.lastName || ''} (ID: ${g.id})`).join(', ')}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="flex flex-col md:flex-row md:justify-between md:items-end mb-6 flex-shrink-0 gap-4">
         <div>
           <h1 className="text-3xl font-display text-sage mb-2">Seating Chart</h1>
@@ -113,7 +74,7 @@ export default function SeatingPage() {
 
       <SeatingCanvas 
         tables={tables}
-        guests={seatingGuests}
+        guests={guests}
         onAddTable={addTable}
         onUpdateTable={updateTable}
         onDeleteTable={deleteTable}
@@ -122,4 +83,3 @@ export default function SeatingPage() {
     </div>
   );
 }
-
