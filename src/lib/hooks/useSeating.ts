@@ -4,20 +4,26 @@ import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../amplify/data/resource';
 import { useAuth } from './useAuth';
+import { useGuests } from './useGuests';
 
 const client = generateClient<Schema>();
 
 export function useSeating() {
   const { weddingId, loading: authLoading } = useAuth();
+  const { guests: queryGuests, loading: guestsLoading } = useGuests();
   
   const [tables, setTables] = useState<Schema['SeatingTable']['type'][]>([]);
   const [guests, setGuests] = useState<Schema['Guest']['type'][]>([]);
-  const [loading, setLoading] = useState(true);
+  const [tablesLoading, setTablesLoading] = useState(true);
+
+  useEffect(() => {
+    setGuests(queryGuests);
+  }, [queryGuests]);
 
   useEffect(() => {
     if (authLoading) return;
     if (!weddingId) {
-      setLoading(false);
+      setTablesLoading(false);
       return;
     }
 
@@ -26,25 +32,22 @@ export function useSeating() {
     }).subscribe({
       next: ({ items }) => {
         setTables(items);
+        setTablesLoading(false);
       },
-      error: (err) => console.error(err)
-    });
-    
-    const subGuests = client.models.Guest.observeQuery({
-      filter: { weddingId: { eq: weddingId } }
-    }).subscribe({
-      next: ({ items }) => {
-        setGuests(items);
-        setLoading(false);
-      },
-      error: (err) => console.error(err)
+      error: (err) => {
+        console.error(err);
+        setTablesLoading(false);
+      }
     });
 
     return () => {
       subTables.unsubscribe();
-      subGuests.unsubscribe();
     };
   }, [weddingId, authLoading]);
+
+  const loading = authLoading || tablesLoading || guestsLoading;
+
+
 
   const addTable = async (table: Omit<Schema['SeatingTable']['type'], 'id' | 'createdAt' | 'updatedAt' | 'weddingId'>) => {
     if (!weddingId) return;
