@@ -189,5 +189,41 @@ When guests send cash gifts via Stripe, transaction fees (typically 2.9% + $0.30
   * Give guests the option to check a box during Stripe checkout: *"Cover the credit card transaction fees ($X.XX) so the couple receives 100% of my gift."*
   * If checked, the payment intent adds the fee to the guest's checkout total.
 
+---
+
+## 17. Multi-Language & Localization Support (AI Translation)
+Weddings often bring together multi-cultural families from different parts of the world. A global wedding website must cater to this natively.
+
+* **Dynamic AI Website Translation**:
+  * Allow couples to enable secondary languages (e.g. Spanish, French, Chinese).
+  * Use AI translation to automatically translate all couple-written text (our story, FAQs, schedule descriptions, registry guidelines) when the guest toggles the language on the public page.
+* **Localized RSVP Questions**:
+  * Auto-translate RSVP buttons, prompts, custom questions, and confirmations depending on the guest's browser locale or manually chosen language.
+
+---
+
+## 18. Printed Keepsakes (Memory Books & Guestbook Printables)
+Capitalize on the photos and comments gathered by the app to create physical, high-margin commemorative items.
+
+* **Automated Printed Guestbook**:
+  * Allow couples to export the digital guestbook entries, messages, and uploaded guest photos into a beautiful, print-ready layout.
+  * Partner with print-on-demand book publishers (e.g., Blurb, Shutterfly) so couples can order a physical, linen-bound coffee table guestbook with one click.
+* **Collaborative Photo Album Creator**:
+  * Aggregate all high-resolution guest photo uploads (from the live reception feed) and official photographer uploads.
+  * Compile a draft printed photo album where pages are pre-arranged chronologically or grouped by wedding events.
+
+---
+
+## 19. Smart Travel & Hotel Block Optimizations
+Coordinate travel logistics for out-of-town guests automatically.
+
+* **Out-of-Town Guest Heatmap**:
+  * Group guests by zip code/city from their collected physical addresses.
+  * Provide the couple with a heatmap showing where groups of guests are traveling from to negotiate optimal flight/group rates.
+* **Hotel Block Broker Integrations**:
+  * Integrate with group travel APIs (e.g., HotelPlanner, Kleinfeld Hotel Blocks) to help couples set up hotel blocks near the venue.
+  * Automatically display real-time availability and booking links directly on the public travel page (`/w/[slug]/travel`), tracking who has booked.
+
+
 
 
