@@ -117,3 +117,42 @@ Because the platform collects sensitive personal information (emails, addresses,
   * Build an automated "Opt-Out" workflow in email and SMS campaigns.
 * **Granular Data Encryption**: Encrypt sensitive guest address fields and dietary notes at rest to ensure client security.
 
+---
+
+## 11. Post-Event Workflows & Retention (Thank-You Cards & Anniversaries)
+The user lifecycle shouldn't end when the wedding ceremony is over. Premium platforms help transition the relationship post-event.
+
+* **Automated Thank-You Card Writer**:
+  * Sync the guest list and the registry database (Stripe/Affiliates) into a "Thank-You Checklist".
+  * Automatically cross-reference who sent which gift (e.g., *"John Doe sent a $100 contribution to the honeymoon flights"*).
+  * Use AI to draft a personalized thank-you note referencing the exact gift.
+  * Allow printing and shipping physical cards directly from the portal, matching the theme of their invitations.
+* **Anniversary Reminders & Legacy Pages**:
+  * Transition the wedding website into an "Anniversary & Legacy Page" (archiving photos, guest wishes, and wedding details).
+  * Send yearly notifications with recommendations for anniversary gifts, travel getaways, or local date ideas.
+
+---
+
+## 12. Group Gifting & Registry Gift Tracking
+To accommodate large-ticket registry items, guests need collaborative ways to buy gifts.
+
+* **Group Gifting (Crowdfunding)**:
+  * Allow couples to tag expensive items (e.g. a $1,500 espresso machine or a $3,000 honeymoon fund) for Group Gifting.
+  * Guests can contribute partial amounts (e.g., $50, $100) toward the target price, with progress bars showing remaining goals.
+* **Registry Gift Tracker Dashboard**:
+  * A comprehensive dashboard for the couple tracking which gifts were purchased, who bought them, and when they were delivered.
+  * Integrate thank-you card templates directly next to each completed transaction.
+
+---
+
+## 13. Day-of Live Timelines & Seating Previews
+Help guests navigate the wedding day smoothly by turning the static website layout into a dynamic, real-time app.
+
+* **Live Schedule/Run Sheet updates**:
+  * If the wedding schedule gets delayed or shifts (e.g. dinner is delayed 20 minutes), the couple or planner can push an update.
+  * The public wedding website/guest portal schedule shifts in real-time, accompanied by SMS/Push notifications.
+* **Public Floor Plan & Seating Previews**:
+  * Allow guests to view the floor plan and search for their seats on their mobile phones when they arrive at the venue.
+  * Map guests' table placements so they can easily find their table location in a large ballroom.
+
+
