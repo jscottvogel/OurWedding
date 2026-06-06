@@ -139,3 +139,19 @@ export async function POST(req: Request) {
   return NextResponse.json({ received: true });
 }
 ```
+
+---
+
+## 6. Post-Event Legacy Subscription Tier (Anniversary Tier)
+After the wedding date passes, the premium features (like custom domain, hosting, and media galleries) transition to a low-cost, long-term maintenance tier.
+
+### Billing Logic & Flows
+1. **Automated Transition Alert**:
+   * Approximately 14 to 30 days post-wedding, couples receive an automated email notification regarding site archiving.
+   * Couples are given the option to downgrade to the free tier (read-only basic layout, custom domain disabled) or transition to the **Anniversary/Legacy Tier**.
+2. **Pricing Structure**:
+   * The Anniversary Tier is priced to cover baseline S3 storage and CloudFront delivery costs, set at a minimal rate (e.g., **$1.00 to $2.00 per month**, or **$12.00 per year**).
+3. **Stripe Subscription Update**:
+   * The backend triggers a Stripe subscription update (`stripe.subscriptions.update`) changing the pricing plan ID from the active premium plan (e.g. $9.99/mo) to the legacy plan ID (e.g. $1.00/mo).
+   * Webhook checks (`customer.subscription.updated`) sync this status to the `subscriptionStatus` and `premiumTierEnabled` fields on the `Wedding` model, keeping media hosting active.
+

@@ -129,6 +129,7 @@ The user lifecycle shouldn't end when the wedding ceremony is over. Premium plat
   * Allow printing and shipping physical cards directly from the portal, matching the theme of their invitations.
 * **Anniversary Reminders & Legacy Pages**:
   * Transition the wedding website into an "Anniversary & Legacy Page" (archiving photos, guest wishes, and wedding details).
+  * **Anniversary Pricing Tier**: Downgrade the active subscription plan to a low-cost legacy maintenance tier (set at **$1.00 to $2.00 per month** or **$12.00 per year**) to keep the custom domains, media storage, and online galleries active while strictly covering server/storage overhead.
   * Send yearly notifications with recommendations for anniversary gifts, travel getaways, or local date ideas.
 
 ---
