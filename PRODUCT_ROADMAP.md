@@ -268,6 +268,39 @@ Simplify photo sharing and downloads for hundreds of wedding guests.
 * **Automatic Time & Metadata Sync**:
   * Auto-align guest phone snapshots with professional photographer photos based on time and location metadata to create a synchronized, multi-perspective timeline of the wedding day.
 
+---
+
+## 24. Augmented Reality (AR) Guest Experiences
+Bridge the gap between print and digital using immersive WebAR (Web-based Augmented Reality) that requires no app store downloads.
+
+* **Interactive AR Table Centerpieces**:
+  * Pointing a mobile camera at printed table place cards or signs overlays virtual photo/video galleries of the couple, 3D animated timelines of their relationship, or seating-based ice-breaker quizzes.
+* **AR Venue Wayfinding**:
+  * Guest portals can offer AR-based camera guides helping guests find critical locations (e.g. restrooms, photo booth, buffet line, exits) directly via visual arrows overlaid on their phone screens.
+
+---
+
+## 25. AI Video Highlight Reel Compilation (Crowdsourced Footage)
+Instead of waiting weeks for professional videography, couples can generate instant video recaps compiled from guest cell phone clips.
+
+* **Automated Highlight Reels**:
+  * Leverage AI models to scan, grade, and filter uploaded guest video clips.
+  * Auto-compile these clips into a synced, multi-angle highlights video timed to the couple's wedding song.
+* **Smart Audio Stabilization**:
+  * Identify and isolate key audio tracks (e.g. the couple's vows, toasts) from multiple guest video angles and sync them with clean ambient tracks.
+
+---
+
+## 26. Carbon-Neutral Wedding Registry (Sustainability Integration)
+Cater to the growing market demand for sustainable and eco-conscious weddings.
+
+* **Travel Carbon Footprint Calculator**:
+  * Auto-estimate the carbon footprint of the guest list based on their travel locations (e.g. flight distance, road trips).
+* **Carbon-Offset Gifting Registry**:
+  * Integrate offset partner programs directly into the Stripe cash registry options.
+  * Let guests sponsor certified climate offsets (tree planting, renewable energy investments) to make the wedding 100% carbon-neutral.
+
+
 
 
 
