@@ -288,20 +288,3 @@ Instead of waiting weeks for professional videography, couples can generate inst
   * Auto-compile these clips into a synced, multi-angle highlights video timed to the couple's wedding song.
 * **Smart Audio Stabilization**:
   * Identify and isolate key audio tracks (e.g. the couple's vows, toasts) from multiple guest video angles and sync them with clean ambient tracks.
-
----
-
-## 26. Carbon-Neutral Wedding Registry (Sustainability Integration)
-Cater to the growing market demand for sustainable and eco-conscious weddings.
-
-* **Travel Carbon Footprint Calculator**:
-  * Auto-estimate the carbon footprint of the guest list based on their travel locations (e.g. flight distance, road trips).
-* **Carbon-Offset Gifting Registry**:
-  * Integrate offset partner programs directly into the Stripe cash registry options.
-  * Let guests sponsor certified climate offsets (tree planting, renewable energy investments) to make the wedding 100% carbon-neutral.
-
-
-
-
-
-
