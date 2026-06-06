@@ -156,4 +156,38 @@ Help guests navigate the wedding day smoothly by turning the static website layo
   * Allow guests to view the floor plan and search for their seats on their mobile phones when they arrive at the venue.
   * Map guests' table placements so they can easily find their table location in a large ballroom.
 
+---
+
+## 14. Virtual Attendance & Live Stream Integration
+For remote guests who cannot travel, a world-class platform offers a seamless way to participate in the ceremony live.
+
+* **Embedded Live Stream Player**:
+  * Support embedding YouTube Live, Vimeo, Zoom, or custom RTMP feeds directly onto the public site homepage or a designated `/live` tab.
+* **Virtual Guestbook & Interactive Chat**:
+  * Provide a real-time chat window alongside the video player so virtual guests can congratulate the couple and chat with other remote attendees.
+  * Log the virtual chat messages automatically into the couple’s Digital Guestbook.
+
+---
+
+## 15. AI Speech & Toast Assistant (Viral Engagement Tool)
+To drive high engagement among the bridal party and close friends, the app can offer writing help tools.
+
+* **AI Toast Writer (Ask Ivy)**:
+  * Best man, maid of honor, or parents can use the tool to draft speeches.
+  * Ivy prompts the user with short, targeted questions (e.g., *"How did you meet the groom?"*, *"What's a funny/favorite memory?"*, *"Describe the bride in three words"*).
+  * Ivy generates a professionally structured, touching, or humorous speech with a timer estimate.
+* **AI Table Ice-breaker Cards**:
+  * Couples can auto-generate customized conversation cards for tables.
+  * Ivy scans guest tags (e.g. "college friends", "campsite group") and prints fun prompts: *"Ask Table 4 how they know the groom from University of Texas, or ask Sarah about the camping trip in 2021."*
+
+---
+
+## 16. Stripe Fee Sponsorship (Registry Fee Transparency)
+When guests send cash gifts via Stripe, transaction fees (typically 2.9% + $0.30) are deducted from the payout. World-class registries offer options to offset this.
+
+* **Guest Fee Sponsorship Toggle**:
+  * Give guests the option to check a box during Stripe checkout: *"Cover the credit card transaction fees ($X.XX) so the couple receives 100% of my gift."*
+  * If checked, the payment intent adds the fee to the guest's checkout total.
+
+
 
