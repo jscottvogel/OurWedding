@@ -67,3 +67,53 @@ A premium app must perform flawlessly on mobile devices, especially on the weddi
 
 * **Offline Functionality**: Store the Run Sheet, guest contact lists, and vendor details locally on the device so it remains accessible in venues with poor signal/Wi-Fi.
 * **Push Notifications**: Send real-time scheduling updates to the bridal party and vendors on the day of the event (e.g., *"Bridal portraits starting in the garden in 5 minutes"*).
+
+---
+
+## 7. Organic Growth Loops & Viral Mechanics
+To lower user acquisition costs (CAC) to near-zero, the app needs built-in referral mechanisms that turn active users' networks into future customers.
+
+* **Guest-to-User Conversion Loop**:
+  * Include subtle, premium "Created with Wedding Steward" signatures in public wedding footers, RSVP completion pages, and email notification templates.
+  * Provide a single-click "Start Planning Your Wedding" banner tailored for engaged guests viewing the website.
+* **Vendor Referral Ecosystem**:
+  * Introduce wedding vendors (venue coordinators, DJs, florists) to the product when they log in to view schedules or layouts.
+  * Offer co-branded portals or premium referrals where vendors can recommend Wedding Steward to their next clients in exchange for priority listing in a local directory.
+
+---
+
+## 8. Physical-to-Digital Bridge (Paper Goods & Logistics)
+A world-class app bridges the gap between digital planning and physical coordination.
+
+* **Address Collection Campaigns**:
+  * Provide a simple "Address Collector" tool where couples can generate a personal link and text it to guests.
+  * Guests enter their physical addresses, which instantly populate the guest database.
+* **Physical Invitation Integration**:
+  * Partner with a printing service (e.g., Printful, Lob) to allow couples to design their Save-the-Dates and invitations in the app.
+  * Automate printing, envelope addressing (using the guest list database), stamping, and direct mailing.
+* **Place-card & Seating Printables**:
+  * Auto-generate print-ready PDFs for dinner table place-cards based on table assignments.
+  * Include markers on place-cards reflecting guest meal choices (e.g., a small cow icon for beef, fish for seafood) for waitstaff convenience.
+
+---
+
+## 9. Monetization Channels & Affiliate Registries
+Beyond premium subscription tiers, the app can generate substantial passive income through affiliate and commission partnerships.
+
+* **Retail Registry Integrations**:
+  * Integrate affiliate links for major registries (e.g., Amazon, Target, Wayfair, Crate & Barrel).
+  * Earn 3–8% commission on gift purchases made through the wedding website registry links.
+* **Curated Vendor Marketplace**:
+  * Create a local marketplace where couples can search and book planners, photographers, and caterers.
+  * Charge vendors a directory listing fee or take a booking finder's fee on contracts initiated through the platform.
+
+---
+
+## 10. Privacy, Compliance & Security Polish
+Because the platform collects sensitive personal information (emails, addresses, phone numbers, and child guest counts), it must adhere to world-class security standards.
+
+* **GDPR & CCPA Compliance**:
+  * Allow guests to request deletion of their personal information (right to be forgotten).
+  * Build an automated "Opt-Out" workflow in email and SMS campaigns.
+* **Granular Data Encryption**: Encrypt sensitive guest address fields and dietary notes at rest to ensure client security.
+
