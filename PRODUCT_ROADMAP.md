@@ -224,6 +224,51 @@ Coordinate travel logistics for out-of-town guests automatically.
   * Integrate with group travel APIs (e.g., HotelPlanner, Kleinfeld Hotel Blocks) to help couples set up hotel blocks near the venue.
   * Automatically display real-time availability and booking links directly on the public travel page (`/w/[slug]/travel`), tracking who has booked.
 
+---
+
+## 20. Smart Place Cards with QR/NFC Service Codes
+Improve day-of catering accuracy and guest services using smart paper goods.
+
+* **Scan-to-Serve QR/NFC Place Cards**:
+  * Include a small, elegant QR code or embedded NFC chip on each guest's printed table place card.
+  * Waiters scan the code to instantly see the guest's specific meal choice, drink preferences, and allergies without disrupting conversations.
+* **On-Demand Table Services**:
+  * Let guests scan their table card to call the service staff (e.g. *"Request more water"* or *"Request wine bottle refill"*), sending notifications to the coordinator/venue dashboard.
+
+---
+
+## 21. Collaborative Vendor Run Sheet Checklist
+Provide real-time logistics tracking for coordination teams and vendors.
+
+* **Live Vendor Progress Feeds**:
+  * Give vendors (caterers, florists, photographers) their own checklist tied to the master **Run Sheet**.
+  * Vendors tick off setup milestones (e.g., *"Florals installed"*, *"Catering tables prepped"*, *"Photographer arrived"*).
+  * Updates feed in real-time to the wedding planner and couple's dashboards, eliminating frantic walkie-talkie checks.
+* **Geofenced Vendor Check-ins**:
+  * Automatically mark vendor arrival times based on mobile device GPS when they enter the venue perimeter, confirming attendance.
+
+---
+
+## 22. Legacy Anniversaries & Baby Registry Transitions
+Maximize customer lifetime value (LTV) by transitioning the app for major post-wedding family milestones.
+
+* **Registry Lifecycle Extension**:
+  * Instead of shutting down the registry after the wedding, let couples transition the registry for future milestones (e.g., housewarmings, first anniversaries, and baby showers).
+* **Memory Timeline Updates**:
+  * Allow couples to keep the website active as a family blog/memory portal where they post annual updates, anniversary photos, and family milestones for their original guest list to follow.
+
+---
+
+## 23. Smart Photo Curation & Guest Face Matching
+Simplify photo sharing and downloads for hundreds of wedding guests.
+
+* **Facial Recognition Photo Matching**:
+  * Integrate an AI face-matching service (e.g., Amazon Rekognition).
+  * Guests upload a selfie to their personal guest portal, and the app instantly filters and displays all guest-uploaded and photographer-uploaded wedding photos that they appear in.
+* **Automatic Time & Metadata Sync**:
+  * Auto-align guest phone snapshots with professional photographer photos based on time and location metadata to create a synchronized, multi-perspective timeline of the wedding day.
+
+
 
 
 
