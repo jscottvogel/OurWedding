@@ -7,6 +7,48 @@ import { generateServerClientUsingCookies } from '@aws-amplify/adapter-nextjs/ap
 import { cookies } from 'next/headers';
 import outputs from '@/../amplify_outputs.json';
 import type { Schema } from '../../../../amplify/data/resource';
+import type { Metadata } from 'next';
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  try {
+    const cookieStore = cookies();
+    const client = generateServerClientUsingCookies<Schema>({
+      config: outputs,
+      cookies: () => cookieStore,
+    });
+    const decodedSlug = decodeURIComponent(params.slug);
+    const { data: configs } = await client.models.WebsiteConfig.listWebsiteConfigBySubdomain(
+      { subdomain: decodedSlug },
+      { authMode: 'apiKey' }
+    );
+    const config = configs[0];
+    if (!config) return { title: 'Wedding Website Not Found', robots: { index: false, follow: false } };
+
+    const title = config.siteTitle || 'Our Wedding';
+    const description = config.metaDescription || `Join us to celebrate — ${title}`;
+    const isPrivate = !!config.passwordProtected || config.publishStatus === 'DRAFT';
+    return {
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        type: 'website',
+        ...(config.ogImageUrl ? { images: [{ url: config.ogImageUrl }] } : {}),
+      },
+      twitter: {
+        card: config.ogImageUrl ? 'summary_large_image' : 'summary',
+        title,
+        description,
+        ...(config.ogImageUrl ? { images: [config.ogImageUrl] } : {}),
+      },
+      robots: isPrivate ? { index: false, follow: false } : { index: true, follow: true },
+    };
+  } catch (err) {
+    console.error('generateMetadata failed for wedding site', err);
+    return { title: 'Our Wedding' };
+  }
+}
 
 export default async function PublicSitePage({ params }: { params: { slug: string } }) {
   const cookieStore = cookies();
@@ -16,15 +58,10 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
   });
 
   const decodedSlug = decodeURIComponent(params.slug);
-  const { data: configs } = await client.models.WebsiteConfig.list({
-    filter: { 
-      or: [
-        { subdomain: { eq: decodedSlug } },
-        { customDomain: { contains: decodedSlug } }
-      ]
-    },
-    authMode: 'apiKey'
-  });
+  const { data: configs } = await client.models.WebsiteConfig.listWebsiteConfigBySubdomain(
+    { subdomain: decodedSlug },
+    { authMode: 'apiKey' }
+  );
 
   const config = configs[0];
   
@@ -38,16 +75,15 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
 
   const weddingId = config.weddingId;
 
+  // Guest and Vendor records are owner-only; the public site never reads them with the API key.
+  // The venue comes from Wedding.venueName/venueAddress and RSVPs go through /api/rsvp/*.
   const [
     { data: wedding },
     { data: stories },
     { data: events },
     { data: travels },
-    { data: partyMembers },
     { data: registries },
     { data: faqs },
-    { data: guests },
-    { data: vendors },
     { data: gallery },
     { data: guestbookEntries }
   ] = await Promise.all([
@@ -55,18 +91,14 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
     client.models.WebsiteStory.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' }),
     client.models.RunSheetItem.list({ filter: { weddingId: { eq: weddingId }, isPublic: { eq: true } }, authMode: 'apiKey' }),
     client.models.WebsiteTravel.list({ filter: { weddingId: { eq: weddingId }, isVisible: { eq: true } }, authMode: 'apiKey' }),
-    // client.models.WebsitePartyMember.list is deprecated
-    Promise.resolve({ data: [] }),
     client.models.WebsiteRegistry.list({ filter: { weddingId: { eq: weddingId }, isVisible: { eq: true } }, authMode: 'apiKey' }),
     client.models.WebsiteFaq.list({ filter: { weddingId: { eq: weddingId }, isVisible: { eq: true } }, authMode: 'apiKey' }),
-    client.models.Guest.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey', limit: 1000 }),
-    client.models.Vendor.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' }),
     client.models.GalleryUpload.list({ filter: { weddingId: { eq: weddingId }, showOnWebsite: { eq: true } }, authMode: 'apiKey' }),
-    client.models.WebsiteGuestbook.list({ filter: { weddingId: { eq: weddingId } }, authMode: 'apiKey' })
+    client.models.WebsiteGuestbook.list({ filter: { weddingId: { eq: weddingId }, isApproved: { eq: true } }, authMode: 'apiKey' })
   ]);
 
   const story = stories[0];
-  const venueVendor = vendors.find(v => v.category?.toLowerCase() === 'venue');
+  const approvedGuestbookEntries = guestbookEntries.filter(e => e.isApproved === true && !e.isDeleted);
 
   const siteTitle = config.siteTitle || (wedding ? `${wedding.coupleName1} & ${wedding.coupleName2}` : 'Our Wedding');
 
@@ -84,17 +116,9 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
     sectionOrder = [...defaultSections];
   }
 
-  const partyTags = config.partyTags || [];
-  const partyGroups = partyTags.map(tag => {
-    return {
-      role: tag,
-      members: guests.filter(g => {
-        if (!g.tags) return false;
-        const guestTags = g.tags.split(',').map(t => t.trim());
-        return guestTags.includes(tag);
-      })
-    };
-  }).filter(group => group.members.length > 0);
+  // Wedding-party groups were derived from Guest tags, which are no longer publicly readable.
+  // The section renders nothing when empty; a public party-member model would be needed to restore it.
+  const partyGroups: { role: string; members: Schema['Guest']['type'][] }[] = [];
 
   return (
     <PublicSiteLayout 
@@ -107,16 +131,16 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
       {sectionOrder.map(section => {
         if (!enabledSections.has(section)) return null;
         switch (section) {
-          case 'hero': return <HeroSection key={section} wedding={wedding} venueVendor={venueVendor} />;
+          case 'hero': return <HeroSection key={section} wedding={wedding} />;
           case 'story': return <OurStorySection key={section} story={story} />;
           case 'events': return <EventsSection key={section} events={events} />;
-          case 'rsvp': return <RsvpSection key={section} slug={params.slug} guests={guests} wedding={wedding} />;
+          case 'rsvp': return <RsvpSection key={section} slug={params.slug} guests={[]} wedding={wedding} />;
           case 'travel': return <TravelSection key={section} travels={travels} />;
           case 'party': return <WeddingPartySection key={section} partyGroups={partyGroups} />;
           case 'gallery': return <GallerySection key={section} photos={gallery} slug={params.slug} />;
           case 'registry': return <RegistrySection key={section} registries={registries} />;
           case 'faq': return <FaqSection key={section} faqs={faqs} />;
-          case 'guestbook': return <GuestbookSection key={section} entries={guestbookEntries} slug={params.slug} />;
+          case 'guestbook': return <GuestbookSection key={section} entries={approvedGuestbookEntries} slug={params.slug} />;
           default: return null;
         }
       })}

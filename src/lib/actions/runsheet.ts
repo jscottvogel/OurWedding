@@ -1,42 +1,55 @@
-'use server';
+import { escapeHtml } from '@/lib/export/download';
 
-import { generateClient } from 'aws-amplify/data';
-import type { Schema } from '../../../amplify/data/resource';
-import { runWithAmplifyServerContext } from '@/lib/amplify/server';
-import { cookies } from 'next/headers';
+export interface RunSheetRow {
+  time?: string | null;
+  title?: string | null;
+  duration?: string;
+  desc?: string | null;
+}
+
+export function formatTime(timeStr?: string | null) {
+  if (!timeStr) return '';
+  const [h, m] = timeStr.split(':');
+  let hours = parseInt(h, 10);
+  if (Number.isNaN(hours)) return escapeHtml(timeStr);
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12 || 12;
+  return `${hours}:${m ?? '00'} ${ampm}`;
+}
+
+/** Build printable, HTML-escaped run-sheet markup. */
+export function buildRunSheetHtml(rows: RunSheetRow[], title = 'Wedding Run Sheet') {
+  const body = rows.map((r) => `
+    <tr>
+      <td class="time">${escapeHtml(formatTime(r.time))}</td>
+      <td class="duration">${escapeHtml(r.duration || '')}</td>
+      <td><div class="title">${escapeHtml(r.title)}</div>${r.desc ? `<div class="desc">${escapeHtml(r.desc)}</div>` : ''}</td>
+    </tr>`).join('');
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:40px;color:#333}
+    h1{color:#58705c;font-size:28px;margin-bottom:24px;border-bottom:2px solid #58705c;padding-bottom:8px}
+    table{width:100%;border-collapse:collapse;margin-top:20px}
+    th,td{padding:12px;text-align:left;border-bottom:1px solid #ddd;vertical-align:top}
+    th{background:#f8f9fa;font-weight:600;color:#444;border-top:1px solid #ddd}
+    tr:nth-child(even){background:#fbfbfb}
+    .time{font-weight:600;white-space:nowrap;width:100px;color:#222}
+    .duration{color:#666;font-size:14px;width:80px}
+    .title{font-weight:500;font-size:16px;color:#111}
+    .desc{color:#666;font-size:14px;margin-top:4px;white-space:pre-wrap}
+    @media print{body{padding:0}@page{margin:1cm}}
+  </style></head><body><h1>${escapeHtml(title)}</h1>
+  <table><thead><tr><th>Time</th><th>Duration</th><th>Event</th></tr></thead><tbody>${body}</tbody></table>
+  </body></html>`;
+}
 
 /**
- * Generates a PDF export of the run-sheet for a specific wedding.
- * 
- * This is a Next.js Server Action (`'use server'`). It safely accesses the AWS Amplify 
- * backend context by injecting server-side cookies, which ensures the operation is 
- * authenticated. It invokes a custom mutation on the backend to trigger a PDF generation 
- * Lambda function.
- *
- * @param weddingId - The unique identifier of the wedding for which to generate the run-sheet.
- * @returns A promise resolving to the URL of the generated PDF file.
- * @throws Will throw an error if the PDF generation fails.
+ * Client-side: open the run sheet in a new window and invoke the print dialog
+ * (users choose "Save as PDF"). Must be called from a user gesture.
  */
-export async function generateRunSheetPDF(weddingId: string) {
-  try {
-    // Call the custom mutation defined in our schema that maps to the pdf-export Lambda
-    const result = await runWithAmplifyServerContext({
-      nextServerContext: { cookies },
-      operation: async (contextSpec) => {
-        // We'd use the server-side client here
-        // const client = generateClient<Schema>();
-        // const res = await client.mutations.exportPDF(contextSpec, { type: 'run-sheet', weddingId });
-        // return res.data;
-        
-        // Mocking the result for now until backend is fully deployed
-        console.log(`Generating PDF for wedding ${weddingId}`);
-        return `https://example.com/exports/run-sheet-${weddingId}.pdf`;
-      }
-    });
-    
-    return result;
-  } catch (error) {
-    console.error('Error generating PDF:', error);
-    throw new Error('Failed to generate PDF');
-  }
+export function generateRunSheetPDF(rows: RunSheetRow[], title?: string) {
+  const w = window.open('', '_blank');
+  if (!w) throw new Error('Popup blocked');
+  w.document.write(buildRunSheetHtml(rows, title));
+  w.document.close();
+  setTimeout(() => { try { w.focus(); w.print(); } catch { /* window closed */ } }, 300);
 }

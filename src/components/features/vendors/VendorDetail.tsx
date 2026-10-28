@@ -3,6 +3,7 @@
 import { Mail, Phone, Globe, MapPin, FileText, Download, Send, Loader2 } from 'lucide-react';
 import type { Schema } from '../../../../amplify/data/resource';
 import { useState, useRef } from 'react';
+import { sendVendorContractLink } from '@/lib/actions/vendors';
 
 interface VendorDetailProps {
   vendor: Schema['Vendor']['type'];
@@ -33,7 +34,7 @@ export default function VendorDetail({ vendor, onUpdate }: VendorDetailProps) {
       await uploadData({
         path: key,
         data: file
-      });
+      }).result;
 
       await onUpdate({
         contractFileKey: key,
@@ -56,6 +57,20 @@ export default function VendorDetail({ vendor, onUpdate }: VendorDetailProps) {
       window.open(result.url.toString(), '_blank');
     } catch (err) {
       console.error('Failed to get download URL:', err);
+    }
+  };
+
+  const handleSendContract = async () => {
+    if (!vendor.contractFileKey || !vendor.email) return;
+    try {
+      await sendVendorContractLink({
+        email: vendor.email,
+        contractFileKey: vendor.contractFileKey,
+        vendorName: vendor.companyName,
+      });
+    } catch (err) {
+      console.error('Failed to create contract link:', err);
+      alert('Failed to create contract link.');
     }
   };
 
@@ -148,9 +163,16 @@ export default function VendorDetail({ vendor, onUpdate }: VendorDetailProps) {
                 {vendor.contractFileKey.split('/').pop()?.split('-').slice(1).join('-') || 'Contract Document'}
               </span>
             </div>
-            <button onClick={handleDownloadContract} className="p-2 text-mid-gray hover:text-sage">
-              <Download className="w-5 h-5" />
-            </button>
+            <div className="flex items-center">
+              {vendor.email && (
+                <button onClick={handleSendContract} className="p-2 text-mid-gray hover:text-sage" title="Email contract link to vendor" aria-label="Email contract link to vendor">
+                  <Send className="w-5 h-5" />
+                </button>
+              )}
+              <button onClick={handleDownloadContract} className="p-2 text-mid-gray hover:text-sage" title="Download contract" aria-label="Download contract">
+                <Download className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         )}
       </div>

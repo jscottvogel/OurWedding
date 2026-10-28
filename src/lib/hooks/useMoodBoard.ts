@@ -5,6 +5,7 @@ import { generateClient } from 'aws-amplify/data';
 import { getUrl, remove } from 'aws-amplify/storage';
 import type { Schema } from '../../../amplify/data/resource';
 import { useAuth } from './useAuth';
+import { getWeddingOwners } from '../amplify/weddingOwners';
 
 const client = generateClient<Schema>();
 
@@ -37,7 +38,8 @@ export function useMoodBoard() {
           const { data: newBoard } = await client.models.MoodBoard.create({
             weddingId,
             title: 'Our Mood Board',
-            shareToken: null
+            shareToken: null,
+            owners: await getWeddingOwners(weddingId)
           });
           currentBoard = newBoard as any;
         }
@@ -92,7 +94,8 @@ export function useMoodBoard() {
     if (!boardId) return;
     await client.models.MoodPin.create({
       ...item,
-      moodBoardId: boardId
+      moodBoardId: boardId,
+      ...(weddingId ? { owners: await getWeddingOwners(weddingId) } : {})
     });
   };
 

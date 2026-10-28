@@ -7,6 +7,7 @@ import { LogOut, User, Key, Shield, Users, RefreshCw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../../amplify/data/resource';
+import { getWeddingOwners } from '@/lib/amplify/weddingOwners';
 
 const client = generateClient<Schema>();
 import { seedDemoData, clearDemoData } from '@/lib/utils/seedDemoData';
@@ -103,7 +104,8 @@ export default function SettingsPage() {
       await client.models.WeddingMember.create({
         profileId: `INVITE_${inviteEmail}`,
         role: inviteRole as any,
-        weddingId: weddingId
+        weddingId: weddingId,
+        owners: await getWeddingOwners(weddingId)
       });
       
       setInviteSuccess(true);

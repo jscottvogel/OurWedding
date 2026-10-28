@@ -8,6 +8,8 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { Tag, Plus, Trash2, X, Lock, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { getWeddingOwners } from '@/lib/amplify/weddingOwners';
+
 const client = generateClient<Schema>();
 
 export default function GuestTagManager({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
@@ -60,7 +62,8 @@ export default function GuestTagManager({ isOpen, onClose }: { isOpen: boolean, 
       await client.models.GuestTag.create({
         weddingId,
         name: newTagName.trim(),
-        isPublic
+        isPublic,
+        owners: await getWeddingOwners(weddingId)
       });
       setNewTagName('');
       setIsPublic(false);
@@ -80,12 +83,14 @@ export default function GuestTagManager({ isOpen, onClose }: { isOpen: boolean, 
   };
 
   const handleTogglePublic = async (tag: Schema['GuestTag']['type']) => {
+    if (!weddingId) return;
     try {
       if (tag.id.startsWith('system-')) {
         await client.models.GuestTag.create({
           weddingId,
           name: tag.name,
-          isPublic: !tag.isPublic
+          isPublic: !tag.isPublic,
+          owners: await getWeddingOwners(weddingId)
         });
       } else {
         await client.models.GuestTag.update({

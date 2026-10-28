@@ -13,6 +13,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { toast } from 'sonner';
 import GuestTagManager from '@/components/features/guests/GuestTagManager';
 import { Tag } from 'lucide-react';
+import { exportGuestListToCsv } from '@/lib/actions/guests';
 
 export default function GuestsPage() {
   const { guests, loading, addGuest, updateGuest, deleteGuest } = useGuests();
@@ -47,24 +48,7 @@ export default function GuestsPage() {
   const handleExport = () => {
     if (!weddingId || guests.length === 0) return;
     try {
-      const headers = ['First Name', 'Last Name', 'Email', 'RSVP Status', 'Notes', 'Tag'];
-      const rows = guests.map(g => [
-        `"${(g.firstName || '').replace(/"/g, '""')}"`,
-        `"${(g.lastName || '').replace(/"/g, '""')}"`,
-        `"${(g.email || '').replace(/"/g, '""')}"`,
-        `"${g.rsvpStatus || 'PENDING'}"`,
-        `"${(g.notes || '').replace(/"/g, '""')}"`,
-        `"${(g.tags || '').replace(/"/g, '""')}"`
-      ]);
-      const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'wedding_guests.csv');
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      exportGuestListToCsv(guests);
     } catch (e) {
       toast.error('Failed to export guest list');
     }

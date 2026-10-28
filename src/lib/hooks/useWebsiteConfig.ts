@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../amplify/data/resource';
 import { useAuth } from './useAuth';
+import { getWeddingOwners } from '../amplify/weddingOwners';
 import { DEFAULT_SECTION_ORDER, THEME_PRESETS } from '../website-defaults';
 
 const client = generateClient<Schema>();
@@ -55,7 +56,8 @@ export function useWebsiteConfig() {
         buttonStyle: 'ROUNDED',
         sectionOrder: JSON.stringify(DEFAULT_SECTION_ORDER),
         enabledSections: JSON.stringify(['hero', 'story', 'events', 'rsvp']),
-        viewCount: 0
+        viewCount: 0,
+        owners: await getWeddingOwners(wId)
       });
     } catch (e) {
       console.error('Failed to create initial website config', e);

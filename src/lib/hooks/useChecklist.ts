@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../amplify/data/resource';
 import { useAuth } from './useAuth';
+import { getWeddingOwners } from '../amplify/weddingOwners';
 
 const client = generateClient<Schema>();
 
@@ -39,7 +40,8 @@ export function useChecklist() {
     if (!weddingId) return;
     const { data } = await client.models.ChecklistItem.create({
       ...task,
-      weddingId
+      weddingId,
+      owners: await getWeddingOwners(weddingId)
     });
     if (data) {
       setTasks(prev => [...prev, data].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0)));

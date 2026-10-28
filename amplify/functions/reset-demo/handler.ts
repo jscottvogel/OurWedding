@@ -7,6 +7,10 @@ const docClient = DynamoDBDocumentClient.from(ddbClient);
 
 const DEMO_WEDDING_ID = 'demo-wedding-123';
 
+// Cognito sub of the demo account. Every demo record is owned only by this user, so the demo
+// login can never see or change real customers' data. Set via `npx ampx sandbox secret set DEMO_USER_SUB`.
+const DEMO_OWNERS = process.env.DEMO_USER_SUB ? [process.env.DEMO_USER_SUB] : [];
+
 export const handler = async () => {
   console.log('Resetting Demo Data...');
 
@@ -47,10 +51,20 @@ export const handler = async () => {
   console.log('Old demo data cleared.');
 
   const existingWedding = await docClient.send(new GetCommand({ TableName: TABLE_WEDDING, Key: { id: DEMO_WEDDING_ID } }));
-  if (!existingWedding.Item) {
+  if (existingWedding.Item) {
+    // Reset membership so the demo wedding is only ever owned by the demo account.
+    await docClient.send(new PutCommand({
+      TableName: TABLE_WEDDING,
+      Item: { ...existingWedding.Item, owners: DEMO_OWNERS, readers: [], updatedAt: new Date().toISOString() },
+    }));
+  } else {
     await docClient.send(new PutCommand({
       TableName: TABLE_WEDDING,
       Item: {
+        __typename: 'Wedding',
+        owners: DEMO_OWNERS,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         id: DEMO_WEDDING_ID,
         slug: 'emily-and-michael',
         coupleName1: 'Emily',
@@ -73,7 +87,7 @@ export const handler = async () => {
     for (const item of items) {
       await docClient.send(new PutCommand({
         TableName: tableName,
-        Item: { ...item, id: randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+        Item: { ...item, owners: DEMO_OWNERS, id: randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
       }));
     }
   };

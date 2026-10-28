@@ -9,6 +9,8 @@ import type { Schema } from '../../../../../amplify/data/resource';
 import { Trash2, Plus, ExternalLink, Loader2, Image as ImageIcon } from 'lucide-react';
 import { uploadData } from 'aws-amplify/storage';
 
+import { getWeddingOwners } from '@/lib/amplify/weddingOwners';
+
 const client = generateClient<Schema>();
 
 export function WebsiteEditorPanel({ section }: { section: string }) {
@@ -104,7 +106,7 @@ function OurStoryEditor({ weddingId, story }: { weddingId: string, story: Schema
       if (story?.id) {
         await client.models.WebsiteStory.update({ id: story.id, coupleStory: content, storyImageKey: imageKey });
       } else {
-        await client.models.WebsiteStory.create({ weddingId, coupleStory: content, storyImageKey: imageKey });
+        await client.models.WebsiteStory.create({ weddingId, coupleStory: content, storyImageKey: imageKey, owners: await getWeddingOwners(weddingId) });
       }
     } catch (err) {
       console.error(err);
@@ -184,7 +186,7 @@ function TravelEditor({ weddingId, items }: { weddingId: string, items: Schema['
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) return;
-    await client.models.WebsiteTravel.create({ weddingId, hotelName: name, address, bookingUrl: url, isVisible: true });
+    await client.models.WebsiteTravel.create({ weddingId, hotelName: name, address, bookingUrl: url, isVisible: true, owners: await getWeddingOwners(weddingId) });
     setName(''); setAddress(''); setUrl('');
   };
 
@@ -220,7 +222,7 @@ import { SYSTEM_TAGS } from '@/lib/constants/tags';
 
 function PartyEditor({ weddingId, config, updateConfig }: { weddingId: string, config: Schema['WebsiteConfig']['type'], updateConfig: (updates: any) => Promise<void> }) {
   const [availableTags, setAvailableTags] = useState<string[]>(SYSTEM_TAGS);
-  const [selectedTags, setSelectedTags] = useState<string[]>(config.partyTags || []);
+  const [selectedTags, setSelectedTags] = useState<string[]>(() => (config.partyTags || []).filter((t): t is string => !!t));
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -238,7 +240,7 @@ function PartyEditor({ weddingId, config, updateConfig }: { weddingId: string, c
 
   // Sync with config if it changes
   useEffect(() => {
-    setSelectedTags(config.partyTags || []);
+    setSelectedTags((config.partyTags || []).filter((t): t is string => !!t));
   }, [config.partyTags]);
 
   const toggleTag = (tag: string) => {
@@ -354,7 +356,7 @@ function RegistryEditor({ weddingId, items }: { weddingId: string, items: Schema
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !url) return;
-    await client.models.WebsiteRegistry.create({ weddingId, registryName: name, registryUrl: url, imageKey, isVisible: true });
+    await client.models.WebsiteRegistry.create({ weddingId, registryName: name, registryUrl: url, imageKey, isVisible: true, owners: await getWeddingOwners(weddingId) });
     setName(''); setUrl(''); setImageKey(null);
   };
 
@@ -489,7 +491,7 @@ function FaqEditor({ weddingId, items: initialItems }: { weddingId: string, item
     e.preventDefault();
     if (!q || !a) return;
     try {
-      const res = await client.models.WebsiteFaq.create({ weddingId, question: q, answer: a, category: 'GENERAL', isVisible: true });
+      const res = await client.models.WebsiteFaq.create({ weddingId, question: q, answer: a, category: 'GENERAL', isVisible: true, owners: await getWeddingOwners(weddingId) });
       if (res.errors) {
         console.error('Failed to create FAQ:', res.errors);
         alert('Error adding FAQ: ' + res.errors[0].message);

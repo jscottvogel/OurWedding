@@ -9,17 +9,19 @@ export default function DemoLoginButton() {
   const router = useRouter();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
+  if (process.env.NEXT_PUBLIC_DEMO_ENABLED !== 'true') return null;
+
   const handleDemoLogin = async () => {
     setIsLoggingIn(true);
     try {
       toast.info('Logging into Demo Account...');
+      const res = await fetch('/api/demo/login', { method: 'POST' });
+      if (!res.ok) throw new Error('Demo is currently unavailable');
+      const { username, password } = await res.json();
       try { await signOut(); } catch (e) { /* ignore */ }
-      await signIn({ username: 'demo@weddingsteward.com', password: 'DemoPassword123!' });
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 500);
+      await signIn({ username, password });
+      router.push('/dashboard');
     } catch (e: any) {
-      console.error(e);
       toast.error(`Failed to access demo account: ${e.message || 'Unknown error'}`);
       setIsLoggingIn(false);
     }

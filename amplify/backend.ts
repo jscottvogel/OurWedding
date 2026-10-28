@@ -10,6 +10,7 @@ import { askIvy } from './functions/ask-ivy/resource';
 import { removeUser } from './functions/remove-user/resource';
 import { resetDemo } from './functions/reset-demo/resource';
 import { sendWeddingEmail } from './functions/send-wedding-email/resource';
+import { publicSite } from './functions/public-site/resource';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 
@@ -25,7 +26,12 @@ const backend = defineBackend({
   removeUser,
   resetDemo,
   sendWeddingEmail,
+  publicSite,
 });
+
+const tables = backend.data.resources.tables;
+const tableArns = (names: string[]) =>
+  names.flatMap((n) => [tables[n].tableArn, `${tables[n].tableArn}/index/*`]);
 
 const bucket = backend.storage.resources.bucket as s3.Bucket;
 bucket.addCorsRule({
@@ -59,13 +65,70 @@ backend.sendEmail.resources.lambda.addToRolePolicy(
   new iam.PolicyStatement({
     actions: [
       'cognito-idp:AdminCreateUser',
-      'cognito-idp:AdminAddUserToGroup'
+      'cognito-idp:AdminAddUserToGroup',
+      'cognito-idp:AdminGetUser'
     ],
     resources: [backend.auth.resources.userPool.userPoolArn],
   })
 );
 
 backend.sendEmail.addEnvironment('USER_POOL_ID', backend.auth.resources.userPool.userPoolId);
+
+// inviteUser propagates the invitee's sub into owners/readers of every wedding-scoped record.
+const WEDDING_SCOPED_MODELS = [
+  'WeddingMember', 'Vendor', 'ChecklistItem', 'RunSheetItem', 'GalleryUpload', 'GuestTag', 'Guest',
+  'SeatingTable', 'BudgetItem', 'MoodBoard', 'WebsiteConfig', 'SitePassword', 'WebsiteAnalytics',
+  'WebsiteStory', 'WebsiteTravel', 'WebsitePartyMember', 'WebsiteRegistry', 'WebsiteFaq',
+  'WebsiteGuestbook', 'EmailCampaign', 'EmailSendRecord',
+];
+const READER_MODELS = ['Vendor', 'RunSheetItem'];
+backend.sendEmail.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    actions: ['dynamodb:GetItem', 'dynamodb:UpdateItem', 'dynamodb:Scan', 'dynamodb:Query'],
+    resources: tableArns(['Wedding', 'MoodPin', ...WEDDING_SCOPED_MODELS]),
+  })
+);
+backend.sendEmail.addEnvironment('TABLE_WEDDING', tables['Wedding'].tableName);
+backend.sendEmail.addEnvironment('TABLE_MOOD_BOARD', tables['MoodBoard'].tableName);
+backend.sendEmail.addEnvironment('TABLE_MOOD_PIN', tables['MoodPin'].tableName);
+backend.sendEmail.addEnvironment('WEDDING_SCOPED_TABLES', WEDDING_SCOPED_MODELS.map((m) => tables[m].tableName).join(','));
+backend.sendEmail.addEnvironment('READER_TABLES', READER_MODELS.map((m) => tables[m].tableName).join(','));
+
+// Public site Lambda: read access to site data, write access only to what guests can submit.
+const PUBLIC_SITE_TABLES: Record<string, string> = {
+  TABLE_WEDDING: 'Wedding',
+  TABLE_WEBSITE_CONFIG: 'WebsiteConfig',
+  TABLE_SITE_PASSWORD: 'SitePassword',
+  TABLE_GUEST: 'Guest',
+  TABLE_GUEST_TAG: 'GuestTag',
+  TABLE_MOOD_BOARD: 'MoodBoard',
+  TABLE_MOOD_PIN: 'MoodPin',
+  TABLE_WEBSITE_ANALYTICS: 'WebsiteAnalytics',
+  TABLE_WEBSITE_GUESTBOOK: 'WebsiteGuestbook',
+  TABLE_GALLERY_UPLOAD: 'GalleryUpload',
+};
+for (const [envName, model] of Object.entries(PUBLIC_SITE_TABLES)) {
+  backend.publicSite.addEnvironment(envName, tables[model].tableName);
+}
+backend.publicSite.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    actions: ['dynamodb:GetItem', 'dynamodb:Query'],
+    resources: tableArns(Object.values(PUBLIC_SITE_TABLES)),
+  })
+);
+backend.publicSite.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    actions: ['dynamodb:PutItem', 'dynamodb:UpdateItem'],
+    resources: ['Guest', 'WebsiteConfig', 'WebsiteAnalytics', 'WebsiteGuestbook', 'GalleryUpload', 'SitePassword']
+      .map((m) => tables[m].tableArn),
+  })
+);
+backend.publicSite.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    actions: ['dynamodb:DeleteItem'],
+    resources: [tables['SitePassword'].tableArn],
+  })
+);
 
 backend.removeUser.resources.lambda.addToRolePolicy(
   new iam.PolicyStatement({

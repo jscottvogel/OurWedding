@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../../../amplify/data/resource';
 import RSVPForm from '@/components/features/guests/RSVPForm';
-import { useGuests } from '@/lib/hooks/useGuests';
 import { Mail } from 'lucide-react';
 
 const client = generateClient<Schema>();
@@ -17,17 +16,12 @@ export default function GuestRSVPPage({ params }: { params: { slug: string } }) 
     const fetchWedding = async () => {
       try {
         const decodedSlug = decodeURIComponent(params.slug);
-        const configResult = await client.models.WebsiteConfig.list({
-          filter: { 
-            or: [
-              { subdomain: { eq: decodedSlug } },
-              { customDomain: { contains: decodedSlug } }
-            ]
-          },
-          authMode: 'apiKey'
-        });
+        const configResult = await client.models.WebsiteConfig.listWebsiteConfigBySubdomain(
+          { subdomain: decodedSlug },
+          { authMode: 'apiKey' }
+        );
         
-        const config = configResult.data[0];
+        const config = configResult.data?.[0];
         if (!config) {
           setLoading(false);
           return;
@@ -48,7 +42,6 @@ export default function GuestRSVPPage({ params }: { params: { slug: string } }) 
     fetchWedding();
   }, [params.slug]);
 
-  const { guests, updateGuest } = useGuests(wedding?.id);
 
   if (loading) {
     return (
@@ -101,8 +94,7 @@ export default function GuestRSVPPage({ params }: { params: { slug: string } }) 
       {/* RSVP Section */}
       <div className="flex-1 -mt-12 px-4 pb-12 relative z-20">
         <RSVPForm 
-          guests={guests} 
-          onUpdate={updateGuest}
+          slug={decodeURIComponent(params.slug)}
           wedding={wedding}
         />
       </div>

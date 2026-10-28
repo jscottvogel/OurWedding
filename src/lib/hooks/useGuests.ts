@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../amplify/data/resource';
 import { useAuth } from './useAuth';
+import { getWeddingOwners } from '../amplify/weddingOwners';
 
 const client = generateClient<Schema>();
 
@@ -22,8 +23,7 @@ export function useGuests(publicWeddingId?: string) {
     }
 
     const sub = client.models.Guest.observeQuery({
-      filter: { weddingId: { eq: weddingId } },
-      limit: 1000
+      filter: { weddingId: { eq: weddingId } }
     }).subscribe({
       next: ({ items }) => {
         setGuests([...items].sort((a, b) => a.firstName.localeCompare(b.firstName)));
@@ -43,7 +43,8 @@ export function useGuests(publicWeddingId?: string) {
     if (!weddingId) return;
     return await client.models.Guest.create({
       ...guest,
-      weddingId
+      weddingId,
+      ...(publicWeddingId ? {} : { owners: await getWeddingOwners(weddingId) })
     }, { authMode: publicWeddingId ? 'apiKey' : undefined });
   };
 

@@ -14,16 +14,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   });
   
   const decodedSlug = decodeURIComponent(params.slug);
-  const { data: configs } = await client.models.WebsiteConfig.list({
-    filter: { 
-      or: [
-        { subdomain: { eq: decodedSlug } },
-        { customDomain: { contains: decodedSlug } }
-      ]
-    },
-    authMode: 'apiKey'
-  });
-  const config = configs[0];
+  const { data: configs } = await client.models.WebsiteConfig.listWebsiteConfigBySubdomain(
+    { subdomain: decodedSlug },
+    { authMode: 'apiKey' }
+  );
+  const config = configs?.[0];
 
   return {
     title: config?.siteTitle || `Wedding of ${params.slug}`,
@@ -45,16 +40,11 @@ export default async function PublicSiteLayout({
   });
 
   const decodedSlug = decodeURIComponent(params.slug);
-  const { data: configs } = await client.models.WebsiteConfig.list({
-    filter: { 
-      or: [
-        { subdomain: { eq: decodedSlug } },
-        { customDomain: { contains: decodedSlug } }
-      ]
-    },
-    authMode: 'apiKey'
-  });
-  const config = configs[0];
+  const { data: configs } = await client.models.WebsiteConfig.listWebsiteConfigBySubdomain(
+    { subdomain: decodedSlug },
+    { authMode: 'apiKey' }
+  );
+  const config = configs?.[0];
 
   const themeConfig = config || {
     primaryColor: '#e8caca',

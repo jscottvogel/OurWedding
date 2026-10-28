@@ -149,6 +149,7 @@ export const GuestbookPDF = ({ weddingName, weddingDate, venueName, heroImageUrl
       {/* Cover Page */}
       <Page size="A4" style={styles.coverPage}>
         {heroImageUrl && (
+          // eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf Image has no alt prop
           <Image src={heroImageUrl} style={styles.coverImage} />
         )}
         <View style={heroImageUrl ? styles.coverContent : styles.coverContentNoImage}>
@@ -167,6 +168,7 @@ export const GuestbookPDF = ({ weddingName, weddingDate, venueName, heroImageUrl
           {entries.map((entry) => (
             <View key={entry.id} style={styles.entryCard} wrap={false}>
               {entry.mediaUrl && (
+                // eslint-disable-next-line jsx-a11y/alt-text -- @react-pdf Image has no alt prop
                 <Image src={entry.mediaUrl} style={styles.entryImage} />
               )}
               {entry.message && (

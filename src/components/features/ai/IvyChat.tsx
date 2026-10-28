@@ -16,6 +16,8 @@ import { generateClient } from 'aws-amplify/data';
 import { uploadData } from 'aws-amplify/storage';
 import type { Schema } from '../../../../amplify/data/resource';
 
+import { getWeddingOwners } from '@/lib/amplify/weddingOwners';
+
 const client = generateClient<Schema>();
 
 interface Message {
@@ -234,20 +236,20 @@ export default function IvyChat() {
             if (website.story) {
               await client.models.WebsiteStory.update({ id: website.story.id, coupleStory: toolCall.input.coupleStory });
             } else if (wedding?.id) {
-              await client.models.WebsiteStory.create({ weddingId: wedding.id, coupleStory: toolCall.input.coupleStory });
+              await client.models.WebsiteStory.create({ weddingId: wedding.id, coupleStory: toolCall.input.coupleStory, owners: await getWeddingOwners(wedding.id) });
             }
             lastActionMessage = "I've updated your story on the website!";
           } else if (toolCall.name === 'add_travel_item') {
-            if (wedding?.id) await client.models.WebsiteTravel.create({ weddingId: wedding.id, hotelName: toolCall.input.hotelName, address: toolCall.input.address, bookingUrl: toolCall.input.bookingUrl, notes: toolCall.input.notes, isVisible: true });
+            if (wedding?.id) await client.models.WebsiteTravel.create({ weddingId: wedding.id, hotelName: toolCall.input.hotelName, address: toolCall.input.address, bookingUrl: toolCall.input.bookingUrl, notes: toolCall.input.notes, isVisible: true, owners: await getWeddingOwners(wedding.id) });
             lastActionMessage = `I've added ${toolCall.input.hotelName} to the travel section!`;
             addedCount++;
 
           } else if (toolCall.name === 'add_registry') {
-            if (wedding?.id) await client.models.WebsiteRegistry.create({ weddingId: wedding.id, registryName: toolCall.input.registryName, registryUrl: toolCall.input.registryUrl, isVisible: true });
+            if (wedding?.id) await client.models.WebsiteRegistry.create({ weddingId: wedding.id, registryName: toolCall.input.registryName, registryUrl: toolCall.input.registryUrl, isVisible: true, owners: await getWeddingOwners(wedding.id) });
             lastActionMessage = `I've added ${toolCall.input.registryName} to your registry!`;
             addedCount++;
           } else if (toolCall.name === 'add_faq') {
-            if (wedding?.id) await client.models.WebsiteFaq.create({ weddingId: wedding.id, question: toolCall.input.question, answer: toolCall.input.answer, category: toolCall.input.category as any, isVisible: true });
+            if (wedding?.id) await client.models.WebsiteFaq.create({ weddingId: wedding.id, question: toolCall.input.question, answer: toolCall.input.answer, category: toolCall.input.category as any, isVisible: true, owners: await getWeddingOwners(wedding.id) });
             lastActionMessage = "I've added that FAQ to your website!";
             addedCount++;
           } else if (toolCall.name === 'delete_travel_item') {

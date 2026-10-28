@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../amplify/data/resource';
 import { useAuth } from './useAuth';
+import { getWeddingOwners } from '../amplify/weddingOwners';
 import { useGuests } from './useGuests';
 
 const client = generateClient<Schema>();
@@ -65,7 +66,8 @@ export function useSeating() {
 
     return await client.models.SeatingTable.create({
       ...table,
-      weddingId
+      weddingId,
+      owners: await getWeddingOwners(weddingId)
     });
   };
 

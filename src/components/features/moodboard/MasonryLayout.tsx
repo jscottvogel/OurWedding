@@ -5,6 +5,9 @@ import { MoodPinItem } from '@/lib/hooks/useMoodBoard';
 import { Trash2, Plus, Image as ImageIcon, Link as LinkIcon, Loader2, X } from 'lucide-react';
 import { uploadData } from 'aws-amplify/storage';
 import { toast } from 'sonner';
+import { importImageFromUrl } from '@/lib/actions/moodboard';
+
+const safeHref = (u?: string | null) => (u && /^https?:\/\//i.test(u) ? u : undefined);
 
 interface MasonryLayoutProps {
   items: MoodPinItem[];
@@ -52,18 +55,38 @@ export default function MasonryLayout({ items, weddingId, onAddItem, onDeleteIte
   };
 
   const handleAddLink = async () => {
-    if (!linkUrl.trim()) return;
-    
-    // In a real app, this would trigger the backend scraping lambda
-    // For this UI, we'll just mock adding a link text item
-    await onAddItem({
-      notes: linkUrl,
-      sourceUrl: linkUrl
-    });
-    
-    setLinkUrl('');
-    setIsAddingLink(false);
-    toast.success('Link added to mood board');
+    const url = linkUrl.trim();
+    if (!url || !weddingId) return;
+    setIsUploading(true);
+    try {
+      const res = await importImageFromUrl(url);
+      if (!res.ok || !res.imageBase64 || !res.contentType) {
+        toast.error(res.error || 'Could not import image from that link');
+        return;
+      }
+      const bytes = Uint8Array.from(atob(res.imageBase64), c => c.charCodeAt(0));
+      const ext = res.contentType.split('/')[1] || 'jpg';
+      const fileKey = `moodboard/${weddingId}/${Date.now()}-import.${ext}`;
+      await uploadData({
+        path: fileKey,
+        data: new Blob([bytes], { type: res.contentType }),
+        options: { contentType: res.contentType }
+      }).result;
+      await onAddItem({
+        imageKey: fileKey,
+        sourceUrl: url,
+        title: res.title,
+        notes: res.title || url
+      });
+      setLinkUrl('');
+      setIsAddingLink(false);
+      toast.success('Image added to mood board');
+    } catch (error) {
+      console.error('URL import error:', error);
+      toast.error('Failed to import image');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -93,7 +116,7 @@ export default function MasonryLayout({ items, weddingId, onAddItem, onDeleteIte
                 className="flex-1 p-2 text-sm focus:outline-none"
                 autoFocus
               />
-              <button onClick={handleAddLink} className="bg-sage text-white px-3 text-sm font-medium hover:bg-dark-sage">Add</button>
+              <button onClick={handleAddLink} disabled={isUploading} className="bg-sage text-white px-3 text-sm font-medium hover:bg-dark-sage disabled:opacity-50">{isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add'}</button>
               <button onClick={() => setIsAddingLink(false)} className="bg-light-gray text-mid-gray px-3 hover:text-charcoal"><X className="w-4 h-4" /></button>
             </div>
           ) : (
@@ -124,7 +147,7 @@ export default function MasonryLayout({ items, weddingId, onAddItem, onDeleteIte
             ) : (
               <div className="p-6 bg-ivory text-center break-all">
                 <LinkIcon className="w-8 h-8 text-sage mx-auto mb-2" />
-                <a href={item.sourceUrl || '#'} target="_blank" rel="noreferrer" className="text-sm text-sage hover:underline">
+                <a href={safeHref(item.sourceUrl)} target="_blank" rel="noopener noreferrer" className="text-sm text-sage hover:underline">
                   {item.notes || item.sourceUrl}
                 </a>
               </div>

@@ -5,13 +5,16 @@ import { Search, CheckCircle2, UserCheck, UserX, Loader2, Plus, Trash2 } from 'l
 import type { Schema } from '../../../../amplify/data/resource';
 import { generateClient } from 'aws-amplify/data';
 import { toast } from 'sonner';
+import { getWeddingOwners } from '@/lib/amplify/weddingOwners';
 
 const client = generateClient<Schema>();
 
 interface RSVPFormProps {
-  guests: Schema['Guest']['type'][];
-  onUpdate: (id: string, updates: Partial<Schema['Guest']['type']>) => Promise<any>;
+  guests?: Schema['Guest']['type'][];
+  onUpdate?: (id: string, updates: Partial<Schema['Guest']['type']>) => Promise<any>;
   wedding?: Schema['Wedding']['type'] | null;
+  /** Public site mode: when set, lookup and submit go through /api/rsvp/* (server-side, no PII exposure). */
+  slug?: string;
 }
 
 interface PartyMemberForm {
@@ -25,7 +28,7 @@ interface PartyMemberForm {
   legacyTags: string[];
 }
 
-export default function RSVPForm({ guests, onUpdate, wedding }: RSVPFormProps) {
+export default function RSVPForm({ guests = [], onUpdate, wedding, slug }: RSVPFormProps) {
   const [step, setStep] = useState<'SEARCH' | 'RSVP' | 'SUCCESS'>('SEARCH');
   const [searchFirst, setSearchFirst] = useState('');
   const [searchLast, setSearchLast] = useState('');
@@ -71,6 +74,51 @@ export default function RSVPForm({ guests, onUpdate, wedding }: RSVPFormProps) {
     if (!searchFirst || !searchLast) return;
     
     setIsSearching(true);
+
+    if (slug) {
+      (async () => {
+        try {
+          const res = await fetch('/api/rsvp/lookup', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ slug, firstName: searchFirst, lastName: searchLast }),
+          });
+          if (res.status === 429) { toast.error('Too many attempts. Please wait a minute.'); return; }
+          const result = await res.json().catch(() => null);
+          if (!res.ok || !result?.found) {
+            toast.error('We couldn\'t find your invitation. Please check the spelling or contact the couple.');
+            return;
+          }
+          const tags = (result.publicTags || []) as Schema['GuestTag']['type'][];
+          setPublicTags(tags);
+          const pTagNames = tags.map(t => t.name);
+          const g = result.guest;
+          setFoundGuest(g as Schema['Guest']['type']);
+          setIsAttending(g.rsvpStatus === 'CONFIRMED' ? true : g.rsvpStatus === 'DECLINED' ? false : null);
+          setMealChoice(g.mealChoice || '');
+          setDietaryRequirements(g.dietaryOther || '');
+          setEmail('');
+          setPhone('');
+          const parsed = parseGuestTags(g.tags, pTagNames);
+          setSelectedTags(parsed.selected);
+          setLegacyTags(parsed.legacy);
+          setPartyMembers((result.partyMembers || []).map((lg: any) => {
+            const p = parseGuestTags(lg.tags, pTagNames);
+            return {
+              id: lg.id, firstName: lg.firstName, lastName: lg.lastName || '', mealChoice: lg.mealChoice || '',
+              dietaryRequirements: lg.dietaryOther || '', selectedTags: p.selected, legacyTags: p.legacy,
+              isAttending: lg.rsvpStatus === 'CONFIRMED' ? true : lg.rsvpStatus === 'DECLINED' ? false : null,
+            };
+          }));
+          setStep('RSVP');
+        } catch {
+          toast.error('Something went wrong. Please try again.');
+        } finally {
+          setIsSearching(false);
+        }
+      })();
+      return;
+    }
     
     setTimeout(async () => {
       const match = guests.find(g => {
@@ -161,6 +209,38 @@ export default function RSVPForm({ guests, onUpdate, wedding }: RSVPFormProps) {
     setIsSubmitting(true);
     try {
       const primaryTags = [...legacyTags, ...selectedTags];
+      if (slug) {
+        const res = await fetch('/api/rsvp/submit', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            weddingSlug: slug,
+            guestId: foundGuest.id,
+            attending: isAttending,
+            mealChoice: isAttending ? mealChoice : undefined,
+            dietaryOther: isAttending ? dietaryRequirements : undefined,
+            email: email || undefined,
+            phone: phone || undefined,
+            tags: primaryTags.length > 0 ? primaryTags.join(', ') : undefined,
+            partyMembers: partyMembers.filter(m => m.firstName).map(m => {
+              const t = [...m.legacyTags, ...m.selectedTags];
+              return {
+                id: m.id, firstName: m.firstName, lastName: m.lastName, attending: m.isAttending,
+                mealChoice: m.isAttending ? m.mealChoice : undefined,
+                dietaryOther: m.isAttending ? m.dietaryRequirements : undefined,
+                tags: t.length > 0 ? t.join(', ') : undefined,
+              };
+            }),
+          }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.error || 'Failed');
+        }
+        setStep('SUCCESS');
+        return;
+      }
+      if (!onUpdate) throw new Error('No update handler');
       await onUpdate(foundGuest.id, {
         rsvpStatus: isAttending ? 'CONFIRMED' : 'DECLINED',
         mealChoice: isAttending ? mealChoice : undefined,
@@ -187,7 +267,7 @@ export default function RSVPForm({ guests, onUpdate, wedding }: RSVPFormProps) {
         if (member.id) {
           await client.models.Guest.update({ id: member.id, ...memberData });
         } else {
-          await client.models.Guest.create(memberData);
+          await client.models.Guest.create({ ...memberData, owners: await getWeddingOwners(foundGuest.weddingId) });
         }
       }
 

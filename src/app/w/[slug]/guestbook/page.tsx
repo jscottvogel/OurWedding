@@ -18,15 +18,10 @@ export default function GuestbookSignPage({ params }: { params: { slug: string }
     const fetchWedding = async () => {
       try {
         const decodedSlug = decodeURIComponent(params.slug);
-        const configResult = await client.models.WebsiteConfig.list({
-          filter: { 
-            or: [
-              { subdomain: { eq: decodedSlug } },
-              { customDomain: { contains: decodedSlug } }
-            ]
-          },
-          authMode: 'apiKey'
-        });
+        const configResult = await client.models.WebsiteConfig.listWebsiteConfigBySubdomain(
+          { subdomain: decodedSlug },
+          { authMode: 'apiKey' }
+        );
         
         const config = configResult.data[0];
         if (!config) {

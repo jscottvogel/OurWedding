@@ -5,6 +5,7 @@ import { generateClient } from 'aws-amplify/data';
 import { getUrl, remove } from 'aws-amplify/storage';
 import type { Schema } from '../../../amplify/data/resource';
 import { useAuth } from './useAuth';
+import { getWeddingOwners } from '../amplify/weddingOwners';
 
 const client = generateClient<Schema>();
 
@@ -27,11 +28,15 @@ export function useGallery(publicWeddingId?: string) {
     }
 
     const sub = client.models.GalleryUpload.observeQuery({
-      filter: { weddingId: { eq: weddingId } }
+      filter: { weddingId: { eq: weddingId } },
+      ...(publicWeddingId ? { authMode: 'apiKey' as const } : {})
     }).subscribe({
       next: async ({ items }) => {
         // Filter out deleted items locally due to AppSync negated boolean limitations
-        const activeItems = items.filter(item => !item.isDeleted);
+        // Public visitors only see approved uploads.
+        const activeItems = items.filter(item =>
+          !item.isDeleted && (!publicWeddingId || (item as { isApproved?: boolean | null }).isApproved !== false)
+        );
         
         // Resolve S3 presigned URLs for each item
         const photosWithUrls = await Promise.all(
@@ -66,10 +71,23 @@ export function useGallery(publicWeddingId?: string) {
 
   const addPhotoRecord = async (record: Omit<Schema['GalleryUpload']['type'], 'id' | 'createdAt' | 'updatedAt' | 'weddingId'>) => {
     if (!weddingId) return;
+    if (publicWeddingId) {
+      const { errors } = await client.mutations.submitGalleryUpload({
+        weddingId,
+        uploaderName: record.uploaderName || 'Guest',
+        fileKey: record.fileKey,
+        fileType: record.fileType ?? undefined,
+        fileSizeBytes: record.fileSizeBytes ?? undefined,
+        caption: record.caption ?? undefined,
+      }, { authMode: 'apiKey' });
+      if (errors?.length) throw new Error(errors[0].message);
+      return;
+    }
     await client.models.GalleryUpload.create({
       ...record,
-      weddingId
-    }, { authMode: publicWeddingId ? 'apiKey' : undefined });
+      weddingId,
+      owners: await getWeddingOwners(weddingId)
+    });
   };
 
   const deletePhoto = async (photo: GalleryPhoto) => {

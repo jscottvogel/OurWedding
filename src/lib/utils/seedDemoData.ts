@@ -1,12 +1,12 @@
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../amplify/data/resource';
+import { getWeddingOwners } from '../amplify/weddingOwners';
 
 const client = generateClient<Schema>();
 
 export const DEMO_WEDDING_ID = 'demo-wedding-123';
 
 export async function clearDemoData() {
-  console.log('Clearing old demo data...');
   
   // Clear Guests
   let nextToken: string | null | undefined = null;
@@ -55,12 +55,9 @@ export async function clearDemoData() {
     for (const r of res.data) await client.models.RunSheetItem.delete({ id: r.id });
     nextToken = res.nextToken;
   } while (nextToken);
-  
-  console.log('Old demo data cleared.');
 }
 
 export async function seedDemoData() {
-  console.log('Seeding new demo data...');
   
   // 1. Ensure Wedding object exists
   const existingWedding = await client.models.Wedding.get({ id: DEMO_WEDDING_ID } as any);
@@ -89,7 +86,9 @@ export async function seedDemoData() {
     { weddingId: DEMO_WEDDING_ID, category: 'Catering', companyName: 'Epicurean Delights', contractStatus: 'NOT_STARTED' as const, quotedAmount: 8500 },
     { weddingId: DEMO_WEDDING_ID, category: 'Entertainment', companyName: 'Midnight Groove Band', contractStatus: 'SIGNED' as const, quotedAmount: 4000, depositAmount: 1000, depositPaid: false },
   ];
-  for (const v of vendorsToCreate) await client.models.Vendor.create(v);
+  // Records created without `owners` would be visible only to the creator; share with the wedding's owners.
+  const owners = await getWeddingOwners(DEMO_WEDDING_ID);
+  for (const v of vendorsToCreate) await client.models.Vendor.create({ ...v, owners });
 
   // 3. Guests
   const guestsToCreate = [
@@ -102,7 +101,7 @@ export async function seedDemoData() {
     { weddingId: DEMO_WEDDING_ID, firstName: 'Emma', lastName: 'Davis', rsvpStatus: 'CONFIRMED' as const, mealChoice: 'Beef Wellington', attendingCount: 1, dietaryGlutenFree: true },
     { weddingId: DEMO_WEDDING_ID, firstName: 'James', lastName: 'Taylor', rsvpStatus: 'PENDING' as const, attendingCount: 2 },
   ];
-  for (const g of guestsToCreate) await client.models.Guest.create(g);
+  for (const g of guestsToCreate) await client.models.Guest.create({ ...g, owners });
 
   // 4. Budget Items
   const budgetItemsToCreate = [
@@ -114,7 +113,7 @@ export async function seedDemoData() {
     { weddingId: DEMO_WEDDING_ID, expenseName: 'Wedding Dress', category: 'Attire', estimatedCost: 2500, actualCost: 2900 }, // Over budget
     { weddingId: DEMO_WEDDING_ID, expenseName: 'Invitations & Postage', category: 'Stationery', estimatedCost: 800, actualCost: 750 },
   ];
-  for (const b of budgetItemsToCreate) await client.models.BudgetItem.create(b);
+  for (const b of budgetItemsToCreate) await client.models.BudgetItem.create({ ...b, owners });
 
   // 5. Run Sheet
   const runSheetItemsToCreate = [
@@ -131,7 +130,5 @@ export async function seedDemoData() {
     { weddingId: DEMO_WEDDING_ID, title: 'Dance Floor Opens', eventTime: '20:00', durationMinutes: 120, location: 'Main Hall', itemType: 'EVENT' as const },
     { weddingId: DEMO_WEDDING_ID, title: 'Sparkler Send-off', eventTime: '22:30', durationMinutes: 15, location: 'Front Drive', itemType: 'EVENT' as const },
   ];
-  for (const r of runSheetItemsToCreate) await client.models.RunSheetItem.create(r);
-
-  console.log('Seeding complete!');
+  for (const r of runSheetItemsToCreate) await client.models.RunSheetItem.create({ ...r, owners });
 }

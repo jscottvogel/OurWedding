@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { generateClient } from 'aws-amplify/data';
-import { updateUserAttributes } from 'aws-amplify/auth';
+import { updateUserAttributes, getCurrentUser } from 'aws-amplify/auth';
 import type { Schema } from '../../../../amplify/data/resource';
 import { generateDefaultChecklist } from '@/lib/utils/defaultChecklist';
 
@@ -47,8 +47,11 @@ export default function OnboardingPage() {
         heroImageKey = key;
       }
 
-      // Create the Wedding record
+      // Create the Wedding record, owned by the current user's Cognito sub
+      const { userId: ownerSub } = await getCurrentUser();
+      const owners = [ownerSub];
       const { data: newWedding, errors } = await client.models.Wedding.create({
+        owners,
         slug: `wedding-${Date.now()}`,
         coupleName1: formData.coupleName1 || 'Partner 1',
         coupleName2: formData.coupleName2 || 'Partner 2',
@@ -67,7 +70,7 @@ export default function OnboardingPage() {
       const weddingItem = newWedding as any;
       const defaultTasks = generateDefaultChecklist(weddingItem.id, weddingItem.weddingDate);
       await Promise.all(
-        defaultTasks.map(task => client.models.ChecklistItem.create(task))
+        defaultTasks.map(task => client.models.ChecklistItem.create({ ...task, owners }))
       );
 
       // Link it to the user's Cognito attributes

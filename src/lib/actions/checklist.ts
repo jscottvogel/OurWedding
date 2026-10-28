@@ -1,10 +1,16 @@
-'use server';
+import { generateClient } from 'aws-amplify/data';
+import type { Schema } from '../../../amplify/data/resource';
 
-// Placeholder for server actions if needed for complex server-side operations
-// In this Amplify Gen 2 setup, most CRUD is handled client-side via the Amplify Data client
-// to support real-time subscriptions and optimistic UI.
-
-export async function bulkCompleteTasks(taskIds: string[]) {
-  // Logic to bulk complete tasks would go here using server context
-  console.log('Bulk completing tasks', taskIds);
+/**
+ * Client-side: mark many checklist items complete. Uses the authenticated
+ * Amplify Data client so owner/auth rules apply. Returns success/failure counts.
+ */
+export async function bulkCompleteTasks(taskIds: string[], completed = true) {
+  const client = generateClient<Schema>();
+  const completedAt = completed ? new Date().toISOString() : null;
+  const results = await Promise.allSettled(
+    taskIds.map((id) => client.models.ChecklistItem.update({ id, isCompleted: completed, completedAt })),
+  );
+  const failed = results.filter((r) => r.status === 'rejected' || (r.status === 'fulfilled' && r.value.errors?.length)).length;
+  return { updated: taskIds.length - failed, failed };
 }

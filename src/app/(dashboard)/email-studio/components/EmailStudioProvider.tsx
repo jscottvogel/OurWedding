@@ -6,6 +6,7 @@ import { getUrl } from 'aws-amplify/storage';
 import type { Schema } from '../../../../../amplify/data/resource';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useWedding } from '@/lib/hooks/useWedding';
+import { getWeddingOwners } from '@/lib/amplify/weddingOwners';
 
 const client = generateClient<Schema>();
 
@@ -103,6 +104,7 @@ export function EmailStudioProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     refreshCampaigns();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refreshCampaigns is recreated each render; deps listed are the real triggers
   }, [weddingId, activeType, wedding?.heroImageKey]);
 
   // Debounced Auto-save
@@ -132,6 +134,7 @@ export function EmailStudioProvider({ children }: { children: ReactNode }) {
             customContent,
             photoUrl,
             overrideNames,
+            owners: await getWeddingOwners(weddingId),
           });
           if (data) setDraftCampaignId(data.id);
         }

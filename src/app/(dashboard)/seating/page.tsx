@@ -11,13 +11,11 @@ export default function SeatingPage() {
   const { tables, guests, loading, addTable, updateTable, deleteTable, assignPartyToTable } = useSeating();
   const { weddingId } = useAuth();
 
-  const handleExport = async () => {
+  const handleExport = () => {
     if (!weddingId) return;
     try {
-      const url = await exportSeatingPlan(weddingId);
-      // In a real app this might return a generated PDF URL or CSV text
-      window.open(url, '_blank');
-      toast.success('Seating plan export started');
+      exportSeatingPlan(tables, guests);
+      toast.success('Seating plan downloaded');
     } catch (e) {
       toast.error('Failed to export seating plan');
     }

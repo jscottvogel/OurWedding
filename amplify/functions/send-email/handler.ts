@@ -1,21 +1,40 @@
 import type { AppSyncResolverHandler } from 'aws-lambda';
-import { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminAddUserToGroupCommand } from "@aws-sdk/client-cognito-identity-provider";
+import {
+  CognitoIdentityProviderClient,
+  AdminCreateUserCommand,
+  AdminAddUserToGroupCommand,
+  AdminGetUserCommand,
+} from "@aws-sdk/client-cognito-identity-provider";
+import { getWeddingOwners, grantWeddingAccess } from '../shared/owners';
 
 const client = new CognitoIdentityProviderClient({});
+
+const subFrom = (attrs?: { Name?: string; Value?: string }[]) => attrs?.find((a) => a.Name === 'sub')?.Value;
 
 export const handler: AppSyncResolverHandler<{ email: string; role: string; weddingId: string }, boolean> = async (event) => {
   const { email, role, weddingId } = event.arguments;
   const userPoolId = process.env.USER_POOL_ID;
+  const callerSub = (event.identity as any)?.sub as string | undefined;
 
   if (!userPoolId) {
     throw new Error('USER_POOL_ID environment variable is missing.');
   }
+  if (!email || !weddingId || !callerSub) {
+    throw new Error('email and weddingId are required');
+  }
 
+  // Only an owner of the wedding can invite collaborators to it.
+  const wedding = await getWeddingOwners(process.env.TABLE_WEDDING!, weddingId);
+  if (!wedding || !(wedding.owners || []).includes(callerSub)) {
+    throw new Error('Unauthorized');
+  }
+
+  // Never allow privilege escalation into the global "admin" group via invites.
+  const groupName = role === 'vendor' ? 'vendor' : 'planner';
+
+  let inviteeSub: string | undefined;
   try {
-    console.log(`Inviting user ${email} with role ${role} to wedding ${weddingId}...`);
-    
-    // 1. Create the user in Cognito (this automatically sends the temporary password email)
-    const createCommand = new AdminCreateUserCommand({
+    const created = await client.send(new AdminCreateUserCommand({
       UserPoolId: userPoolId,
       Username: email,
       UserAttributes: [
@@ -23,34 +42,23 @@ export const handler: AppSyncResolverHandler<{ email: string; role: string; wedd
         { Name: "email_verified", Value: "true" },
       ],
       DesiredDeliveryMediums: ["EMAIL"],
-    });
-    
-    await client.send(createCommand);
-    
-    // 2. Add the user to the correct Cognito Group based on their role
-    // Valid groups based on auth/resource.ts: "admin", "planner", "vendor"
-    let groupName = role;
-    if (!["admin", "planner", "vendor"].includes(groupName)) {
-        // Default to planner if something else was passed
-        groupName = "planner";
-    }
-
-    const addGroupCommand = new AdminAddUserToGroupCommand({
-      UserPoolId: userPoolId,
-      Username: email,
-      GroupName: groupName,
-    });
-
-    await client.send(addGroupCommand);
-
-    console.log(`Successfully invited ${email} and added to group ${groupName}.`);
-    return true;
+    }));
+    inviteeSub = subFrom(created.User?.Attributes);
+    await client.send(new AdminAddUserToGroupCommand({ UserPoolId: userPoolId, Username: email, GroupName: groupName }));
   } catch (error: any) {
-    if (error.name === 'UsernameExistsException') {
-      console.log(`User ${email} already exists in Cognito. Proceeding anyway.`);
-      return true;
+    if (error.name !== 'UsernameExistsException') {
+      console.error('Failed to invite user:', error?.name);
+      throw new Error('Failed to invite user');
     }
-    console.error('Failed to invite user:', error);
-    throw new Error('Failed to invite user');
+    // Existing users keep their current groups. We only grant wedding-level access.
   }
+
+  if (!inviteeSub) {
+    const existing = await client.send(new AdminGetUserCommand({ UserPoolId: userPoolId, Username: email }));
+    inviteeSub = subFrom(existing.UserAttributes);
+  }
+  if (!inviteeSub) throw new Error('Failed to resolve invited user');
+
+  await grantWeddingAccess(weddingId, inviteeSub, groupName === 'vendor' ? 'readers' : 'owners');
+  return true;
 };

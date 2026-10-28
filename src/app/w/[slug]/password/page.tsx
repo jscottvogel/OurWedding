@@ -2,11 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { generateClient } from 'aws-amplify/data';
-import type { Schema } from '../../../../../amplify/data/resource';
-
-const client = generateClient<Schema>();
-
 export default function PasswordPage({ params }: { params: { slug: string } }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
@@ -14,20 +9,16 @@ export default function PasswordPage({ params }: { params: { slug: string } }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const decodedSlug = decodeURIComponent(params.slug);
-    const { data: configs } = await client.models.WebsiteConfig.list({
-      filter: { 
-        or: [
-          { subdomain: { eq: decodedSlug } },
-          { customDomain: { contains: decodedSlug } }
-        ]
-      },
-      authMode: 'apiKey'
-    });
+    const slug = decodeURIComponent(params.slug);
+    const res = await fetch('/api/website/verify-password', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ slug, password }),
+    }).catch(() => null);
 
-    if (configs.length > 0 && password === configs[0].sitePassword) {
+    if (res?.ok) {
       router.push(`/w/${params.slug}`);
+      router.refresh();
     } else {
       setError(true);
       setTimeout(() => setError(false), 2000);

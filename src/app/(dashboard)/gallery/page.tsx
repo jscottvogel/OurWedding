@@ -68,9 +68,11 @@ export default function GalleryPage() {
   const handleExportGallery = async () => {
     if (!weddingId) return;
     try {
-      const url = await zipAndDownloadGallery(weddingId);
-      window.open(url, '_blank');
-      toast.success('Gallery download started');
+      const toastId = toast.loading('Preparing ZIP...');
+      const { added, failed } = await zipAndDownloadGallery(photos, `gallery-${wedding?.slug || 'wedding'}.zip`, (done, total) =>
+        toast.loading(`Preparing ZIP... ${done}/${total}`, { id: toastId })
+      );
+      toast.success(`Downloaded ${added} photos${failed ? ` (${failed} failed)` : ''}`, { id: toastId });
     } catch (e) {
       toast.error('Failed to download gallery');
     }

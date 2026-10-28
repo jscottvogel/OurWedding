@@ -47,5 +47,5 @@ export function StorageImage({ storageKey, fileType, ...props }: StorageImagePro
     );
   }
 
-  return <img src={url} {...props} />;
+  return <img src={url} {...props} alt={props.alt ?? ''} />;
 }

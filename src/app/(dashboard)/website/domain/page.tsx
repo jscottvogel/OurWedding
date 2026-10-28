@@ -5,6 +5,11 @@ import { useWedding } from '@/lib/hooks/useWedding';
 import { useAutoSave } from '@/lib/hooks/useAutoSave';
 import { Loader2, Check } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { generateClient } from 'aws-amplify/data';
+import { toast } from 'sonner';
+import type { Schema } from '../../../../../amplify/data/resource';
+
+const client = generateClient<Schema>();
 
 export default function WebsiteDomainPage() {
   const { config, isLoading: isConfigLoading, updateConfig } = useWebsiteConfig();
@@ -12,6 +17,17 @@ export default function WebsiteDomainPage() {
 
   const [localSiteTitle, setLocalSiteTitle] = useState('');
   const [localSubdomain, setLocalSubdomain] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  const saveSitePassword = async () => {
+    if (!wedding?.id || newPassword.length < 4) return;
+    setSavingPassword(true);
+    const { errors } = await client.mutations.setSitePassword({ weddingId: wedding.id, password: newPassword });
+    setSavingPassword(false);
+    if (errors?.length) toast.error(errors[0].message);
+    else { setNewPassword(''); toast.success('Site password saved'); }
+  };
 
   const defaultTitle = wedding ? `${wedding.coupleName1} & ${wedding.coupleName2}'s Wedding` : '';
 
@@ -114,6 +130,26 @@ export default function WebsiteDomainPage() {
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sage"></div>
             </label>
           </div>
+          {config.passwordProtected && (
+            <div className="flex gap-2">
+              <input
+                id="site-password-input"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Set a new site password (min 4 characters)"
+                className="flex-1 border-light-gray rounded-md focus:ring-sage focus:border-sage"
+              />
+              <button
+                id="save-site-password"
+                onClick={saveSitePassword}
+                disabled={savingPassword || newPassword.length < 4}
+                className="px-4 py-2 bg-sage text-white rounded-md disabled:opacity-50"
+              >
+                {savingPassword ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          )}
           
           <div className="pt-4 border-t border-light-gray">
             <label className="block text-sm font-medium text-charcoal mb-2">Search Engine Title</label>

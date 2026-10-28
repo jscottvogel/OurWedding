@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../amplify/data/resource';
 import { useAuth } from './useAuth';
+import { getWeddingOwners } from '../amplify/weddingOwners';
 import { useWedding } from './useWedding';
 
 const client = generateClient<Schema>();
@@ -115,7 +116,7 @@ export function useRunSheetProvider() {
         if (!currentStart) {
           try {
             const res = await client.models.RunSheetItem.create({
-              weddingId, title: 'Day Starts', eventTime: '14:00:00', itemType: 'START', sortOrder: -1
+              weddingId, title: 'Day Starts', eventTime: '14:00:00', itemType: 'START', sortOrder: -1, owners: await getWeddingOwners(weddingId)
             });
             if (res.data) {
               currentStart = res.data;
@@ -126,7 +127,7 @@ export function useRunSheetProvider() {
         if (!currentEnd) {
           try {
             const res = await client.models.RunSheetItem.create({
-              weddingId, title: 'Day Ends (Hard Stop)', eventTime: '23:00:00', itemType: 'END', sortOrder: 9999
+              weddingId, title: 'Day Ends (Hard Stop)', eventTime: '23:00:00', itemType: 'END', sortOrder: 9999, owners: await getWeddingOwners(weddingId)
             });
             if (res.data) {
               currentEnd = res.data;
@@ -159,7 +160,8 @@ export function useRunSheetProvider() {
                 eventTime: evtTime, 
                 itemType: 'GUESTS_ARRIVE', 
                 isFixed: true, 
-                sortOrder: 0
+                sortOrder: 0,
+                owners: await getWeddingOwners(weddingId)
               });
               if (res.data) {
                 guestsArrive = res.data;
@@ -198,12 +200,14 @@ export function useRunSheetProvider() {
     });
 
     return () => sub.unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-subscribing on every helper/wedding change would thrash the subscription
   }, [weddingId, authLoading, hasUnsavedChanges]);
 
   useEffect(() => {
     const { isOver, overMins } = calculateSchedule(items, startItem, endItem);
     setIsOverSchedule(isOver);
     setOverScheduleByMins(overMins);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- calculateSchedule is a pure helper recreated each render
   }, [items, startItem, endItem]);
 
   // Auto-save effect
@@ -214,6 +218,7 @@ export function useRunSheetProvider() {
       }, 1500); // 1.5s debounce
       return () => clearTimeout(timeoutId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- saveChanges reads latest state; debounce keyed on data changes only
   }, [hasUnsavedChanges, isSaving, items, startItem, endItem]);
 
   const applyLocalUpdate = (newEvents: CalculatedRunSheetItem[]) => {
@@ -265,7 +270,7 @@ export function useRunSheetProvider() {
   // Check if we are updating GUESTS_ARRIVE and sync its time to the main wedding record
     const existingItem = items.find(item => item.id === id);
     if (existingItem?.itemType === 'GUESTS_ARRIVE') {
-      const newTime = updates.eventTime || updates.scheduledStartTime;
+      const newTime = updates.eventTime;
       if (newTime && newTime !== wedding?.weddingTime) {
         updateWedding({ weddingTime: newTime }).catch(e => console.error("Failed to sync wedding time:", e));
       }
@@ -297,8 +302,9 @@ export function useRunSheetProvider() {
     if (!wedding?.weddingTime || items.length === 0) return;
     const guestsArrive = items.find(i => i.itemType === 'GUESTS_ARRIVE');
     if (guestsArrive && guestsArrive.eventTime !== wedding.weddingTime && guestsArrive.scheduledStartTime !== wedding.weddingTime) {
-      updateItem(guestsArrive.id, { eventTime: wedding.weddingTime, scheduledStartTime: wedding.weddingTime });
+      updateItem(guestsArrive.id, { eventTime: wedding.weddingTime });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when the wedding time changes, not on every item edit
   }, [wedding?.weddingTime]);
 
   const processIvyActions = async (actions: any[]) => {
@@ -365,7 +371,7 @@ export function useRunSheetProvider() {
         };
 
         if (item.id.startsWith('temp-')) {
-          promises.push(client.models.RunSheetItem.create(payload));
+          promises.push(client.models.RunSheetItem.create({ ...payload, owners: await getWeddingOwners(weddingId) }));
         } else {
           promises.push(client.models.RunSheetItem.update({ id: item.id, ...payload }));
         }
