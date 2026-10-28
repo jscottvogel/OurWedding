@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
-import { getUrl, remove } from 'aws-amplify/storage';
+import { getFileUrls } from '../storage/files';
 import type { Schema } from '../../../amplify/data/resource';
 import { useAuth } from './useAuth';
 import { getWeddingOwners } from '../amplify/weddingOwners';
@@ -38,17 +38,9 @@ export function useGallery(publicWeddingId?: string) {
           !item.isDeleted && (!publicWeddingId || (item as { isApproved?: boolean | null }).isApproved !== false)
         );
         
-        // Resolve S3 presigned URLs for each item
-        const photosWithUrls = await Promise.all(
-          activeItems.map(async (item) => {
-            try {
-              const urlResult = await getUrl({ path: item.fileKey });
-              return { ...item, url: urlResult.url.toString() };
-            } catch (e) {
-              return { ...item };
-            }
-          })
-        );
+        // Resolve presigned URLs in one batched storage-access call
+        const urls = await getFileUrls(activeItems.map((item) => item.fileKey)).catch(() => ({} as Record<string, string>));
+        const photosWithUrls: GalleryPhoto[] = activeItems.map((item) => ({ ...item, url: urls[item.fileKey] }));
         
         // Sort by newest first
         photosWithUrls.sort((a, b) => {
@@ -99,7 +91,7 @@ export function useGallery(publicWeddingId?: string) {
       });
       
       // We keep the actual S3 file for safety, or optionally delete it:
-      // await remove({ path: photo.fileKey });
+      // await deleteFile(photo.fileKey);  (from '@/lib/storage/files')
     } catch (err) {
       console.error('Failed to delete photo', err);
     }

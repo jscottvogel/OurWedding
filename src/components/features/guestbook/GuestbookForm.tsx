@@ -2,11 +2,12 @@
 
 import { useState, useRef } from 'react';
 import { Upload, X, Camera, Music, Loader2, BookOpen } from 'lucide-react';
-import { uploadData } from 'aws-amplify/storage';
+import { uploadGuestFile } from '@/lib/storage/files';
 import { toast } from 'sonner';
 
 interface GuestbookFormProps {
-  weddingId: string;
+  /** Public site slug; guest uploads are authorized per published site. */
+  slug: string;
   onUploadComplete: (record: { 
     guestName: string; 
     message?: string; 
@@ -17,7 +18,7 @@ interface GuestbookFormProps {
   }) => Promise<void>;
 }
 
-export default function GuestbookForm({ weddingId, onUploadComplete }: GuestbookFormProps) {
+export default function GuestbookForm({ slug, onUploadComplete }: GuestbookFormProps) {
   const [name, setName] = useState('');
   const [message, setMessage] = useState('');
   const [songRequest, setSongRequest] = useState('');
@@ -48,25 +49,13 @@ export default function GuestbookForm({ weddingId, onUploadComplete }: Guestbook
       let mediaType: string | undefined;
 
       if (file) {
-        const timestamp = new Date().getTime();
-        const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        mediaKey = `guestbook/${weddingId}/${timestamp}-${safeName}`;
         mediaType = file.type;
-        
-        const result = uploadData({
-          path: mediaKey,
-          data: file,
-          options: {
-            contentType: file.type,
-            onProgress: (progress) => {
-              if (progress.totalBytes) {
-                setUploadProgress((progress.transferredBytes / progress.totalBytes) * 100);
-              }
-            }
-          }
+        mediaKey = await uploadGuestFile({
+          slug,
+          kind: 'guestbook',
+          file,
+          onProgress: (fraction) => setUploadProgress(fraction * 100),
         });
-        
-        await result.result;
       }
       
       const hasMessage = message.trim().length > 0;
@@ -92,7 +81,7 @@ export default function GuestbookForm({ weddingId, onUploadComplete }: Guestbook
       setFile(null);
     } catch (error) {
       console.error('Submit error:', error);
-      toast.error('Failed to submit entry. Please try again.');
+      toast.error((error as Error)?.message || 'Failed to submit entry. Please try again.');
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -150,7 +139,7 @@ export default function GuestbookForm({ weddingId, onUploadComplete }: Guestbook
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-mid-gray mb-2">Attach a Photo or Video (Optional)</label>
+          <label className="block text-sm font-medium text-mid-gray mb-2">Attach a Photo (Optional)</label>
           
           {!file ? (
             <div 
@@ -178,7 +167,7 @@ export default function GuestbookForm({ weddingId, onUploadComplete }: Guestbook
             ref={fileInputRef} 
             onChange={handleFileSelect} 
             className="hidden" 
-            accept="image/*,video/mp4,video/quicktime"
+            accept="image/*"
           />
         </div>
 

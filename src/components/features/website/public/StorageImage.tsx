@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getUrl } from 'aws-amplify/storage';
+import { getFileUrl } from '@/lib/storage/files';
 
 interface StorageImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   storageKey: string;
@@ -14,9 +14,9 @@ export function StorageImage({ storageKey, fileType, ...props }: StorageImagePro
   useEffect(() => {
     let isMounted = true;
     if (storageKey) {
-      getUrl({ path: storageKey })
-        .then((res) => {
-          if (isMounted) setUrl(res.url.toString());
+      getFileUrl(storageKey)
+        .then((resolved) => {
+          if (isMounted) setUrl(resolved);
         })
         .catch((err) => {
           console.error('Failed to load storage image:', err);

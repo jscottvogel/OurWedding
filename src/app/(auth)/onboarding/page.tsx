@@ -36,17 +36,6 @@ export default function OnboardingPage() {
 
     setIsLoading(true);
     try {
-      let heroImageKey;
-      if (heroImageFile) {
-        const { uploadData } = await import('aws-amplify/storage');
-        const key = `assets/hero-${Date.now()}-${heroImageFile.name}`;
-        await uploadData({
-          path: key,
-          data: heroImageFile
-        }).result;
-        heroImageKey = key;
-      }
-
       // Create the Wedding record, owned by the current user's Cognito sub
       const { userId: ownerSub } = await getCurrentUser();
       const owners = [ownerSub];
@@ -58,12 +47,24 @@ export default function OnboardingPage() {
         weddingDate: formData.weddingDate || new Date().toISOString().split('T')[0],
         venueName: formData.venueName || undefined,
         budgetTotal: formData.budgetTotal ? parseFloat(formData.budgetTotal) : undefined,
-        heroImageKey: heroImageKey,
         isActive: true
       });
 
       if (errors || !newWedding) {
         throw new Error('Failed to create wedding record');
+      }
+
+      // Files live under weddings/{id}/... and storage-access checks Wedding.owners, so the hero
+      // image can only be uploaded once the Wedding exists.
+      if (heroImageFile) {
+        try {
+          const { uploadFile } = await import('@/lib/storage/files');
+          const heroImageKey = await uploadFile({ weddingId: newWedding.id, kind: 'hero', file: heroImageFile });
+          await client.models.Wedding.update({ id: newWedding.id, heroImageKey });
+        } catch (err) {
+          // Non-fatal: the couple can add a hero image later from the dashboard.
+          console.error('Hero image upload failed', err);
+        }
       }
 
       // Generate default checklist tasks based on wedding date

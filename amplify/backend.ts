@@ -11,6 +11,7 @@ import { removeUser } from './functions/remove-user/resource';
 import { resetDemo } from './functions/reset-demo/resource';
 import { sendWeddingEmail } from './functions/send-wedding-email/resource';
 import { publicSite } from './functions/public-site/resource';
+import { storageAccess } from './functions/storage-access/resource';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 
@@ -27,6 +28,7 @@ const backend = defineBackend({
   resetDemo,
   sendWeddingEmail,
   publicSite,
+  storageAccess,
 });
 
 const tables = backend.data.resources.tables;
@@ -55,11 +57,45 @@ backend.askIvy.resources.lambda.addToRolePolicy(
 backend.askIvy.resources.lambda.addToRolePolicy(
   new iam.PolicyStatement({
     actions: ['s3:GetObject'],
-    resources: [`${backend.storage.resources.bucket.bucketArn}/chat/*`],
+    resources: [
+      `${backend.storage.resources.bucket.bucketArn}/weddings/*/private/chat/*`,
+      // Legacy chat attachments; remove with ALLOW_LEGACY_KEYS after the key migration.
+      `${backend.storage.resources.bucket.bucketArn}/chat/*`,
+    ],
   })
+);
+// ask-ivy checks the caller owns the wedding a chat attachment belongs to.
+backend.askIvy.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({ actions: ['dynamodb:GetItem'], resources: [tables['Wedding'].tableArn] })
 );
 
 backend.askIvy.addEnvironment('STORAGE_BUCKET_NAME', backend.storage.resources.bucket.bucketName);
+backend.askIvy.addEnvironment('TABLE_WEDDING', tables['Wedding'].tableName);
+
+// storage-access presigns every client read/write of weddings/* after checking Wedding.owners/readers.
+// Presigned URLs carry this role's permissions, so it's the only principal with weddings/* write.
+backend.storageAccess.addEnvironment('STORAGE_BUCKET_NAME', bucket.bucketName);
+backend.storageAccess.addEnvironment('TABLE_WEDDING', tables['Wedding'].tableName);
+backend.storageAccess.addEnvironment('TABLE_WEBSITE_CONFIG', tables['WebsiteConfig'].tableName);
+backend.storageAccess.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    actions: ['dynamodb:GetItem', 'dynamodb:Query'],
+    resources: tableArns(['Wedding', 'WebsiteConfig']),
+  })
+);
+backend.storageAccess.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    actions: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject'],
+    resources: [`${bucket.bucketArn}/weddings/*`],
+  })
+);
+backend.storageAccess.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    // Read-only presigning of pre-migration keys (ALLOW_LEGACY_KEYS). Drop after the migration.
+    actions: ['s3:GetObject'],
+    resources: ['gallery', 'story', 'logo', 'guestbook', 'registry', 'assets', 'chat'].map((p) => `${bucket.bucketArn}/${p}/*`),
+  })
+);
 
 backend.sendEmail.resources.lambda.addToRolePolicy(
   new iam.PolicyStatement({

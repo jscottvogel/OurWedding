@@ -13,7 +13,7 @@ import { useGuests } from '@/lib/hooks/useGuests';
 import { useBudget } from '@/lib/hooks/useBudget';
 import { useGuestbook } from '@/lib/hooks/useGuestbook';
 import { generateClient } from 'aws-amplify/data';
-import { uploadData } from 'aws-amplify/storage';
+import { uploadFile } from '@/lib/storage/files';
 import type { Schema } from '../../../../amplify/data/resource';
 
 import { getWeddingOwners } from '@/lib/amplify/weddingOwners';
@@ -108,18 +108,11 @@ export default function IvyChat() {
         img.src = event.target?.result as string;
       };
       reader.readAsDataURL(file);
-    } else if (file.name.endsWith('.docx') || file.name.endsWith('.xlsx')) {
+    } else if ((file.name.endsWith('.docx') || file.name.endsWith('.xlsx')) && wedding?.id) {
       // Document upload
       setIsUploadingDoc(true);
-      const timestamp = new Date().getTime();
-      const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-      const key = `chat/${timestamp}-${safeName}`;
-      
       try {
-        await uploadData({
-          path: key,
-          data: file
-        }).result;
+        const key = await uploadFile({ weddingId: wedding.id, kind: 'chat', file });
         setDocumentKey(key);
         setDocumentName(file.name);
       } catch (err) {

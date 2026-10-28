@@ -69,7 +69,7 @@ Lambda functions read these through `secret()`. They are not environment variabl
 
 | Secret | Used by | Purpose |
 | --- | --- | --- |
-| `INTERNAL_API_SECRET` | `public-site` function | Must match the frontend's `INTERNAL_API_SECRET` |
+| `INTERNAL_API_SECRET` | `public-site`, `storage-access` functions | Must match the frontend's `INTERNAL_API_SECRET` |
 | `DEMO_USER_SUB` | `reset-demo` function | Cognito `sub` of the demo user (owner of the demo wedding) |
 
 ```bash
@@ -88,6 +88,33 @@ Wedding-scoped records carry an `owners` array of Cognito subs (`allow.ownersDef
 - Invites append the invitee's sub.
 - Public wedding sites use the API key, and only for public models.
 - Guests and vendors are owner-only. RSVPs and password checks go through `/api/rsvp/*` and `/api/website/*`, which call the backend with `INTERNAL_API_SECRET`.
+
+## File storage access model
+
+The S3 bucket has **no client access rules** ([storage/resource.ts](amplify/storage/resource.ts)). Signed-in users and guests get no direct S3 permissions. Every file operation goes through the `storage-access` Lambda ([handler.ts](amplify/functions/storage-access/handler.ts)). It checks `Wedding.owners` / `Wedding.readers` and returns short-lived presigned URLs. In the browser, always use [files.ts](src/lib/storage/files.ts). Never import `aws-amplify/storage`.
+
+Keys look like `weddings/{weddingId}/{public|private}/{kind}/{timestamp}-{name}`. The layout and per-kind rules live in [storage-keys.ts](amplify/functions/shared/storage-keys.ts):
+
+| Kind | Visibility | Who can upload | Who can read |
+| --- | --- | --- | --- |
+| `hero`, `logo`, `story`, `registry` | public | owners | anyone with the key (website assets) |
+| `gallery`, `guestbook` | public | owners; guests of a **published** site (images only, 15 MB) | anyone with the key |
+| `contracts` | private | owners | owners and readers (vendors) |
+| `chat`, `moodboard`, `exports` | private | owners | owners |
+
+- **Uploads** use presigned POST. S3 itself enforces the exact content type and the size limit, so a client can't widen what the Lambda approved.
+- **Reads:** `getFileUrl` / `getFileUrls` return 1-hour URLs. The client batches and caches them. Unreadable keys come back as `null`; they don't throw.
+- **Deletes** are owner-only.
+- **Guest uploads** go through `/api/website/upload-url` (rate-limited per IP, checks the site-password cookie). That route calls `createGuestUploadUrl` with `INTERNAL_API_SECRET`. `submitGalleryUpload` / `submitGuestbookEntry` accept only keys inside that site's own `weddings/{id}/public/{gallery|guestbook}/`.
+- **Ivy chat:** `askIvy` reads a `documentKey` only if it is a `chat` key of a wedding the caller owns.
+- **Email images:** `/api/email-image?key=` redirects only for public keys.
+
+Decisions worth knowing:
+
+- Public-kind URLs are presigned for anyone who knows the key. Keys are unguessable and only appear in records that are already public. Guest uploads still need moderation (`isApproved`) before they show on the site.
+- Guest uploads are images only. Video is no longer accepted: it can't be size-checked cheaply and is the main abuse risk on an anonymous upload.
+- Mood-board files are private. Share-token pages would need a dedicated resolver.
+- Vendor contract email links last about 1 hour instead of 7 days.
 
 ## Deploying
 
@@ -140,6 +167,24 @@ Find `API_ID` (the AppSync API id; DynamoDB tables are named `<Model>-<API_ID>-N
 5. **Smoke test:** sign in as an existing couple and check the dashboard. Then open one public site and one password-protected site.
 
 **Rollback:** the new fields are additive, so redeploying the previous commit restores the old behaviour. Restore from backups only if the post-deploy phase has already removed plaintext passwords and you need them back.
+
+### Migrating storage keys (storage lockdown release)
+
+Files uploaded before the storage lockdown live under the old prefixes (`gallery/`, `assets/`, `story/`, `logo/`, `guestbook/`, `registry/`, `chat/`). Those keys don't encode a wedding. Until they are moved, `storage-access` serves them **read-only** to the same audience the old rules allowed: public prefixes to anyone, `assets/` and `chat/` to any signed-in user. This is controlled by `ALLOW_LEGACY_KEYS`, which defaults to `true`.
+
+1. **Deploy** this release. Old files keep displaying, and new uploads use the new layout.
+2. **Dry run, then apply.** Objects are copied, never moved, and each record is updated with a condition on its old key:
+   ```bash
+   npx tsx tools/migrations/move-storage-keys.ts --bucket $BUCKET --table-suffix -$API_ID-NONE
+   npx tsx tools/migrations/move-storage-keys.ts --bucket $BUCKET --table-suffix -$API_ID-NONE --apply
+   ```
+   `BUCKET` is `storage.bucket_name` in `amplify_outputs.json`.
+3. **Smoke test:** check the hero, logo, gallery, guestbook and contracts. Then remove the old objects:
+   ```bash
+   npx tsx tools/migrations/move-storage-keys.ts --bucket $BUCKET --table-suffix -$API_ID-NONE --apply --delete-source
+   ```
+   This step refuses to delete if the run reported errors. Chat attachments aren't referenced by any record, so delete the `chat/` prefix by hand.
+4. **Close the legacy path:** set `ALLOW_LEGACY_KEYS: 'false'` in [storage-access/resource.ts](amplify/functions/storage-access/resource.ts). Remove the legacy `s3:GetObject` grants for `storage-access` and `ask-ivy` in [backend.ts](amplify/backend.ts). Redeploy.
 
 ### API key rotation
 

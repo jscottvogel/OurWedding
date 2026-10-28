@@ -5,7 +5,7 @@ import { useWedding } from '@/lib/hooks/useWedding';
 import { StorageImage } from '@/components/features/website/public/StorageImage';
 import { BookOpen, Check, EyeOff, Trash2, Music, Download, Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import { getUrl } from 'aws-amplify/storage';
+import { getFileUrls } from '@/lib/storage/files';
 import { GuestbookPDF } from '@/components/features/guestbook/GuestbookPDF';
 import { pdf } from '@react-pdf/renderer';
 
@@ -30,34 +30,17 @@ export default function GuestbookManagementPage() {
     setIsExporting(true);
 
     try {
-      // 1. Resolve presigned URLs for the hero image and all entry images
-      let heroImageUrl: string | undefined;
-      if (wedding.heroImageKey) {
-        const urlObj = await getUrl({ path: wedding.heroImageKey });
-        heroImageUrl = urlObj.url.toString();
-      }
-
+      // 1. Resolve presigned URLs for the hero image and all entry images (one batched call)
       const approvedEntries = entries.filter(e => e.isApproved);
-      const entriesWithUrls = await Promise.all(
-        approvedEntries.map(async (entry) => {
-          let mediaUrl: string | undefined;
-          if (entry.mediaKey) {
-            try {
-              const urlObj = await getUrl({ path: entry.mediaKey });
-              mediaUrl = urlObj.url.toString();
-            } catch (err) {
-              console.error('Failed to resolve URL for', entry.mediaKey);
-            }
-          }
-          return {
-            id: entry.id,
-            guestName: entry.guestName,
-            message: entry.message || undefined,
-            songRequest: entry.songRequest || undefined,
-            mediaUrl
-          };
-        })
-      );
+      const urls = await getFileUrls([wedding.heroImageKey, ...approvedEntries.map((e) => e.mediaKey)]);
+      const heroImageUrl = wedding.heroImageKey ? urls[wedding.heroImageKey] : undefined;
+      const entriesWithUrls = approvedEntries.map((entry) => ({
+        id: entry.id,
+        guestName: entry.guestName,
+        message: entry.message || undefined,
+        songRequest: entry.songRequest || undefined,
+        mediaUrl: entry.mediaKey ? urls[entry.mediaKey] : undefined,
+      }));
 
       // 2. Render the PDF
       const doc = (

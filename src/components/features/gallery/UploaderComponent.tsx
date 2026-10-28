@@ -2,15 +2,16 @@
 
 import { useState, useRef } from 'react';
 import { Upload, X, Camera, Image as ImageIcon, Loader2 } from 'lucide-react';
-import { uploadData } from 'aws-amplify/storage';
+import { uploadGuestFile } from '@/lib/storage/files';
 import { toast } from 'sonner';
 
 interface UploaderComponentProps {
-  weddingId: string;
+  /** Public site slug; guest uploads are authorized per published site, not per wedding id. */
+  slug: string;
   onUploadComplete: (record: { uploaderName: string; caption?: string; fileKey: string; fileType: string; fileSizeBytes: number }) => Promise<void>;
 }
 
-export default function UploaderComponent({ weddingId, onUploadComplete }: UploaderComponentProps) {
+export default function UploaderComponent({ slug, onUploadComplete }: UploaderComponentProps) {
   const [name, setName] = useState('');
   const [caption, setCaption] = useState('');
   const [files, setFiles] = useState<File[]>([]);
@@ -36,29 +37,13 @@ export default function UploaderComponent({ weddingId, onUploadComplete }: Uploa
     
     try {
       for (const file of files) {
-        // Generate a unique key for the file
-        const timestamp = new Date().getTime();
-        const extension = file.name.split('.').pop();
-        const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const fileKey = `gallery/${weddingId}/${timestamp}-${safeName}`;
-        
-        // Upload to S3 via Amplify Storage
-        const result = uploadData({
-          path: fileKey,
-          data: file,
-          options: {
-            contentType: file.type,
-            onProgress: (progress) => {
-              if (progress.totalBytes) {
-                // Approximate overall progress
-                const fileProgress = progress.transferredBytes / progress.totalBytes;
-                setUploadProgress(((completed + fileProgress) / files.length) * 100);
-              }
-            }
-          }
+        // Presigned upload to weddings/{id}/public/gallery/... (images only, 15 MB, published sites)
+        const fileKey = await uploadGuestFile({
+          slug,
+          kind: 'gallery',
+          file,
+          onProgress: (fileProgress) => setUploadProgress(((completed + fileProgress) / files.length) * 100),
         });
-        
-        await result.result;
         
         // Create database record
         await onUploadComplete({
@@ -78,7 +63,7 @@ export default function UploaderComponent({ weddingId, onUploadComplete }: Uploa
       // Keep the name so they can upload more easily
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload some photos. Please try again.');
+      toast.error((error as Error)?.message || 'Failed to upload some photos. Please try again.');
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -115,7 +100,7 @@ export default function UploaderComponent({ weddingId, onUploadComplete }: Uploa
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-mid-gray mb-2">Photos & Videos</label>
+          <label className="block text-sm font-medium text-mid-gray mb-2">Photos</label>
           
           {files.length === 0 ? (
             <div 
@@ -127,7 +112,7 @@ export default function UploaderComponent({ weddingId, onUploadComplete }: Uploa
                 <ImageIcon className="w-8 h-8" />
               </div>
               <p className="font-medium text-charcoal">Tap to select photos</p>
-              <p className="text-xs text-mid-gray mt-2">High quality JPEGs, PNGs, and MP4s</p>
+              <p className="text-xs text-mid-gray mt-2">JPEG, PNG, WebP or HEIC photos, up to 15 MB each</p>
             </div>
           ) : (
             <div className="border border-light-gray rounded-xl p-4 max-h-60 overflow-y-auto bg-ivory/50">
@@ -164,7 +149,7 @@ export default function UploaderComponent({ weddingId, onUploadComplete }: Uploa
             onChange={handleFileSelect} 
             className="hidden" 
             multiple 
-            accept="image/*,video/mp4,video/quicktime"
+            accept="image/*"
           />
         </div>
 

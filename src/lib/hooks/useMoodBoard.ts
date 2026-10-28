@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
-import { getUrl, remove } from 'aws-amplify/storage';
+import { deleteFile, getFileUrls } from '../storage/files';
 import type { Schema } from '../../../amplify/data/resource';
 import { useAuth } from './useAuth';
 import { getWeddingOwners } from '../amplify/weddingOwners';
@@ -63,19 +63,10 @@ export function useMoodBoard() {
       filter: { moodBoardId: { eq: boardId } }
     }).subscribe({
       next: async ({ items }) => {
-        // Resolve S3 presigned URLs for each item
-        const itemsWithUrls = await Promise.all(
-          items.map(async (item) => {
-            if (item.imageKey) {
-              try {
-                const urlResult = await getUrl({ path: item.imageKey });
-                return { ...item, url: urlResult.url.toString() };
-              } catch (e) {
-                return { ...item };
-              }
-            }
-            return { ...item };
-          })
+        // Resolve presigned URLs in one batched storage-access call
+        const urls = await getFileUrls(items.map((item) => item.imageKey)).catch(() => ({} as Record<string, string>));
+        const itemsWithUrls: MoodPinItem[] = items.map((item) =>
+          item.imageKey && urls[item.imageKey] ? { ...item, url: urls[item.imageKey] } : { ...item }
         );
         
         setItems(itemsWithUrls);
@@ -105,7 +96,7 @@ export function useMoodBoard() {
       
       // If it has an S3 file, delete that too
       if (item.imageKey) {
-        await remove({ path: item.imageKey });
+        await deleteFile(item.imageKey);
       }
     } catch (err) {
       console.error('Failed to delete item', err);

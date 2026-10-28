@@ -106,9 +106,8 @@ export default function WebsiteDesignPage() {
                           
                           // We use a simple confirm or toast in a real app, but for now just upload
                           try {
-                            const { uploadData } = await import('aws-amplify/storage');
-                            const key = `logo/${Date.now()}-${file.name}`;
-                            await uploadData({ path: key, data: file }).result;
+                            const { uploadFile } = await import('@/lib/storage/files');
+                            const key = await uploadFile({ weddingId: config.weddingId, kind: 'logo', file });
                             await updateConfig({ siteLogoKey: key });
                           } catch (error) {
                             console.error('Upload failed', error);

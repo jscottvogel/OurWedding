@@ -89,7 +89,7 @@ export default function GuestbookSignPage({ params }: { params: { slug: string }
       {/* Guestbook Section */}
       <div className="flex-1 -mt-12 px-4 pb-12 relative z-20">
         <GuestbookForm 
-          weddingId={wedding.id} 
+          slug={params.slug}
           onUploadComplete={addEntry} 
         />
         

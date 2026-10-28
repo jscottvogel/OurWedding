@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { generateClient } from 'aws-amplify/data';
-import { getUrl } from 'aws-amplify/storage';
+import { getFileUrl } from '@/lib/storage/files';
 import type { Schema } from '../../../../../amplify/data/resource';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useWedding } from '@/lib/hooks/useWedding';
@@ -73,8 +73,7 @@ export function EmailStudioProvider({ children }: { children: ReactNode }) {
       let initialPhotoUrl = draft?.photoUrl || '';
       if (!initialPhotoUrl && activeType !== 'thank_you' && wedding?.heroImageKey) {
         try {
-          const res = await getUrl({ path: wedding.heroImageKey });
-          initialPhotoUrl = res.url.toString();
+          initialPhotoUrl = (await getFileUrl(wedding.heroImageKey)) || '';
         } catch (e) {
           console.error('Failed to get hero image URL', e);
         }

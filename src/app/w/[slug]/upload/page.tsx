@@ -90,7 +90,7 @@ export default function GuestUploadPage({ params }: { params: { slug: string } }
       {/* Upload Section */}
       <div className="flex-1 -mt-12 px-4 pb-12 relative z-20">
         <UploaderComponent 
-          weddingId={wedding.id} 
+          slug={params.slug}
           onUploadComplete={addPhotoRecord} 
         />
       </div>

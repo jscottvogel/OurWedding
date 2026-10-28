@@ -7,7 +7,7 @@ import { useWedding } from '@/lib/hooks/useWedding';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../../../amplify/data/resource';
 import { Trash2, Plus, ExternalLink, Loader2, Image as ImageIcon } from 'lucide-react';
-import { uploadData } from 'aws-amplify/storage';
+import { uploadFile } from '@/lib/storage/files';
 
 import { getWeddingOwners } from '@/lib/amplify/weddingOwners';
 
@@ -136,8 +136,7 @@ function OurStoryEditor({ weddingId, story }: { weddingId: string, story: Schema
                 if (!file) return;
                 setIsUploading(true);
                 try {
-                  const key = `story/${Date.now()}-${file.name}`;
-                  await uploadData({ path: key, data: file }).result;
+                  const key = await uploadFile({ weddingId, kind: 'story', file });
                   setImageKey(key);
                 } catch (error) {
                   console.error('Upload failed', error);
@@ -398,8 +397,7 @@ function RegistryEditor({ weddingId, items }: { weddingId: string, items: Schema
                         if (!file) return;
                         setIsEditUploading(true);
                         try {
-                          const key = `registry/${Date.now()}-${file.name}`;
-                          await uploadData({ path: key, data: file }).result;
+                          const key = await uploadFile({ weddingId, kind: 'registry', file });
                           setEditImageKey(key);
                         } catch (error) {
                           console.error('Upload failed', error);
@@ -455,8 +453,7 @@ function RegistryEditor({ weddingId, items }: { weddingId: string, items: Schema
                 if (!file) return;
                 setIsUploading(true);
                 try {
-                  const key = `registry/${Date.now()}-${file.name}`;
-                  await uploadData({ path: key, data: file }).result;
+                  const key = await uploadFile({ weddingId, kind: 'registry', file });
                   setImageKey(key);
                 } catch (error) {
                   console.error('Upload failed', error);

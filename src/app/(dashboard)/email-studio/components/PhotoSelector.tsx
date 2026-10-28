@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
-import { getUrl } from 'aws-amplify/storage';
 import type { Schema } from '../../../../../amplify/data/resource';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useWedding } from '@/lib/hooks/useWedding';

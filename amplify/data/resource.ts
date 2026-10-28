@@ -6,6 +6,7 @@ import { removeUser } from '../functions/remove-user/resource';
 import { resetDemo } from '../functions/reset-demo/resource';
 import { sendWeddingEmail } from '../functions/send-wedding-email/resource';
 import { publicSite } from '../functions/public-site/resource';
+import { storageAccess } from '../functions/storage-access/resource';
 
 /**
  * AUTHORIZATION MODEL
@@ -38,6 +39,19 @@ const publicReadRules = (allow: any) => [
 ];
 
 const schema = a.schema({
+  /** Presigned POST returned by createUploadUrl / createGuestUploadUrl. `fields` is a JSON object string. */
+  StorageUpload: a.customType({
+    key: a.string().required(),
+    url: a.string().required(),
+    fields: a.string().required(),
+    contentType: a.string().required(),
+    maxBytes: a.integer().required(),
+    expiresAt: a.string().required(),
+  }),
+  StorageFileUrl: a.customType({
+    key: a.string().required(),
+    url: a.string(),
+  }),
   SendEmailResult: a.customType({
     campaignId: a.id(),
     sentCount: a.integer(),
@@ -561,6 +575,56 @@ const schema = a.schema({
     .returns(a.boolean())
     .authorization((allow) => [allow.authenticated()])
     .handler(a.handler.function(publicSite)),
+
+  // ---------------- File storage (storageAccess Lambda) ----------------
+  // Clients have no direct S3 access to weddings/*; these presign after checking Wedding.owners.
+  createUploadUrl: a
+    .mutation()
+    .arguments({
+      weddingId: a.string().required(),
+      visibility: a.string(),
+      kind: a.string().required(),
+      fileName: a.string().required(),
+      contentType: a.string(),
+    })
+    .returns(a.ref('StorageUpload'))
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(storageAccess)),
+
+  getFileUrl: a
+    .query()
+    .arguments({ key: a.string().required() })
+    .returns(a.string())
+    .authorization((allow) => [allow.publicApiKey(), allow.authenticated()])
+    .handler(a.handler.function(storageAccess)),
+
+  getFileUrls: a
+    .query()
+    .arguments({ keys: a.string().required().array().required() })
+    .returns(a.ref('StorageFileUrl').array())
+    .authorization((allow) => [allow.publicApiKey(), allow.authenticated()])
+    .handler(a.handler.function(storageAccess)),
+
+  deleteFile: a
+    .mutation()
+    .arguments({ key: a.string().required() })
+    .returns(a.boolean())
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(storageAccess)),
+
+  /** Server-only (requires INTERNAL_API_SECRET); browsers call the rate-limited /api/website/upload-url. */
+  createGuestUploadUrl: a
+    .mutation()
+    .arguments({
+      internalKey: a.string().required(),
+      slug: a.string().required(),
+      kind: a.string().required(),
+      fileName: a.string().required(),
+      contentType: a.string(),
+    })
+    .returns(a.ref('StorageUpload'))
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(storageAccess)),
 
   // ---------------- Authenticated operations ----------------
   exportPDF: a

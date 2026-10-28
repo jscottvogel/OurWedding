@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { MoodPinItem } from '@/lib/hooks/useMoodBoard';
 import { Trash2, Plus, Image as ImageIcon, Link as LinkIcon, Loader2, X } from 'lucide-react';
-import { uploadData } from 'aws-amplify/storage';
+import { uploadFile } from '@/lib/storage/files';
 import { toast } from 'sonner';
 import { importImageFromUrl } from '@/lib/actions/moodboard';
 
@@ -29,15 +29,7 @@ export default function MasonryLayout({ items, weddingId, onAddItem, onDeleteIte
 
     setIsUploading(true);
     try {
-      const timestamp = new Date().getTime();
-      const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-      const fileKey = `moodboard/${weddingId}/${timestamp}-${safeName}`;
-      
-      await uploadData({
-        path: fileKey,
-        data: file,
-        options: { contentType: file.type }
-      }).result;
+      const fileKey = await uploadFile({ weddingId, kind: 'moodboard', file });
       
       await onAddItem({
         imageKey: fileKey,
@@ -66,12 +58,13 @@ export default function MasonryLayout({ items, weddingId, onAddItem, onDeleteIte
       }
       const bytes = Uint8Array.from(atob(res.imageBase64), c => c.charCodeAt(0));
       const ext = res.contentType.split('/')[1] || 'jpg';
-      const fileKey = `moodboard/${weddingId}/${Date.now()}-import.${ext}`;
-      await uploadData({
-        path: fileKey,
-        data: new Blob([bytes], { type: res.contentType }),
-        options: { contentType: res.contentType }
-      }).result;
+      const fileKey = await uploadFile({
+        weddingId,
+        kind: 'moodboard',
+        file: new Blob([bytes], { type: res.contentType }),
+        fileName: `import.${ext}`,
+        contentType: res.contentType,
+      });
       await onAddItem({
         imageKey: fileKey,
         sourceUrl: url,

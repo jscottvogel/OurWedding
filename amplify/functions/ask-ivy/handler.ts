@@ -3,8 +3,25 @@ import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedroc
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import mammoth from 'mammoth';
 import * as xlsx from 'xlsx';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { isLegacyKey, parseKey } from '../shared/storage-keys';
 
 const bedrockClient = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' });
+const doc = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+
+/** Chat attachments must be weddings/{id}/private/chat/... in a wedding the caller owns. */
+async function canReadDocument(key: string, sub: string | undefined): Promise<boolean> {
+  if (!sub) return false;
+  const parsed = parseKey(key);
+  if (!parsed) {
+    // Pre-migration chat/ keys were readable by any signed-in user; keep that until ALLOW_LEGACY_KEYS=false.
+    return process.env.ALLOW_LEGACY_KEYS !== 'false' && key.startsWith('chat/') && isLegacyKey(key);
+  }
+  if (parsed.kind !== 'chat') return false;
+  const res = await doc.send(new GetCommand({ TableName: process.env.TABLE_WEDDING!, Key: { id: parsed.weddingId } }));
+  return ((res.Item?.owners as string[] | undefined) || []).includes(sub);
+}
 
 export const handler: Schema['askIvy']['functionHandler'] = async (event, context) => {
   const { message, weddingContext, conversationHistory, imageBase64, documentKey } = event.arguments;
@@ -69,6 +86,8 @@ export const handler: Schema['askIvy']['functionHandler'] = async (event, contex
   let extractedText = '';
   if (documentKey) {
     try {
+      const sub = (event.identity as { sub?: string } | null | undefined)?.sub;
+      if (!(await canReadDocument(documentKey, sub))) throw new Error('Not authorized to read this document');
       const s3Client = new S3Client({ region: process.env.AWS_REGION || 'us-east-1' });
       const getObjCmd = new GetObjectCommand({
         Bucket: process.env.STORAGE_BUCKET_NAME,

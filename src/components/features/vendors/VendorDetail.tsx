@@ -4,6 +4,7 @@ import { Mail, Phone, Globe, MapPin, FileText, Download, Send, Loader2 } from 'l
 import type { Schema } from '../../../../amplify/data/resource';
 import { useState, useRef } from 'react';
 import { sendVendorContractLink } from '@/lib/actions/vendors';
+import { getFileUrl, uploadFile } from '@/lib/storage/files';
 
 interface VendorDetailProps {
   vendor: Schema['Vendor']['type'];
@@ -27,14 +28,7 @@ export default function VendorDetail({ vendor, onUpdate }: VendorDetailProps) {
 
     setIsUploading(true);
     try {
-      const { uploadData } = await import('aws-amplify/storage');
-      const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-      const key = `vendors/${vendor.id}/${Date.now()}-${safeName}`;
-
-      await uploadData({
-        path: key,
-        data: file
-      }).result;
+      const key = await uploadFile({ weddingId: vendor.weddingId, kind: 'contracts', file });
 
       await onUpdate({
         contractFileKey: key,
@@ -52,9 +46,8 @@ export default function VendorDetail({ vendor, onUpdate }: VendorDetailProps) {
   const handleDownloadContract = async () => {
     if (!vendor.contractFileKey) return;
     try {
-      const { getUrl } = await import('aws-amplify/storage');
-      const result = await getUrl({ path: vendor.contractFileKey });
-      window.open(result.url.toString(), '_blank');
+      const url = await getFileUrl(vendor.contractFileKey);
+      if (url) window.open(url, '_blank');
     } catch (err) {
       console.error('Failed to get download URL:', err);
     }

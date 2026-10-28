@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useWedding } from '@/lib/hooks/useWedding';
 import { differenceInDays, startOfDay } from 'date-fns';
 import { Edit2 } from 'lucide-react';
+import { getFileUrl, uploadFile } from '@/lib/storage/files';
 
 export default function CoupleHero() {
   const { wedding, loading } = useWedding();
@@ -35,11 +36,9 @@ export default function CoupleHero() {
       });
       
       if (wedding.heroImageKey) {
-        import('aws-amplify/storage').then(({ getUrl }) => {
-          getUrl({ path: wedding.heroImageKey! })
-            .then((res) => setHeroImageUrl(res.url.toString()))
-            .catch((err) => console.error('Failed to load hero image', err));
-        });
+        getFileUrl(wedding.heroImageKey)
+          .then((url) => setHeroImageUrl(url))
+          .catch((err) => console.error('Failed to load hero image', err));
       }
     }
   }, [wedding]);
@@ -51,13 +50,7 @@ export default function CoupleHero() {
       let updatedHeroImageKey = wedding.heroImageKey;
 
       if (heroImageFile) {
-        const { uploadData } = await import('aws-amplify/storage');
-        const key = `assets/hero-${Date.now()}-${heroImageFile.name}`;
-        await uploadData({
-          path: key,
-          data: heroImageFile
-        });
-        updatedHeroImageKey = key;
+        updatedHeroImageKey = await uploadFile({ weddingId: wedding.id, kind: 'hero', file: heroImageFile });
       }
 
       const { generateClient } = await import('aws-amplify/data');

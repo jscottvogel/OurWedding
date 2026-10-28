@@ -9,6 +9,7 @@ import {
   DeleteCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'crypto';
+import { parseKey } from '../shared/storage-keys';
 
 const doc = DynamoDBDocumentClient.from(new DynamoDBClient({}), {
   marshallOptions: { removeUndefinedValues: true },
@@ -36,6 +37,12 @@ type Item = Record<string, any>;
 class PublicError extends Error {}
 
 const now = () => new Date().toISOString();
+
+/** A guest-submitted key must be a new-layout public key of `kind` inside this site's wedding. */
+function isGuestKeyFor(key: string, kind: 'gallery' | 'guestbook', weddingId: string): boolean {
+  const parsed = parseKey(key);
+  return !!parsed && parsed.kind === kind && parsed.weddingId === weddingId;
+}
 
 function requireInternalKey(key: unknown) {
   const expected = process.env.INTERNAL_API_SECRET || '';
@@ -387,7 +394,7 @@ const ops: Record<string, (args: any, event: AppSyncResolverEvent<any>) => Promi
     const songRequest = str(args.songRequest, 300, 'songRequest');
     if (!message && !songRequest && !args.mediaKey) throw new PublicError('Message is required');
     const mediaKey = str(args.mediaKey, 500, 'mediaKey');
-    if (mediaKey && !mediaKey.startsWith('guestbook/')) throw new PublicError('Invalid media key');
+    if (mediaKey && !isGuestKeyFor(mediaKey, 'guestbook', site.weddingId)) throw new PublicError('Invalid media key');
     const messageType = ['GUESTBOOK', 'SONG_REQUEST', 'BOTH'].includes(args.messageType)
       ? args.messageType
       : songRequest && message ? 'BOTH' : songRequest ? 'SONG_REQUEST' : 'GUESTBOOK';
@@ -417,7 +424,7 @@ const ops: Record<string, (args: any, event: AppSyncResolverEvent<any>) => Promi
   async submitGalleryUpload(args) {
     const site = await requirePublicSite(args);
     const fileKey = str(args.fileKey, 500, 'fileKey', true)!;
-    if (!fileKey.startsWith('gallery/') || fileKey.includes('..')) throw new PublicError('Invalid file key');
+    if (!isGuestKeyFor(fileKey, 'gallery', site.weddingId)) throw new PublicError('Invalid file key');
     const size = Number.isInteger(args.fileSizeBytes) ? args.fileSizeBytes : undefined;
     const ts = now();
     await doc.send(new PutCommand({
