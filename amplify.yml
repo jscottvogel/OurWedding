@@ -9,6 +9,9 @@ frontend:
   phases:
     build:
       commands:
+        # Amplify Hosting only exposes env vars at build time; persist the ones the
+        # Next.js server needs at runtime (API routes, middleware).
+        - env | grep -E '^(NEXT_PUBLIC_[A-Z_]+|INTERNAL_API_SECRET|SITE_COOKIE_SECRET|SES_FROM_ADDRESS|DEMO_ENABLED|DEMO_USER_EMAIL|DEMO_USER_PASSWORD)=' >> .env.production || true
         - npm run build
   artifacts:
     baseDirectory: .next
