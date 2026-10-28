@@ -6,6 +6,11 @@ import {
   AdminGetUserCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 import { getWeddingOwners, grantWeddingAccess } from '../shared/owners';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
+import { randomUUID } from 'crypto';
+
+const doc = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 const client = new CognitoIdentityProviderClient({});
 
@@ -60,5 +65,32 @@ export const handler: AppSyncResolverHandler<{ email: string; role: string; wedd
   if (!inviteeSub) throw new Error('Failed to resolve invited user');
 
   await grantWeddingAccess(weddingId, inviteeSub, groupName === 'vendor' ? 'readers' : 'owners');
+
+  // Record the membership with the invitee's real sub. (Invitees can't read or claim an
+  // `INVITE_<email>` placeholder under owner-only auth, so it's created here, server-side.)
+  const memberTable = process.env.TABLE_WEDDING_MEMBER!;
+  const existing = await doc.send(new ScanCommand({
+    TableName: memberTable,
+    FilterExpression: 'weddingId = :w AND profileId = :p',
+    ExpressionAttributeValues: { ':w': weddingId, ':p': inviteeSub },
+  }));
+  if (!existing.Items?.length) {
+    const refreshed = await getWeddingOwners(process.env.TABLE_WEDDING!, weddingId);
+    const owners = Array.from(new Set([...(refreshed?.owners || []), inviteeSub]));
+    const now = new Date().toISOString();
+    await doc.send(new PutCommand({
+      TableName: memberTable,
+      Item: {
+        id: randomUUID(),
+        __typename: 'WeddingMember',
+        weddingId,
+        profileId: inviteeSub,
+        role: role === 'vendor' ? 'vendor' : role === 'admin' ? 'admin' : 'planner',
+        owners,
+        createdAt: now,
+        updatedAt: now,
+      },
+    }));
+  }
   return true;
 };

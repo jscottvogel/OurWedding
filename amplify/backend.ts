@@ -88,6 +88,13 @@ backend.sendEmail.resources.lambda.addToRolePolicy(
     resources: tableArns(['Wedding', 'MoodPin', ...WEDDING_SCOPED_MODELS]),
   })
 );
+backend.sendEmail.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    actions: ['dynamodb:PutItem'],
+    resources: [tables['WeddingMember'].tableArn],
+  })
+);
+backend.sendEmail.addEnvironment('TABLE_WEDDING_MEMBER', tables['WeddingMember'].tableName);
 backend.sendEmail.addEnvironment('TABLE_WEDDING', tables['Wedding'].tableName);
 backend.sendEmail.addEnvironment('TABLE_MOOD_BOARD', tables['MoodBoard'].tableName);
 backend.sendEmail.addEnvironment('TABLE_MOOD_PIN', tables['MoodPin'].tableName);

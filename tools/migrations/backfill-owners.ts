@@ -6,9 +6,10 @@
  *   npx tsx tools/migrations/backfill-owners.ts --api-id <appsyncApiId> --user-pool-id <poolId> [--env NONE] [--phase pre|post] [--apply]
  *
  * Phase "pre" (run BEFORE deploying the new schema, safe under old schema):
- *   1. Derive each wedding's owners/readers from WeddingMember -> Profile.cognitoSub
- *      (admin/planner -> owners, vendor -> readers). Falls back to the legacy `owner`
- *      attribute ("sub::username") on the Wedding / WeddingMember records.
+ *   1. Derive each wedding's owners/readers from WeddingMember.profileId, which holds the
+ *      member's Cognito sub (see useAuth.ts / settings page). Rows still pending an invite
+ *      (`INVITE_<email>`) are skipped. admin/planner -> owners, vendor -> readers.
+ *      Legacy `owner` on the Wedding record (creator) is also kept as an owner.
  *   2. Write `owners` (and `readers` on Wedding/Vendor/RunSheetItem) onto every
  *      wedding-scoped record. MoodPins inherit via their MoodBoard.
  *   3. Guestbook entries with no isApproved get isApproved=true (old default) so they stay visible.
@@ -24,7 +25,7 @@
  * cognito-idp:ListUsers/AdminListGroupsForUser/AdminAddUserToGroup.
  */
 import { DynamoDBClient, paginateListTables } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, ScanCommand, UpdateCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, ScanCommand, UpdateCommand, PutCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import {
   CognitoIdentityProviderClient,
   paginateListUsers,
@@ -45,6 +46,8 @@ const API_ID = arg('api-id');
 const USER_POOL_ID = arg('user-pool-id');
 const ENV = arg('env', 'NONE')!;
 const PHASE = arg('phase', 'pre') as 'pre' | 'post';
+// Delete weddings that have no resolvable owner AND no child records (abandoned onboarding).
+const DELETE_EMPTY_ORPHANS = args.includes('--delete-empty-orphans');
 
 if (!API_ID || !USER_POOL_ID) {
   console.error('Usage: --api-id <id> --user-pool-id <id> [--env NONE] [--phase pre|post] [--apply]');
@@ -140,7 +143,11 @@ async function main() {
   }
   for (const m of members) {
     const a = access.get(m.weddingId);
-    const sub = subByProfile.get(m.profileId) || subFromLegacyOwner(m.owner);
+    // profileId is the member's Cognito sub. Older rows may hold a Profile.id instead; map those.
+    // Never fall back to `m.owner`: that is whoever CREATED the row (e.g. the inviter).
+    const pid: string | undefined = m.profileId;
+    const sub = pid?.startsWith('INVITE_') ? undefined : (subByProfile.get(pid!) || pid);
+    if (pid?.startsWith('INVITE_')) { bump('members.pendingInviteSkipped'); continue; }
     if (!a || !sub) { bump('members.unresolved'); continue; }
     const role = m.role || 'admin';
     if (!roleBySub.has(sub)) roleBySub.set(sub, new Set());
@@ -152,12 +159,19 @@ async function main() {
   for (const a of access.values()) for (const s of a.owners) a.readers.delete(s);
 
   const orphans = weddings.filter((w) => access.get(w.id)!.owners.size === 0);
-  if (orphans.length) {
-    console.warn(`\n!! ${orphans.length} wedding(s) have no resolvable owner (will be inaccessible):`);
-    for (const w of orphans) console.warn(`   ${w.id} ${w.slug} (${w.coupleName1} & ${w.coupleName2})`);
-  }
-
   const ownersOf = (weddingId?: string) => (weddingId ? access.get(weddingId) : undefined);
+  const childCount = new Map<string, number>();
+
+  const emailBySub = new Map<string, string>();
+  for (const p of profiles) if (p.cognitoSub && p.email) emailBySub.set(p.cognitoSub, p.email);
+  const who = (s: string) => emailBySub.get(s) || s;
+  console.log('\nDerived access:');
+  for (const w of weddings) {
+    const a = access.get(w.id)!;
+    console.log(`  ${w.slug} (${w.coupleName1} & ${w.coupleName2})`);
+    console.log(`    owners : ${[...a.owners].map(who).join(', ') || '(none)'}`);
+    if (a.readers.size) console.log(`    readers: ${[...a.readers].map(who).join(', ')}`);
+  }
 
   // --- 2. Backfill records ---
   for (const w of weddings) {
@@ -171,12 +185,14 @@ async function main() {
     for (const item of items) {
       if (model === 'MoodBoard' && item.weddingId) boardWedding.set(item.id, item.weddingId);
       if (!item.weddingId) { bump(`skipped.noWeddingId.${model}`); continue; }
+      childCount.set(item.weddingId, (childCount.get(item.weddingId) || 0) + 1);
       const a = ownersOf(item.weddingId);
       if (!a) { bump(`skipped.unknownWedding.${model}`); continue; }
       const owners = [...a.owners];
       // WeddingMember: the member themself must keep access to their own row.
       if (model === 'WeddingMember') {
-        const self = subByProfile.get(item.profileId) || subFromLegacyOwner(item.owner);
+        const pid: string | undefined = item.profileId;
+        const self = pid && !pid.startsWith('INVITE_') ? (subByProfile.get(pid) || pid) : undefined;
         if (self && !owners.includes(self)) owners.push(self);
       }
       await setAccess(table, item, owners, READER_MODELS.has(model) ? [...a.readers] : undefined);
@@ -195,6 +211,24 @@ async function main() {
       const a = ownersOf(pin.weddingId || boardWedding.get(pin.moodBoardId));
       if (!a) { bump('skipped.unknownWedding.MoodPin'); continue; }
       await setAccess(T.MoodPin, pin, [...a.owners]);
+    }
+  }
+
+  // --- Orphans: weddings nobody could own after the cutover ---
+  let blockingOrphans = 0;
+  if (orphans.length) {
+    console.warn(`\n!! ${orphans.length} wedding(s) have no resolvable owner:`);
+    for (const w of orphans) {
+      const n = childCount.get(w.id) || 0;
+      const label = `${w.id} ${w.slug} (${w.coupleName1} & ${w.coupleName2}) children=${n}`;
+      if (n === 0 && DELETE_EMPTY_ORPHANS) {
+        console.warn(`   DELETE (empty) ${label}`);
+        bump('orphans.deletedEmpty');
+        if (APPLY) await doc.send(new DeleteCommand({ TableName: T.Wedding, Key: { id: w.id } }));
+      } else {
+        console.warn(`   ${n === 0 ? 'EMPTY (pass --delete-empty-orphans to remove)' : 'HAS DATA - assign an owner manually'} ${label}`);
+        blockingOrphans++;
+      }
     }
   }
 
@@ -241,7 +275,7 @@ async function main() {
 
   console.log('\nSummary', APPLY ? '(applied)' : '(DRY RUN - nothing written)');
   console.table(stats);
-  if (orphans.length) process.exitCode = 2;
+  if (blockingOrphans) process.exitCode = 2;
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });

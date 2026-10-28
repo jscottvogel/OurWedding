@@ -7,7 +7,6 @@ import { LogOut, User, Key, Shield, Users, RefreshCw } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../../../amplify/data/resource';
-import { getWeddingOwners } from '@/lib/amplify/weddingOwners';
 
 const client = generateClient<Schema>();
 import { seedDemoData, clearDemoData } from '@/lib/utils/seedDemoData';
@@ -100,13 +99,8 @@ export default function SettingsPage() {
         throw new Error(errors[0].message);
       }
       
-      // Track invitation in the database so it appears in the UI list
-      await client.models.WeddingMember.create({
-        profileId: `INVITE_${inviteEmail}`,
-        role: inviteRole as any,
-        weddingId: weddingId,
-        owners: await getWeddingOwners(weddingId)
-      });
+      // inviteUser creates the WeddingMember row server-side (with the invitee's real sub),
+      // so it appears in the team list via the observeQuery above.
       
       setInviteSuccess(true);
       setInviteEmail('');
