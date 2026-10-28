@@ -112,7 +112,34 @@ Put the same `INTERNAL_API_SECRET` and a `SITE_COOKIE_SECRET` into `.env.local`,
    - The frontend phase reuses that install and runs `npm run build`.
 5. Add the custom domain under **Hosting → Custom domains**. For wedding subdomains, add a wildcard `*` subdomain that matches `NEXT_PUBLIC_ROOT_DOMAIN`.
 6. Verify the SES identity for `SES_FROM_ADDRESS` and request SES production access before sending email.
-7. Existing data created before the `owners` migration has no `owners`. Backfill it from each record's `Wedding.owners` before cutover, or those records are hidden from collaborators.
+
+### Migrating production data (tenant-isolation release)
+
+Records created before this release have no `owners`. If you deploy the new schema without backfilling, **nobody can see existing weddings**. Run [backfill-owners.ts](tools/migrations/backfill-owners.ts) as described below. It is idempotent and does a dry run unless you pass `--apply`.
+
+Find `API_ID` (the AppSync API id; DynamoDB tables are named `<Model>-<API_ID>-NONE`) and `USER_POOL_ID` in the current production `amplify_outputs.json` or the AWS console.
+
+1. **Back up:** turn on DynamoDB point-in-time recovery for every `*-<API_ID>-NONE` table, or take on-demand backups.
+2. **Before deploy:** dry run first, then apply. This is safe while the old schema is still live, because the old rules ignore the new fields.
+   ```bash
+   npx tsx tools/migrations/backfill-owners.ts --api-id $API_ID --user-pool-id $USER_POOL_ID --phase pre
+   npx tsx tools/migrations/backfill-owners.ts --api-id $API_ID --user-pool-id $USER_POOL_ID --phase pre --apply
+   ```
+   - Fill in each wedding's `owners` and `readers` from `WeddingMember` → `Profile.cognitoSub`. Members with the admin or planner role become owners; vendors become readers. If neither exists, use the legacy `owner` field.
+   - Copy those owners and readers onto every child record.
+   - Set `isApproved=true` on existing guestbook entries, so they stay visible.
+   - Add users who have no Cognito group to `planner` (or to `vendor` if they're vendor-only members). Without this, the new middleware locks them out.
+   - The script lists any wedding with no resolvable owner and exits with code 2. Fix those weddings by hand before you continue.
+3. **Deploy:** merge the branch. Amplify adds the GSIs one at a time per table, so a deploy on a large table can take a while.
+4. **After deploy:** apply the post-deploy phase.
+   ```bash
+   npx tsx tools/migrations/backfill-owners.ts --api-id $API_ID --user-pool-id $USER_POOL_ID --phase post --apply
+   ```
+   - Re-run the backfill, to catch records written during the deploy.
+   - Move plaintext `WebsiteConfig.sitePassword` values into `SitePassword` as scrypt hashes and delete the plaintext.
+5. **Smoke test:** sign in as an existing couple and check the dashboard. Then open one public site and one password-protected site.
+
+**Rollback:** the new fields are additive, so redeploying the previous commit restores the old behaviour. Restore from backups only if the post-deploy phase has already removed plaintext passwords and you need them back.
 
 ### API key rotation
 
