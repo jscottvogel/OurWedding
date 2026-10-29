@@ -1,5 +1,7 @@
 'use client';
 
+import { QrSvg, qrPngDataUrl } from '@/components/ui/QrSvg';
+
 import { useGallery } from '@/lib/hooks/useGallery';
 import PhotoGrid from '@/components/features/gallery/PhotoGrid';
 import { Download, Copy, Printer, ScanLine } from 'lucide-react';
@@ -36,11 +38,7 @@ export default function GalleryPage() {
       
       setUploadUrl(finalUrl);
       
-      import('qrcode').then((QRCode) => {
-        QRCode.default.toDataURL(finalUrl, { width: 500, margin: 1 })
-          .then(qr => setLocalQr(qr))
-          .catch(err => console.error(err));
-      });
+      setLocalQr(finalUrl);
     }
   }, [wedding, config, configLoading]);
 
@@ -53,10 +51,10 @@ export default function GalleryPage() {
     }
   };
 
-  const handleDownloadQr = () => {
+  const handleDownloadQr = async () => {
     if (displayQr) {
       const a = document.createElement('a');
-      a.href = displayQr;
+      a.href = await qrPngDataUrl(displayQr);
       a.download = `WeddingSteward-QRCode-${wedding?.slug}.png`;
       document.body.appendChild(a);
       a.click();
@@ -111,12 +109,7 @@ export default function GalleryPage() {
             {displayQr ? (
               <>
                 <div className="bg-ivory p-4 rounded-2xl border-2 border-sage border-dashed mb-6">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img 
-                    src={displayQr} 
-                    alt="Wedding QR Code" 
-                    className="w-48 h-48 object-contain mix-blend-multiply" 
-                  />
+                  <QrSvg value={displayQr} className="w-48 h-48" />
                 </div>
                 <h3 className="text-xl font-display text-charcoal mb-1">Scan to Upload</h3>
                 <p className="text-sm text-mid-gray font-medium">{wedding?.coupleName1} & {wedding?.coupleName2}'s Wedding</p>

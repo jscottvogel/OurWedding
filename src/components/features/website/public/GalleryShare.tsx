@@ -1,5 +1,7 @@
 'use client';
 
+import { QrSvg } from '@/components/ui/QrSvg';
+
 import React, { useState, useEffect } from 'react';
 import { Copy, Camera, Check, QrCode } from 'lucide-react';
 
@@ -22,11 +24,7 @@ export function GalleryShare({ slug }: { slug: string }) {
       const url = `${baseUrl}${path}`;
       setUploadUrl(url);
 
-      import('qrcode').then((QRCode) => {
-        QRCode.default.toDataURL(url, { width: 200, margin: 1 })
-          .then(dataUrl => setQrCodeData(dataUrl))
-          .catch(err => console.error('Failed to generate QR code', err));
-      });
+      setQrCodeData(url);
     }
   }, [slug]);
 
@@ -73,7 +71,7 @@ export function GalleryShare({ slug }: { slug: string }) {
       
       <div className="flex-shrink-0 bg-white p-3 rounded-xl shadow-inner border border-gray-100 flex flex-col items-center">
         {qrCodeData ? (
-          <img src={qrCodeData} alt="Upload QR Code" className="w-32 h-32 md:w-40 md:h-40" />
+          <QrSvg value={qrCodeData} className="w-32 h-32 md:w-40 md:h-40" />
         ) : (
           <div className="w-32 h-32 md:w-40 md:h-40 bg-gray-50 flex items-center justify-center animate-pulse rounded-lg">
             <QrCode className="w-8 h-8 text-gray-300" />

@@ -1,5 +1,7 @@
 'use client';
 
+import { QrSvg, qrPngDataUrl } from '@/components/ui/QrSvg';
+
 import { useWedding } from '@/lib/hooks/useWedding';
 import { useWebsiteConfig } from '@/lib/hooks/useWebsiteConfig';
 import { useState, useEffect } from 'react';
@@ -29,11 +31,7 @@ export default function QRQuickShare() {
       
       setUploadUrl(finalUrl);
       
-      import('qrcode').then((QRCode) => {
-        QRCode.default.toDataURL(finalUrl, { width: 300, margin: 1 })
-          .then(url => setLocalQr(url))
-          .catch(err => console.error(err));
-      });
+      setLocalQr(finalUrl);
     }
   }, [wedding, config, configLoading]);
 
@@ -50,10 +48,10 @@ export default function QRQuickShare() {
     return <div className="h-full bg-white rounded-xl border border-light-gray animate-pulse" />;
   }
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (displayQr) {
       const a = document.createElement('a');
-      a.href = displayQr;
+      a.href = await qrPngDataUrl(displayQr);
       a.download = `WeddingSteward-QRCode-${wedding?.slug}.png`;
       document.body.appendChild(a);
       a.click();
@@ -69,8 +67,7 @@ export default function QRQuickShare() {
       {displayQr ? (
         <div className="flex-1 flex flex-col items-center justify-center w-full">
           <div className="bg-ivory p-4 rounded-lg border border-light-gray mb-6">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={displayQr} alt="Wedding QR Code" className="w-32 h-32" />
+            <QrSvg value={displayQr} className="w-32 h-32" />
           </div>
           
           <div className="w-full space-y-3">
