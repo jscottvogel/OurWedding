@@ -15,7 +15,7 @@ export function GalleryShare({ slug }: { slug: string }) {
       
       let baseUrl = window.location.origin;
       if (hostname.includes('weddingsteward.com')) {
-        baseUrl = 'https://weddingsteward.com';
+        baseUrl = 'https://www.weddingsteward.com';
       }
       
       const path = isCustomDomain ? '/upload' : `/w/${slug}/upload`;

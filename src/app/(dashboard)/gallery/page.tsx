@@ -23,7 +23,7 @@ export default function GalleryPage() {
   useEffect(() => {
     if (wedding && !configLoading && typeof window !== 'undefined') {
       const hostname = window.location.hostname;
-      const baseUrl = hostname.includes('weddingsteward.com') ? 'https://weddingsteward.com' : window.location.origin;
+      const baseUrl = hostname.includes('weddingsteward.com') ? 'https://www.weddingsteward.com' : window.location.origin;
       
       let finalUrl = '';
       if (config?.customDomain) {

@@ -16,7 +16,7 @@ export default function QRQuickShare() {
   useEffect(() => {
     if (wedding && !configLoading && typeof window !== 'undefined') {
       const hostname = window.location.hostname;
-      const baseUrl = hostname.includes('weddingsteward.com') ? 'https://weddingsteward.com' : window.location.origin;
+      const baseUrl = hostname.includes('weddingsteward.com') ? 'https://www.weddingsteward.com' : window.location.origin;
       
       let finalUrl = '';
       if (config?.customDomain) {
@@ -87,7 +87,7 @@ export default function QRQuickShare() {
               <Copy className="w-4 h-4 mr-2" /> Copy Link
             </button>
             <Link 
-              href="/qr-code"
+              href="/gallery"
               className="w-full flex items-center justify-center py-2 px-4 bg-sage text-white rounded-md hover:bg-dark-sage transition-colors"
             >
               <ExternalLink className="w-4 h-4 mr-2" /> Manage QR Code
