@@ -77,7 +77,14 @@ npx ampx sandbox secret set INTERNAL_API_SECRET
 npx ampx sandbox secret set DEMO_USER_SUB
 ```
 
-For branch deployments, set them under **Amplify console → Hosting → Secrets**.
+For branch deployments, set them under **Amplify console → Hosting → Secrets**. If you set them with the CLI, use the exact path the functions read. You can find it in a deployed function's `AMPLIFY_SSM_ENV_CONFIG` env var. For production it is `/amplify/d3byz21k828ick/main-branch-cc096e35f7/<NAME>`, or the app-wide `/amplify/shared/d3byz21k828ick/<NAME>`:
+
+```bash
+aws ssm put-parameter --type SecureString --overwrite \
+  --name /amplify/d3byz21k828ick/main-branch-cc096e35f7/INTERNAL_API_SECRET --value "<secret>"
+```
+
+> A secret written to the wrong path does **not** fail the deploy. The function just reads an empty value, and every internal call returns `Unauthorized`. After changing a secret, redeploy, or update the function's description, so warm instances pick up the new value.
 
 ## Data access model
 

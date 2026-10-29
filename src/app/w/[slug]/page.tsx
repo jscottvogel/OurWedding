@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { PublicSiteLayout } from '@/components/features/website/public/PublicSiteLayout';
 import { HeroSection, OurStorySection, EventsSection, TravelSection, WeddingPartySection, GallerySection, RegistrySection, FaqSection, GuestbookSection } from '@/components/features/website/public/Sections';
 import { RsvpSection } from '@/components/features/website/public/RsvpSection';
@@ -66,7 +67,7 @@ export default async function PublicSitePage({ params }: { params: { slug: strin
   const config = configs[0];
   
   if (!config) {
-    return <div className="min-h-screen flex items-center justify-center p-4"><div className="text-center"><h1 className="text-2xl font-bold mb-2 text-charcoal">Website Not Found</h1><p className="text-mid-gray">This wedding website does not exist.</p></div></div>;
+    notFound();
   }
 
   if (config.publishStatus === 'DRAFT') {
