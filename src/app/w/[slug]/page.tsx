@@ -11,6 +11,7 @@ import type { Schema } from '../../../../amplify/data/resource';
 import type { Metadata } from 'next';
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  let config: Schema['WebsiteConfig']['type'] | undefined;
   try {
     const cookieStore = cookies();
     const client = generateServerClientUsingCookies<Schema>({
@@ -22,9 +23,16 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       { subdomain: decodedSlug },
       { authMode: 'apiKey' }
     );
-    const config = configs[0];
-    if (!config) return { title: 'Wedding Website Not Found', robots: { index: false, follow: false } };
+    config = configs[0];
+  } catch (err) {
+    console.error('generateMetadata failed for wedding site', err);
+    return { title: 'Our Wedding' };
+  }
+  // Metadata resolves before loading.tsx starts streaming, so notFound() here produces a real
+  // 404 status. (Calling it only in the page body would be too late: a 200 is already sent.)
+  if (!config) notFound();
 
+  {
     const title = config.siteTitle || 'Our Wedding';
     const description = config.metaDescription || `Join us to celebrate — ${title}`;
     const isPrivate = !!config.passwordProtected || config.publishStatus === 'DRAFT';
@@ -45,9 +53,6 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       },
       robots: isPrivate ? { index: false, follow: false } : { index: true, follow: true },
     };
-  } catch (err) {
-    console.error('generateMetadata failed for wedding site', err);
-    return { title: 'Our Wedding' };
   }
 }
 

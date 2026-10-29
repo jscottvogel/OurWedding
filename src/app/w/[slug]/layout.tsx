@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import outputs from '@/../amplify_outputs.json';
 import type { Schema } from '../../../../amplify/data/resource';
 import { ThemeWrapper } from '@/components/features/website/public/ThemeWrapper';
+import { notFound } from 'next/navigation';
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const cookieStore = cookies();
@@ -19,10 +20,11 @@ export async function generateMetadata({ params }: { params: { slug: string } })
     { authMode: 'apiKey' }
   );
   const config = configs?.[0];
+  if (!config) return { title: 'Wedding website not found', robots: { index: false, follow: false } };
 
   return {
-    title: config?.siteTitle || `Wedding of ${params.slug}`,
-    description: config?.metaDescription || 'Welcome to our wedding website!',
+    title: config.siteTitle || 'Our Wedding',
+    description: config.metaDescription || 'Welcome to our wedding website!',
   };
 }
 
@@ -46,13 +48,11 @@ export default async function PublicSiteLayout({
   );
   const config = configs?.[0];
 
-  const themeConfig = config || {
-    primaryColor: '#e8caca',
-    accentColor: '#d4af37',
-    backgroundColor: '#fffdfd',
-    headingFont: 'Playfair Display, serif',
-    bodyFont: 'Lato, sans-serif'
-  };
+  // Every page under /w/[slug] needs a real site. The layout renders outside this segment's
+  // loading.tsx boundary, so notFound() here returns a true 404 before any streaming starts.
+  if (!config) notFound();
+
+  const themeConfig = config;
 
   return (
     <ThemeWrapper defaultTheme={themeConfig}>
