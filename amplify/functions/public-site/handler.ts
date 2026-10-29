@@ -480,14 +480,16 @@ const ops: Record<string, (args: any, event: AppSyncResolverEvent<any>) => Promi
 };
 
 export const handler = async (event: AppSyncResolverEvent<any>) => {
-  const op = ops[event.info.fieldName];
-  if (!op) throw new Error(`Unknown operation ${event.info.fieldName}`);
+  // Amplify Gen 2 function resolvers put fieldName at the top level; classic AppSync uses info.
+  const fieldName: string = (event as any).fieldName ?? (event as any).info?.fieldName;
+  const op = ops[fieldName];
+  if (!op) throw new Error(`Unknown operation ${fieldName}`);
   try {
     return await op(event.arguments || {}, event);
   } catch (err) {
     if (err instanceof PublicError) throw err;
     // Log the error type only, never request arguments, since they can contain PII or passwords.
-    console.error(`public-site ${event.info.fieldName} failed:`, (err as Error)?.name, (err as Error)?.message);
+    console.error(`public-site ${fieldName} failed:`, (err as Error)?.name, (err as Error)?.message);
     throw new Error('Internal error');
   }
 };
