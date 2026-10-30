@@ -59,8 +59,6 @@ backend.askIvy.resources.lambda.addToRolePolicy(
     actions: ['s3:GetObject'],
     resources: [
       `${backend.storage.resources.bucket.bucketArn}/weddings/*/private/chat/*`,
-      // Legacy chat attachments; remove with ALLOW_LEGACY_KEYS after the key migration.
-      `${backend.storage.resources.bucket.bucketArn}/chat/*`,
     ],
   })
 );
@@ -71,6 +69,7 @@ backend.askIvy.resources.lambda.addToRolePolicy(
 
 backend.askIvy.addEnvironment('STORAGE_BUCKET_NAME', backend.storage.resources.bucket.bucketName);
 backend.askIvy.addEnvironment('TABLE_WEDDING', tables['Wedding'].tableName);
+backend.askIvy.addEnvironment('ALLOW_LEGACY_KEYS', 'false');
 
 // storage-access presigns every client read/write of weddings/* after checking Wedding.owners/readers.
 // Presigned URLs carry this role's permissions, so it's the only principal with weddings/* write.
@@ -87,13 +86,6 @@ backend.storageAccess.resources.lambda.addToRolePolicy(
   new iam.PolicyStatement({
     actions: ['s3:GetObject', 's3:PutObject', 's3:DeleteObject'],
     resources: [`${bucket.bucketArn}/weddings/*`],
-  })
-);
-backend.storageAccess.resources.lambda.addToRolePolicy(
-  new iam.PolicyStatement({
-    // Read-only presigning of pre-migration keys (ALLOW_LEGACY_KEYS). Drop after the migration.
-    actions: ['s3:GetObject'],
-    resources: ['gallery', 'story', 'logo', 'guestbook', 'registry', 'assets', 'chat'].map((p) => `${bucket.bucketArn}/${p}/*`),
   })
 );
 

@@ -15,7 +15,7 @@ export const storageAccess = defineFunction({
   environment: {
     // Shared with the Next.js server; guards createGuestUploadUrl (see public-site/resource.ts).
     INTERNAL_API_SECRET: secret('INTERNAL_API_SECRET'),
-    // Set to 'false' in the follow-up deploy, after tools/migrations/move-storage-keys.ts has run.
-    ALLOW_LEGACY_KEYS: 'true',
+    // Legacy (pre-migration) keys are disabled. Originals archived at archive/legacy-2026-10/.
+    ALLOW_LEGACY_KEYS: 'false',
   },
 });
