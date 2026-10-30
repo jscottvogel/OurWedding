@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Playfair_Display, DM_Sans } from "next/font/google";
 import "./globals.css";
 import ConfigureAmplifyClientSide from "@/lib/amplify/client";
 import { Toaster } from 'sonner';
+import ServiceWorkerRegister from '@/components/pwa/ServiceWorkerRegister';
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -17,6 +18,19 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   title: "Wedding Steward",
   description: "Modern wedding planning and coordination",
+  applicationName: "WeddingSteward",
+  appleWebApp: {
+    capable: true,
+    title: "WeddingSteward",
+    statusBarStyle: "default",
+  },
+  icons: {
+    apple: "/icons/apple-touch-icon.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#6B8F71",
 };
 
 /**
@@ -40,6 +54,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${playfair.variable} ${dmSans.variable} font-body antialiased`}>
         <ConfigureAmplifyClientSide />
+        <ServiceWorkerRegister />
         <Toaster position="top-center" richColors />
         {children}
       </body>

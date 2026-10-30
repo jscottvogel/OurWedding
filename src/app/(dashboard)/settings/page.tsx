@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/lib/hooks/useAuth';
 import { signOut } from 'aws-amplify/auth';
+import { clearAllOfflineData } from '@/lib/offline/store';
 import { useRouter } from 'next/navigation';
 import { LogOut, User, Key, Shield, Users, RefreshCw } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -114,6 +115,7 @@ export default function SettingsPage() {
 
   const handleSignOut = async () => {
     try {
+      await clearAllOfflineData();
       await signOut();
       window.location.href = '/';
     } catch (error) {

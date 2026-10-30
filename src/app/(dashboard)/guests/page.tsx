@@ -14,6 +14,18 @@ import { toast } from 'sonner';
 import GuestTagManager from '@/components/features/guests/GuestTagManager';
 import { Tag } from 'lucide-react';
 import { exportGuestListToCsv } from '@/lib/actions/guests';
+import { useOfflineSnapshot } from '@/lib/offline/useOfflineSnapshot';
+import { OfflineBanner, ReadOnlyTable, SaveOfflineButton } from '@/components/pwa/OfflineUI';
+
+interface GuestSnapshotRow {
+  name: string;
+  rsvpStatus?: string | null;
+  attendingCount?: number | null;
+  mealChoice?: string | null;
+  dietary: string;
+  phone?: string | null;
+  tableId?: string | null;
+}
 
 export default function GuestsPage() {
   const { guests, loading, addGuest, updateGuest, deleteGuest } = useGuests();
@@ -21,6 +33,7 @@ export default function GuestsPage() {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
   const [availableTags, setAvailableTags] = useState<Schema['GuestTag']['type'][]>([]);
+  const offline = useOfflineSnapshot<GuestSnapshotRow[]>(weddingId, 'guests');
 
   useEffect(() => {
     if (!weddingId) return;
@@ -67,6 +80,46 @@ export default function GuestsPage() {
     toast.success(`Successfully imported ${successCount} guests!`);
   };
 
+  const handleSaveOffline = () =>
+    offline.save(
+      guests.map(g => ({
+        name: [g.firstName, g.lastName].filter(Boolean).join(' '),
+        rsvpStatus: g.rsvpStatus,
+        attendingCount: g.attendingCount,
+        mealChoice: g.mealChoice,
+        dietary: [
+          g.dietaryVegetarian && 'Vegetarian',
+          g.dietaryVegan && 'Vegan',
+          g.dietaryGlutenFree && 'Gluten-free',
+          g.dietaryNutFree && 'Nut-free',
+          g.dietaryOther,
+        ].filter(Boolean).join(', '),
+        phone: g.phone,
+        tableId: g.tableId,
+      }))
+    );
+
+  if (offline.showSnapshot && offline.snapshot) {
+    return (
+      <div className="flex flex-col h-full">
+        <h1 className="text-3xl font-display text-sage mb-4">Guest List &amp; RSVPs</h1>
+        <OfflineBanner savedAt={offline.snapshot.savedAt} />
+        <ReadOnlyTable<GuestSnapshotRow>
+          rows={offline.snapshot.data}
+          empty="No guests were saved."
+          columns={[
+            { header: 'Name', cell: r => <span className="font-medium text-charcoal">{r.name}</span> },
+            { header: 'RSVP', cell: r => r.rsvpStatus },
+            { header: 'Party', cell: r => r.attendingCount },
+            { header: 'Meal', cell: r => r.mealChoice },
+            { header: 'Dietary', cell: r => r.dietary },
+            { header: 'Phone', cell: r => r.phone },
+          ]}
+        />
+      </div>
+    );
+  }
+
   if (loading) {
     return <div className="p-8 animate-pulse text-sage font-medium text-lg">Loading guest list...</div>;
   }
@@ -84,6 +137,12 @@ export default function GuestsPage() {
           <p className="text-mid-gray">Manage your invitations and track responses.</p>
         </div>
         <div className="flex space-x-3">
+          <SaveOfflineButton
+            onSave={handleSaveOffline}
+            saving={offline.saving}
+            savedAt={offline.snapshot?.savedAt}
+            disabled={offline.isOffline}
+          />
           <button 
             onClick={() => setIsTagManagerOpen(true)}
             className="bg-white border border-light-gray text-charcoal px-4 py-2 rounded-lg font-medium hover:bg-light-gray transition-colors flex items-center shadow-sm"

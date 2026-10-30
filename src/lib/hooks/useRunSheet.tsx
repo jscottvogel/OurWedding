@@ -29,6 +29,7 @@ export function useRunSheetProvider() {
   const [loading, setLoading] = useState(true);
   const [isOverSchedule, setIsOverSchedule] = useState(false);
   const [overScheduleByMins, setOverScheduleByMins] = useState(0);
+  const [loadError, setLoadError] = useState(false);
 
   const addMinutes = (timeStr: string, mins: number): string => {
     if (!timeStr) return '00:00:00';
@@ -191,10 +192,12 @@ export function useRunSheetProvider() {
         setStartItem(currentStart || null);
         setEndItem(currentEnd || null);
         setItems(calculatedItems);
+        setLoadError(false);
         setLoading(false);
       },
       error: (err) => {
         console.error(err);
+        setLoadError(true);
         setLoading(false);
       }
     });
@@ -397,7 +400,49 @@ export function useRunSheetProvider() {
     setHasUnsavedChanges(false);
   };
 
+  /**
+   * "Running late": shifts the given item and every following item by `minutes`.
+   * The target item is pinned (isFixed) at its new time so auto-calculated items
+   * after it flow along; later fixed items have their eventTime shifted too.
+   * Times are clamped to the same day (00:00-23:59) and never cross midnight.
+   * Accepts AWSTime values (HH:mm, HH:mm:ss or HH:mm:ss.SSS); writes HH:mm:00.
+   */
+  const shiftFrom = (id: string, minutes: number): { shifted: number; clamped: number } => {
+    const idx = items.findIndex(i => i.id === id);
+    if (idx === -1 || !Number.isFinite(minutes) || minutes === 0) return { shifted: 0, clamped: 0 };
+    const toMins = (t: string) => {
+      const [h, m] = (t || '00:00').split(':');
+      return (parseInt(h, 10) || 0) * 60 + (parseInt(m, 10) || 0);
+    };
+    const fmt = (total: number) =>
+      `${Math.floor(total / 60).toString().padStart(2, '0')}:${(total % 60).toString().padStart(2, '0')}:00`;
+    let clamped = 0;
+    const shiftTime = (t: string) => {
+      const raw = toMins(t) + Math.round(minutes);
+      const bounded = Math.min(23 * 60 + 59, Math.max(0, raw));
+      if (bounded !== raw) clamped++;
+      return fmt(bounded);
+    };
+    const next = items.map((item, i) => {
+      if (i < idx) return item;
+      if (i === idx) {
+        return { ...item, eventTime: shiftTime(item.scheduledStartTime || item.eventTime || '00:00'), isFixed: true };
+      }
+      if (item.isFixed && item.eventTime) return { ...item, eventTime: shiftTime(item.eventTime) };
+      return item;
+    });
+    // Keep the wedding record in sync if Guests Arrive moved (otherwise the next refresh reverts it).
+    const ga = next.find((it, i) => i >= idx && it.itemType === 'GUESTS_ARRIVE');
+    if (ga?.eventTime && ga.eventTime !== wedding?.weddingTime) {
+      updateWedding({ weddingTime: ga.eventTime }).catch(e => console.error('Failed to sync wedding time:', e));
+    }
+    applyLocalUpdate(next);
+    return { shifted: items.length - idx, clamped };
+  };
+
   return { 
+    shiftFrom,
+    loadError,
     startItem, 
     endItem, 
     items, 

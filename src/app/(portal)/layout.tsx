@@ -5,6 +5,7 @@ import AuthGuard from '@/components/layout/AuthGuard';
 import { LogOut, CalendarHeart } from 'lucide-react';
 import Link from 'next/link';
 import { signOut } from 'aws-amplify/auth';
+import { clearAllOfflineData } from '@/lib/offline/store';
 
 export default function PortalLayout({ children }: { children: ReactNode }) {
   return (
@@ -22,6 +23,7 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
             
             <button 
               onClick={async () => {
+                await clearAllOfflineData();
                 await signOut();
                 window.location.href = '/';
               }}

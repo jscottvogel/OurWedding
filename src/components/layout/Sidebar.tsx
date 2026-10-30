@@ -8,6 +8,7 @@ import {
   DollarSign, Map, Image as ImageIcon, QrCode, Globe, Settings, LogOut, BookOpen, Menu, X
 } from 'lucide-react';
 import { signOut } from 'aws-amplify/auth';
+import { clearAllOfflineData } from '@/lib/offline/store';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useWedding } from '@/lib/hooks/useWedding';
@@ -35,6 +36,7 @@ export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
+    await clearAllOfflineData();
     await signOut();
     window.location.href = '/';
   };

@@ -1,5 +1,6 @@
 'use client';
 
+import RunningLateControl from './RunningLateControl';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Clock, Link as LinkIcon, Trash2, Lock, Unlock, Eye, EyeOff } from 'lucide-react';
@@ -181,7 +182,8 @@ export default function RunSheetItemRow({
       </div>
 
       {/* Delete Action (Hover only) */}
-      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity ml-2 shrink-0">
+      <div className="flex items-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 focus-within:opacity-100 transition-opacity ml-2 shrink-0">
+        <RunningLateControl itemId={item.id} itemTitle={item.title} />
         {item.itemType !== 'GUESTS_ARRIVE' && (
           <button
             onClick={() => onDelete(item.id)}

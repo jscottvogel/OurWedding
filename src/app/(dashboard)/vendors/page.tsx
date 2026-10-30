@@ -5,6 +5,19 @@ import { useVendors } from '@/lib/hooks/useVendors';
 import VendorCategoryCard from '@/components/features/vendors/VendorCategoryCard';
 import VendorModal from '@/components/features/vendors/VendorModal';
 import { Plus } from 'lucide-react';
+import { useAuth } from '@/lib/hooks/useAuth';
+import { useOfflineSnapshot } from '@/lib/offline/useOfflineSnapshot';
+import { OfflineBanner, ReadOnlyTable, SaveOfflineButton } from '@/components/pwa/OfflineUI';
+
+interface VendorSnapshotRow {
+  category?: string | null;
+  companyName?: string | null;
+  contactPerson?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  notes?: string | null;
+}
 
 const CATEGORIES = [
   'Venue', 'Catering', 'Photography', 'Videography', 
@@ -16,11 +29,47 @@ export default function VendorsPage() {
   const { vendors, loading, addVendor } = useVendors();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const { weddingId } = useAuth();
+  const offline = useOfflineSnapshot<VendorSnapshotRow[]>(weddingId, 'vendors');
 
   const handleAddClick = (category: string) => {
     setSelectedCategory(category);
     setIsModalOpen(true);
   };
+
+  const handleSaveOffline = () =>
+    offline.save(
+      vendors.map(v => ({
+        category: v.category,
+        companyName: v.companyName,
+        contactPerson: v.contactPerson,
+        phone: v.phone,
+        email: v.email,
+        address: v.address,
+        notes: v.notes,
+      }))
+    );
+
+  if (offline.showSnapshot && offline.snapshot) {
+    return (
+      <div>
+        <h1 className="text-3xl font-display text-sage mb-4">Vendor Team</h1>
+        <OfflineBanner savedAt={offline.snapshot.savedAt} />
+        <ReadOnlyTable<VendorSnapshotRow>
+          rows={offline.snapshot.data}
+          empty="No vendors were saved."
+          columns={[
+            { header: 'Category', cell: r => r.category },
+            { header: 'Company', cell: r => <span className="font-medium text-charcoal">{r.companyName}</span> },
+            { header: 'Contact', cell: r => r.contactPerson },
+            { header: 'Phone', cell: r => (r.phone ? <a className="text-sage underline" href={`tel:${r.phone}`}>{r.phone}</a> : null) },
+            { header: 'Email', cell: r => r.email },
+            { header: 'Address', cell: r => r.address },
+          ]}
+        />
+      </div>
+    );
+  }
 
   if (loading) {
     return <div className="p-8 animate-pulse text-sage font-medium text-lg">Loading vendors...</div>;
@@ -37,12 +86,20 @@ export default function VendorsPage() {
           <h1 className="text-3xl font-display text-sage mb-2">Vendor Team</h1>
           <p className="text-mid-gray">Manage your wedding professionals, contracts, and payments.</p>
         </div>
-        <button 
-          onClick={() => handleAddClick('')}
-          className="bg-sage text-white px-4 py-2 rounded-lg font-medium hover:bg-dark-sage transition-colors flex items-center"
-        >
-          <Plus className="w-5 h-5 mr-2" /> Add Vendor
-        </button>
+        <div className="flex items-center gap-2">
+          <SaveOfflineButton
+            onSave={handleSaveOffline}
+            saving={offline.saving}
+            savedAt={offline.snapshot?.savedAt}
+            disabled={offline.isOffline}
+          />
+          <button 
+            onClick={() => handleAddClick('')}
+            className="bg-sage text-white px-4 py-2 rounded-lg font-medium hover:bg-dark-sage transition-colors flex items-center"
+          >
+            <Plus className="w-5 h-5 mr-2" /> Add Vendor
+          </button>
+        </div>
       </div>
 
       <div className="bg-white p-6 rounded-xl border border-light-gray shadow-sm mb-8 flex justify-between items-center">
