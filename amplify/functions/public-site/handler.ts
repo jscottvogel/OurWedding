@@ -7,9 +7,11 @@ import {
   QueryCommand,
   UpdateCommand,
   DeleteCommand,
+  ScanCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'crypto';
 import { parseKey } from '../shared/storage-keys';
+import { verifyUnsubscribeToken } from '../shared/unsubscribe';
 
 const doc = DynamoDBDocumentClient.from(new DynamoDBClient({}), {
   marshallOptions: { removeUndefinedValues: true },
@@ -26,6 +28,11 @@ const T = {
   analytics: process.env.TABLE_WEBSITE_ANALYTICS!,
   guestbook: process.env.TABLE_WEBSITE_GUESTBOOK!,
   gallery: process.env.TABLE_GALLERY_UPLOAD!,
+  seatingTable: process.env.TABLE_SEATING_TABLE!,
+  serveAccess: process.env.TABLE_SERVE_ACCESS!,
+  vendor: process.env.TABLE_VENDOR!,
+  vendorTask: process.env.TABLE_VENDOR_TASK!,
+  profile: process.env.TABLE_PROFILE!,
 };
 
 const ROOT_DOMAIN = (process.env.ROOT_DOMAIN || 'weddingsteward.com').toLowerCase();
@@ -200,6 +207,53 @@ function rsvpStatus(attending: unknown): 'CONFIRMED' | 'DECLINED' | 'PENDING' {
   return attending === true ? 'CONFIRMED' : attending === false ? 'DECLINED' : 'PENDING';
 }
 
+function callerSub(event: AppSyncResolverEvent<any>): string {
+  const sub = (event.identity as any)?.sub as string | undefined;
+  if (!sub) throw new PublicError('Unauthorized');
+  return sub;
+}
+
+/** Profiles are few and owner-scoped; a filtered scan avoids depending on the generated GSI name. */
+async function profileVendorIds(sub: string): Promise<string[]> {
+  const out: string[] = [];
+  let ExclusiveStartKey: Item | undefined;
+  do {
+    const res = await doc.send(new ScanCommand({
+      TableName: T.profile,
+      FilterExpression: 'cognitoSub = :s',
+      ExpressionAttributeValues: { ':s': sub },
+      ProjectionExpression: 'vendorId',
+      ExclusiveStartKey,
+    }));
+    for (const p of res.Items || []) if (p.vendorId) out.push(p.vendorId);
+    ExclusiveStartKey = res.LastEvaluatedKey;
+  } while (ExclusiveStartKey);
+  return out;
+}
+
+/**
+ * May `sub` act as this vendor? Wedding owners always may. A vendor user must be in
+ * Vendor.readers AND have a Profile linked to this vendorId (inviteUser adds every vendor user to
+ * the readers of every Vendor in the wedding, so readers alone isn't specific enough).
+ */
+async function canActForVendor(sub: string, vendor: Item): Promise<boolean> {
+  const wedding = await getItem(T.wedding, vendor.weddingId);
+  if ((wedding?.owners || []).includes(sub)) return true;
+  if (!(vendor.readers || []).includes(sub)) return false;
+  return (await profileVendorIds(sub)).includes(vendor.id);
+}
+
+/** Serve cards work from the day before to the day after the wedding, in any timezone. */
+function inServeWindow(weddingDate: unknown, nowMs = Date.now()): boolean {
+  if (typeof weddingDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(weddingDate)) return false;
+  const day = Date.parse(`${weddingDate}T00:00:00Z`);
+  const H = 3600_000;
+  // Local midnight of (date - 1) at UTC+14 .. local end of (date + 1) at UTC-12.
+  return nowMs >= day - 24 * H - 14 * H && nowMs <= day + 48 * H + 12 * H;
+}
+
+const firstWord = (s: unknown) => (typeof s === 'string' ? s.trim().split(/\s+/)[0] || '' : '');
+
 // ---------------------------------------------------------------- operations
 
 const ops: Record<string, (args: any, event: AppSyncResolverEvent<any>) => Promise<unknown>> = {
@@ -350,14 +404,137 @@ const ops: Record<string, (args: any, event: AppSyncResolverEvent<any>) => Promi
     }
 
     // Confirmation goes to the address already on file. If there wasn't one, it goes to the new address.
+    // Opted-out guests get no confirmation; guestId lets the route add a signed unsubscribe link.
     return {
       success: true,
       attending,
       guestName: guest.firstName,
-      confirmationEmail: previousEmail || email || null,
+      guestId: guest.id,
+      confirmationEmail: guest.emailOptOut ? null : previousEmail || email || null,
       coupleNames: `${wedding.coupleName1} & ${wedding.coupleName2}`,
       siteSlug: site.slug,
     };
+  },
+
+  async findSeat({ internalKey, slug, name }) {
+    requireInternalKey(internalKey);
+    const parts = (str(name, 200, 'name', true) || '').toLowerCase().split(/\s+/).filter(Boolean);
+    // First AND last name are required, which makes enumerating the guest list impractical.
+    if (parts.length < 2) return { enabled: true, found: false, needLastName: true };
+    const site = await requireSite(slug);
+    if (!site.config?.seatFinderEnabled || site.config.publishStatus === 'DRAFT') return { enabled: false, found: false };
+    const first = parts[0];
+    const last = parts.slice(1).join(' ');
+    const guests = await queryAll(T.guest, 'byWeddingId', 'weddingId', site.weddingId);
+    const matches = guests.filter((g) => norm(g.firstName) === first && norm(g.lastName) === last);
+    const match = matches.find((g) => g.tableId) || matches[0];
+    if (!match) return { enabled: true, found: false };
+    if (!match.tableId) return { enabled: true, found: true, tableName: null, tablemates: [] };
+    const table = await getItem(T.seatingTable, match.tableId);
+    if (!table || table.weddingId !== site.weddingId) return { enabled: true, found: true, tableName: null, tablemates: [] };
+    const tablemates = guests
+      .filter((g) => g.tableId === table.id && g.id !== match.id)
+      .map((g) => firstWord(g.firstName))
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
+    return { enabled: true, found: true, tableName: table.tableName || 'Your table', tablemates };
+  },
+
+  async getServeCard({ internalKey, token, guestId }) {
+    requireInternalKey(internalKey);
+    const t = str(token, 200, 'token', true)!;
+    const gid = str(guestId, 100, 'guestId', true)!;
+    if (t.length < 16) return { valid: false };
+    const access = await queryFirst(T.serveAccess, 'byServeToken', 'token', t);
+    if (!access || access.token !== t || !access.enabled) return { valid: false };
+    const wedding = await getItem(T.wedding, access.weddingId);
+    if (!wedding) return { valid: false };
+    if (!inServeWindow(wedding.weddingDate)) return { valid: false, outsideWindow: true };
+    const guest = await getItem(T.guest, gid);
+    if (!guest || guest.weddingId !== access.weddingId) return { valid: false };
+    const table = guest.tableId ? await getItem(T.seatingTable, guest.tableId) : undefined;
+    return {
+      valid: true,
+      firstName: firstWord(guest.firstName),
+      tableName: table && table.weddingId === access.weddingId ? table.tableName || null : null,
+      mealChoice: guest.mealChoice || null,
+      dietary: {
+        vegetarian: !!guest.dietaryVegetarian,
+        vegan: !!guest.dietaryVegan,
+        glutenFree: !!guest.dietaryGlutenFree,
+        nutFree: !!guest.dietaryNutFree,
+      },
+    };
+  },
+
+  async unsubscribeGuest({ internalKey, token }) {
+    requireInternalKey(internalKey);
+    const guestId = verifyUnsubscribeToken(String(token || ''));
+    if (!guestId) throw new PublicError('Invalid link');
+    const guest = await getItem(T.guest, guestId);
+    if (!guest) return true; // already deleted: nothing left to email
+    await doc.send(new UpdateCommand({
+      TableName: T.guest,
+      Key: { id: guestId },
+      UpdateExpression: 'SET emailOptOut = :t, updatedAt = :u',
+      ExpressionAttributeValues: { ':t': true, ':u': now() },
+    }));
+    return true;
+  },
+
+  async requestDataDeletion({ internalKey, slug }) {
+    requireInternalKey(internalKey);
+    const site = await requireSite(slug);
+    const owners: string[] = site.wedding.owners || [];
+    const emails = new Set<string>();
+    for (const sub of owners.slice(0, 10)) {
+      const res = await doc.send(new ScanCommand({
+        TableName: T.profile,
+        FilterExpression: 'cognitoSub = :s',
+        ExpressionAttributeValues: { ':s': sub },
+        ProjectionExpression: 'email',
+      }));
+      for (const p of res.Items || []) if (typeof p.email === 'string' && p.email.includes('@')) emails.add(p.email);
+    }
+    return {
+      recipients: Array.from(emails),
+      coupleNames: `${site.wedding.coupleName1} & ${site.wedding.coupleName2}`,
+    };
+  },
+
+  async setVendorTaskDone({ taskId, isDone }, event) {
+    const sub = callerSub(event);
+    const task = await getItem(T.vendorTask, str(taskId, 100, 'taskId', true)!);
+    if (!task) throw new PublicError('Task not found');
+    const vendor = await getItem(T.vendor, task.vendorId);
+    if (!vendor || vendor.weddingId !== task.weddingId || !(await canActForVendor(sub, vendor))) {
+      throw new PublicError('Unauthorized');
+    }
+    const done = isDone === true;
+    const ts = now();
+    const res = await doc.send(new UpdateCommand({
+      TableName: T.vendorTask,
+      Key: { id: task.id },
+      UpdateExpression: 'SET isDone = :d, doneAt = :at, doneBy = :by, updatedAt = :u',
+      ExpressionAttributeValues: { ':d': done, ':at': done ? ts : null, ':by': done ? sub : null, ':u': ts },
+      ReturnValues: 'ALL_NEW',
+    }));
+    const a = res.Attributes || {};
+    return { id: a.id, vendorId: a.vendorId, isDone: !!a.isDone, doneAt: a.doneAt ?? null, doneBy: a.doneBy ?? null };
+  },
+
+  async vendorCheckIn({ vendorId }, event) {
+    const sub = callerSub(event);
+    const vendor = await getItem(T.vendor, str(vendorId, 100, 'vendorId', true)!);
+    if (!vendor || !(await canActForVendor(sub, vendor))) throw new PublicError('Unauthorized');
+    const ts = now();
+    await doc.send(new UpdateCommand({
+      TableName: T.vendor,
+      Key: { id: vendor.id },
+      UpdateExpression: 'SET arrivedAt = :a, updatedAt = :u',
+      ExpressionAttributeValues: { ':a': ts, ':u': ts },
+    }));
+    return ts;
   },
 
   async recordSiteView({ internalKey, slug }) {

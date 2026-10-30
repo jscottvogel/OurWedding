@@ -57,6 +57,7 @@ const schema = a.schema({
     sentCount: a.integer(),
     failedCount: a.integer(),
     errors: a.string().array(),
+    skippedOptOut: a.integer(),
   }),
 
   SiteAccess: a.customType({
@@ -139,9 +140,42 @@ const schema = a.schema({
       depositPaid: a.boolean().default(false),
       balancePaid: a.boolean().default(false),
       portalAccess: a.boolean().default(false),
+      // Day-of check-in. Vendors can't update Vendor directly; set via vendorCheckIn.
+      arrivedAt: a.datetime(),
     })
     .secondaryIndexes((index) => [index('weddingId')])
     .authorization((allow) => ownerAndReaderRules(allow)),
+
+  // Per-vendor day-of checklist. Owners have full access; vendors (readers) can only read, and
+  // tick tasks through setVendorTaskDone (which changes isDone/doneAt/doneBy and nothing else).
+  VendorTask: a
+    .model({
+      owners: a.string().array(),
+      readers: a.string().array(),
+      weddingId: a.string().required(),
+      vendorId: a.string().required(),
+      runSheetItemId: a.string(),
+      title: a.string().required(),
+      isDone: a.boolean().default(false),
+      doneAt: a.datetime(),
+      doneBy: a.string(),
+      sortOrder: a.integer(),
+    })
+    .secondaryIndexes((index) => [index('weddingId'), index('vendorId')])
+    .authorization((allow) => ownerAndReaderRules(allow)),
+
+  // Scan-to-serve place cards. Kept out of Wedding on purpose: Wedding is API-key readable
+  // (and listable), so a token stored there would be public. Owner-only; the public serve page
+  // goes through getServeCard. Opt-in: enabled defaults to false.
+  ServeAccess: a
+    .model({
+      owners: a.string().array(),
+      weddingId: a.string().required(),
+      token: a.string().required(),
+      enabled: a.boolean().default(false),
+    })
+    .secondaryIndexes((index) => [index('weddingId'), index('token').name('byServeToken')])
+    .authorization((allow) => ownerRules(allow)),
 
   ChecklistItem: a
     .model({
@@ -245,6 +279,8 @@ const schema = a.schema({
       maxGuests: a.integer().default(1),
       bio: a.string(),
       photoUrl: a.string(),
+      // Set by the signed unsubscribe link. Every email send skips guests with this flag.
+      emailOptOut: a.boolean().default(false),
     })
     .secondaryIndexes((index) => [index('weddingId').name('byWeddingId')])
     .authorization((allow) => ownerRules(allow)),
@@ -326,6 +362,8 @@ const schema = a.schema({
       headInjection: a.string(),
       viewCount: a.integer().default(0),
       partyTags: a.string().array(),
+      // Public "find my seat" page (/w/[slug]/seat). Off unless the couple opts in.
+      seatFinderEnabled: a.boolean().default(false),
     })
     .secondaryIndexes((index) => [
       index('weddingId').name('byWeddingId'),
@@ -566,6 +604,54 @@ const schema = a.schema({
     })
     .returns(a.boolean())
     .authorization((allow) => [allow.publicApiKey(), allow.authenticated()])
+    .handler(a.handler.function(publicSite)),
+
+  /** Server-only (internalKey). Returns only the table name and tablemates' first names. */
+  findSeat: a
+    .mutation()
+    .arguments({ internalKey: a.string().required(), slug: a.string().required(), name: a.string().required() })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(publicSite)),
+
+  /** Server-only (internalKey). First name, table, meal and dietary flags; valid wedding day ±1. */
+  getServeCard: a
+    .mutation()
+    .arguments({ internalKey: a.string().required(), token: a.string().required(), guestId: a.string().required() })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(publicSite)),
+
+  /** Server-only (internalKey). Verifies the HMAC unsubscribe token and sets Guest.emailOptOut. */
+  unsubscribeGuest: a
+    .mutation()
+    .arguments({ internalKey: a.string().required(), token: a.string().required() })
+    .returns(a.boolean())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(publicSite)),
+
+  /** Server-only (internalKey). Resolves the couple's contact emails for a data-deletion request. */
+  requestDataDeletion: a
+    .mutation()
+    .arguments({ internalKey: a.string().required(), slug: a.string().required() })
+    .returns(a.json())
+    .authorization((allow) => [allow.publicApiKey()])
+    .handler(a.handler.function(publicSite)),
+
+  /** Vendor (Vendor.readers + matching Profile.vendorId) or wedding owner. Flips isDone only. */
+  setVendorTaskDone: a
+    .mutation()
+    .arguments({ taskId: a.string().required(), isDone: a.boolean().required() })
+    .returns(a.json())
+    .authorization((allow) => [allow.authenticated()])
+    .handler(a.handler.function(publicSite)),
+
+  /** Vendor (or owner) records day-of arrival; sets Vendor.arrivedAt only. */
+  vendorCheckIn: a
+    .mutation()
+    .arguments({ vendorId: a.string().required() })
+    .returns(a.string())
+    .authorization((allow) => [allow.authenticated()])
     .handler(a.handler.function(publicSite)),
 
   /** Owner-only: hashes and stores the site password (or clears it when password is empty). */

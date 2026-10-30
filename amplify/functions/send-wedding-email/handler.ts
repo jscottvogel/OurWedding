@@ -5,6 +5,7 @@ import { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand, QueryCom
 import { renderEmailHtml, EmailType, PaletteKey, WeddingEmailData } from './templates';
 import type { Schema } from '../../data/resource';
 import { randomUUID } from 'crypto';
+import { unsubscribeUrl, unsubscribeFooterHtml } from '../shared/unsubscribe';
 
 const sesClient = new SESClient({ region: process.env.SES_REGION || 'us-east-1' });
 const ddbClient = new DynamoDBClient({});
@@ -73,6 +74,34 @@ export const handler: AppSyncResolverHandler<
   const wedding = weddingResult.Item;
   if (!wedding) {
     throw new Error(`Wedding ${weddingId} not found`);
+  }
+  // Only the wedding's owners may send its campaigns.
+  const callerSub = (event.identity as any)?.sub as string | undefined;
+  if (!callerSub || !(wedding.owners || []).includes(callerSub)) {
+    throw new Error('Unauthorized');
+  }
+
+  // Guests by email (lowercased) so opted-out guests are skipped and guests get an unsubscribe link.
+  const guestsByEmail = new Map<string, { id: string; emailOptOut?: boolean; firstName?: string }>();
+  if (process.env.TABLE_GUEST) {
+    let ExclusiveStartKey: Record<string, any> | undefined;
+    do {
+      const res = await docClient.send(new QueryCommand({
+        TableName: process.env.TABLE_GUEST,
+        IndexName: 'byWeddingId',
+        KeyConditionExpression: 'weddingId = :w',
+        ExpressionAttributeValues: { ':w': weddingId },
+        ExclusiveStartKey,
+      }));
+      for (const g of res.Items || []) {
+        if (typeof g.email !== 'string' || !g.email) continue;
+        const key = g.email.trim().toLowerCase();
+        const prev = guestsByEmail.get(key);
+        // If any guest sharing this address opted out, treat the address as opted out.
+        guestsByEmail.set(key, { id: g.id, firstName: g.firstName, emailOptOut: !!g.emailOptOut || !!prev?.emailOptOut });
+      }
+      ExclusiveStartKey = res.LastEvaluatedKey;
+    } while (ExclusiveStartKey);
   }
 
   function formatDate(dateStr?: string): string | undefined {
@@ -152,8 +181,21 @@ export const handler: AppSyncResolverHandler<
   // if (guestIds.length > 0) { ... fetch from Guests table ... }
   // To keep this MVP robust without too many table grants, we'll rely on recipientEmails.
 
-  // Dedup by email
-  const uniqueRecipients = Array.from(new Map(recipientsToProcess.map(r => [r.email.toLowerCase(), r])).values());
+  // Dedup by email, then drop guests who unsubscribed.
+  const deduped = Array.from(new Map(recipientsToProcess.map(r => [r.email.trim().toLowerCase(), r])).values());
+  const uniqueRecipients = deduped
+    .filter(r => !guestsByEmail.get(r.email.trim().toLowerCase())?.emailOptOut)
+    .map(r => {
+      const g = guestsByEmail.get(r.email.trim().toLowerCase());
+      return g ? { ...r, guestId: g.id, name: r.name || g.firstName } : r;
+    });
+  const skippedOptOut = deduped.length - uniqueRecipients.length;
+  const ROOT_DOMAIN = process.env.ROOT_DOMAIN || 'weddingsteward.com';
+  const withFooter = (html: string, guestId?: string) => {
+    if (!guestId || !process.env.INTERNAL_API_SECRET) return html;
+    const footer = unsubscribeFooterHtml(unsubscribeUrl(guestId, ROOT_DOMAIN));
+    return html.includes('</body>') ? html.replace('</body>', `${footer}</body>`) : html + footer;
+  };
 
   let sentCount = 0;
   let failedCount = 0;
@@ -175,7 +217,7 @@ export const handler: AppSyncResolverHandler<
         Message: {
           Subject: { Data: subjectLine, Charset: 'UTF-8' },
           Body: {
-            Html: { Data: htmlBody, Charset: 'UTF-8' }
+            Html: { Data: withFooter(htmlBody, recipient.guestId), Charset: 'UTF-8' }
           }
         }
       });
@@ -236,6 +278,7 @@ export const handler: AppSyncResolverHandler<
     campaignId,
     sentCount,
     failedCount,
+    skippedOptOut,
     errors
   };
 };

@@ -163,6 +163,34 @@ export default function WebsiteDomainPage() {
           </div>
         </div>
       </div>
+
+      <div className="bg-white border border-light-gray p-6 rounded-xl shadow-sm">
+        <h3 className="text-lg font-bold text-charcoal mb-4">Day-of Pages</h3>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="font-medium text-charcoal">Find My Seat</div>
+              <div className="text-sm text-mid-gray">
+                Let guests look up their table by name at <span className="font-mono">/w/{config.subdomain}/seat</span>. Shows only the table name and tablemates&apos; first names. Off by default.
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                id="seat-finder-toggle"
+                type="checkbox"
+                className="sr-only peer"
+                checked={config.seatFinderEnabled || false}
+                onChange={(e) => updateConfig({ seatFinderEnabled: e.target.checked })}
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sage"></div>
+            </label>
+          </div>
+          <div className="pt-4 border-t border-light-gray text-sm text-mid-gray">
+            <span className="font-medium text-charcoal">Live schedule:</span> run-sheet items marked public appear at{' '}
+            <a href={`/w/${config.subdomain}/schedule`} target="_blank" rel="noreferrer" className="font-mono text-sage hover:underline">/w/{config.subdomain}/schedule</a>, refreshing every minute with &quot;Now&quot; and &quot;Up next&quot; on the day.
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

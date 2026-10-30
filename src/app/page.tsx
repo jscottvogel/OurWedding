@@ -72,6 +72,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="bg-charcoal text-white/70 py-8 text-center border-t border-charcoal/20">
         <p>© {new Date().getFullYear()} Wedding Steward. Built for couples, by couples.</p>
+        <p className="mt-2 text-sm"><a href="/privacy" className="underline hover:text-white">Privacy policy</a></p>
       </footer>
     </div>
   );

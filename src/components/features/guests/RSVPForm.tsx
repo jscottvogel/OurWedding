@@ -6,6 +6,7 @@ import type { Schema } from '../../../../amplify/data/resource';
 import { generateClient } from 'aws-amplify/data';
 import { toast } from 'sonner';
 import { getWeddingOwners } from '@/lib/amplify/weddingOwners';
+import { PrivacyNotice } from '@/components/features/privacy/PrivacyNotice';
 
 const client = generateClient<Schema>();
 
@@ -511,6 +512,7 @@ export default function RSVPForm({ guests = [], onUpdate, wedding, slug }: RSVPF
             </button>
           </div>
         </form>
+        {slug && <PrivacyNotice slug={slug} className="mt-6" />}
       </div>
     );
   }
@@ -550,6 +552,7 @@ export default function RSVPForm({ guests = [], onUpdate, wedding, slug }: RSVPF
           {isSearching ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Search RSVP'}
         </button>
       </form>
+      {slug && <PrivacyNotice slug={slug} className="mt-6" />}
     </div>
   );
 }

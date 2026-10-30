@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { appsync, internalKey, parseAwsJson } from '@/lib/server/appsync';
 import { clientIp, rateLimit } from '@/lib/server/rateLimit';
 import { sendRsvpConfirmationEmail } from '@/lib/email/rsvp-confirmation';
+import { unsubscribeUrl } from '../../../../../amplify/functions/shared/unsubscribe';
 
 const optStr = (max: number) => z.string().trim().max(max).optional().nullable();
 
@@ -32,6 +33,8 @@ interface SubmitResult {
   success: boolean;
   attending: boolean;
   guestName: string;
+  guestId?: string;
+  /** null when there's no address on file or the guest has unsubscribed. */
   confirmationEmail: string | null;
   coupleNames: string;
   siteSlug: string;
@@ -78,8 +81,17 @@ export async function POST(request: Request) {
       attending: result.attending,
       weddingSlug: result.siteSlug,
       coupleNames: result.coupleNames,
+      unsubscribeUrl: result.guestId ? safeUnsubscribeUrl(result.guestId) : undefined,
     });
   }
 
   return NextResponse.json({ success: true });
+}
+
+function safeUnsubscribeUrl(guestId: string): string | undefined {
+  try {
+    return unsubscribeUrl(guestId, (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'weddingsteward.com').toLowerCase());
+  } catch {
+    return undefined; // INTERNAL_API_SECRET missing: send without the link rather than fail the RSVP
+  }
 }

@@ -28,7 +28,7 @@ export default function SendConfirmModal({ onClose }: { onClose: () => void }) {
   const [isSending, setIsSending] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-  const [stats, setStats] = useState<{ sent: number; failed: number } | null>(null);
+  const [stats, setStats] = useState<{ sent: number; failed: number; skipped?: number } | null>(null);
 
   const parsedManualEmails = manualEmails.split(',').map(e => e.trim()).filter(e => e.includes('@'));
   const totalRecipients = selectedGuestIds.length + parsedManualEmails.length;
@@ -52,7 +52,8 @@ export default function SendConfirmModal({ onClose }: { onClose: () => void }) {
       // Wait, our Lambda takes recipientEmails. We should pass the emails!
       // To do this properly, the frontend can query the guests.
       const guestEmails = allGuests
-        .filter(g => selectedGuestIds.includes(g.id) && g.email)
+        // Opted-out guests are skipped here and again server-side.
+        .filter(g => selectedGuestIds.includes(g.id) && g.email && !(g as { emailOptOut?: boolean | null }).emailOptOut)
         .map(g => g.email as string);
 
       const allEmails = Array.from(new Set([...guestEmails, ...parsedManualEmails]));
@@ -77,7 +78,7 @@ export default function SendConfirmModal({ onClose }: { onClose: () => void }) {
       }
 
       if (result.data) {
-        setStats({ sent: result.data.sentCount || 0, failed: result.data.failedCount || 0 });
+        setStats({ sent: result.data.sentCount || 0, failed: result.data.failedCount || 0, skipped: result.data.skippedOptOut || 0 });
         setSuccess(true);
         refreshCampaigns();
       } else {
@@ -115,6 +116,7 @@ export default function SendConfirmModal({ onClose }: { onClose: () => void }) {
               <p className="text-sm text-mid-gray">
                 Successfully sent {stats.sent} emails. 
                 {stats.failed > 0 && <span className="text-red-500 ml-1">({stats.failed} failed)</span>}
+                {(stats.skipped ?? 0) > 0 && <span className="block mt-1">{stats.skipped} unsubscribed guest(s) skipped.</span>}
               </p>
               <button
                 onClick={onClose}

@@ -11,6 +11,8 @@ interface RsvpEmailParams {
   attending: boolean;
   weddingSlug: string;
   coupleNames?: string;
+  /** Signed one-click unsubscribe link (see amplify/functions/shared/unsubscribe.ts). */
+  unsubscribeUrl?: string;
 }
 
 const escapeHtml = (s: string) =>
@@ -21,7 +23,7 @@ const escapeHtml = (s: string) =>
  * (never straight from request input). Errors are swallowed so the RSVP still succeeds, and
  * recipient addresses are never logged.
  */
-export async function sendRsvpConfirmationEmail({ toEmail, guestName, attending, weddingSlug, coupleNames }: RsvpEmailParams) {
+export async function sendRsvpConfirmationEmail({ toEmail, guestName, attending, weddingSlug, coupleNames, unsubscribeUrl }: RsvpEmailParams) {
   const name = escapeHtml(guestName || 'Guest');
   const slug = encodeURIComponent(weddingSlug);
   const siteUrl = `https://${slug}.${ROOT_DOMAIN}`;
@@ -54,12 +56,17 @@ export async function sendRsvpConfirmationEmail({ toEmail, guestName, attending,
     </html>
   `;
 
+  const footer = unsubscribeUrl
+    ? `<p style="font-size:12px;color:#888;margin-top:24px;">Don't want wedding emails? <a href="${escapeHtml(unsubscribeUrl)}" style="color:#888;">Unsubscribe</a></p>`
+    : '';
+  const finalHtml = footer ? htmlBody.replace('</body>', `${footer}</body>`) : htmlBody;
+
   const command = new SendEmailCommand({
     Source: FROM_ADDRESS,
     Destination: { ToAddresses: [toEmail] },
     Message: {
       Subject: { Data: subject },
-      Body: { Html: { Data: htmlBody } },
+      Body: { Html: { Data: finalHtml } },
     },
   });
 

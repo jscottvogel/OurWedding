@@ -1,10 +1,26 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Trash2, Edit2, Check, X, Search, Filter, Tags, GripVertical, UserMinus, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Search, Filter, Tags, GripVertical, UserMinus, ChevronUp, ChevronDown, ShieldX, MailX } from 'lucide-react';
 import { DndContext, useDraggable, useDroppable, DragOverlay, useSensor, useSensors, PointerSensor, TouchSensor } from '@dnd-kit/core';
 import type { Schema } from '../../../../amplify/data/resource';
 import TagSelectorModal from './TagSelectorModal';
+import { toast } from 'sonner';
+import { deleteGuestAndAllData } from '@/lib/privacy/deleteGuestData';
+
+/** Privacy: permanent deletion of the guest, plus-ones, guestbook entries and email records. */
+async function confirmAndDeleteAllData(guest: Schema['Guest']['type']) {
+  const name = `${guest.firstName} ${guest.lastName || ''}`.trim();
+  const scope = guest.primaryGuestId ? '' : ', their plus-ones';
+  if (!window.confirm(`Permanently delete ${name}${scope}, their RSVP and guestbook entries? This cannot be undone.`)) return;
+  try {
+    const r = await deleteGuestAndAllData(guest);
+    toast.success(`Deleted ${r.guests} guest${r.guests === 1 ? '' : 's'} and ${r.guestbookEntries} guestbook entr${r.guestbookEntries === 1 ? 'y' : 'ies'}`);
+  } catch (err) {
+    console.error('Failed to delete guest data', err);
+    toast.error('Failed to delete all guest data. Please try again.');
+  }
+}
 
 interface GuestTableProps {
   guests: Schema['Guest']['type'][];
@@ -85,7 +101,16 @@ function GuestRow({
         <p className={`font-medium text-charcoal ${guest.primaryGuestId ? 'text-sm' : ''}`}>{guest.firstName}</p>
       </td>
       <td className="p-4 text-mid-gray text-sm">{guest.lastName || '-'}</td>
-      <td className="p-4 text-mid-gray text-sm">{guest.email || '-'}</td>
+      <td className="p-4 text-mid-gray text-sm">
+        <span className="inline-flex items-center gap-1">
+          {guest.email || '-'}
+          {guest.emailOptOut && (
+            <span title="Unsubscribed from emails" className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-light-gray text-[10px] text-mid-gray">
+              <MailX className="w-3 h-3" /> Unsubscribed
+            </span>
+          )}
+        </span>
+      </td>
       <td className="p-4 text-center text-sm font-medium text-charcoal">
         {!guest.primaryGuestId ? partySize : '-'}
       </td>
@@ -120,6 +145,7 @@ function GuestRow({
           )}
           <button onClick={() => onStartEdit(guest)} className="p-1.5 text-mid-gray hover:text-sage" title="Edit"><Edit2 className="w-4 h-4" /></button>
           <button onClick={() => onDelete(guest.id)} className="p-1.5 text-mid-gray hover:text-red-500" title="Delete"><Trash2 className="w-4 h-4" /></button>
+          <button onClick={() => confirmAndDeleteAllData(guest)} className="p-1.5 text-mid-gray hover:text-red-700" title="Delete guest and all data" aria-label="Delete guest and all data"><ShieldX className="w-4 h-4" /></button>
         </div>
       </td>
     </tr>

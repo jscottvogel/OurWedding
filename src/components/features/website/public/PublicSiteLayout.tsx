@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import type { Schema } from '../../../../../amplify/data/resource';
 import { SiteLogo } from './SiteLogo';
 import { Menu, X } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 
 export function PublicSiteLayout({ children, siteTitle, logoType, logoKey, enabledSections, sectionOrder }: { children: React.ReactNode, siteTitle: string, logoType?: string | null, logoKey?: string | null, enabledSections: Set<string>, sectionOrder: string[] }) {
   const sectionLabels: Record<string, string> = {
@@ -105,7 +106,20 @@ export function PublicSiteLayout({ children, siteTitle, logoType, logoKey, enabl
         ) : (
           <p>Made with Wedding Steward</p>
         )}
+        <SitePrivacyLink />
       </footer>
     </div>
+  );
+}
+
+/** /w/<slug>/privacy on the platform host; plain /privacy on subdomains (rewritten to the same page). */
+function SitePrivacyLink() {
+  const pathname = usePathname() || '';
+  const m = pathname.match(/^\/w\/([^/]+)/);
+  const href = m ? `/w/${m[1]}/privacy` : '/privacy';
+  return (
+    <a href={href} className="mt-3 underline hover:opacity-80" style={{ color: 'var(--color-primary)' }}>
+      Privacy policy
+    </a>
   );
 }

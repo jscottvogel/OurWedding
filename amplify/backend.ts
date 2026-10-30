@@ -107,9 +107,11 @@ const WEDDING_SCOPED_MODELS = [
   'WeddingMember', 'Vendor', 'ChecklistItem', 'RunSheetItem', 'GalleryUpload', 'GuestTag', 'Guest',
   'SeatingTable', 'BudgetItem', 'MoodBoard', 'WebsiteConfig', 'SitePassword', 'WebsiteAnalytics',
   'WebsiteStory', 'WebsiteTravel', 'WebsitePartyMember', 'WebsiteRegistry', 'WebsiteFaq',
-  'WebsiteGuestbook', 'EmailCampaign', 'EmailSendRecord',
+  'WebsiteGuestbook', 'EmailCampaign', 'EmailSendRecord', 'VendorTask', 'ServeAccess',
 ];
-const READER_MODELS = ['Vendor', 'RunSheetItem'];
+// VendorTask follows Vendor/RunSheetItem: invited vendor users can read it (the portal filters to
+// their own vendorId), but only setVendorTaskDone can change it, and that checks Profile.vendorId.
+const READER_MODELS = ['Vendor', 'RunSheetItem', 'VendorTask'];
 backend.sendEmail.resources.lambda.addToRolePolicy(
   new iam.PolicyStatement({
     actions: ['dynamodb:GetItem', 'dynamodb:UpdateItem', 'dynamodb:Scan', 'dynamodb:Query'],
@@ -141,6 +143,11 @@ const PUBLIC_SITE_TABLES: Record<string, string> = {
   TABLE_WEBSITE_ANALYTICS: 'WebsiteAnalytics',
   TABLE_WEBSITE_GUESTBOOK: 'WebsiteGuestbook',
   TABLE_GALLERY_UPLOAD: 'GalleryUpload',
+  TABLE_SEATING_TABLE: 'SeatingTable',
+  TABLE_SERVE_ACCESS: 'ServeAccess',
+  TABLE_VENDOR: 'Vendor',
+  TABLE_VENDOR_TASK: 'VendorTask',
+  TABLE_PROFILE: 'Profile',
 };
 for (const [envName, model] of Object.entries(PUBLIC_SITE_TABLES)) {
   backend.publicSite.addEnvironment(envName, tables[model].tableName);
@@ -151,11 +158,22 @@ backend.publicSite.resources.lambda.addToRolePolicy(
     resources: tableArns(Object.values(PUBLIC_SITE_TABLES)),
   })
 );
+// Profile lookups (vendor identity, couple contact email) use a filtered scan.
+backend.publicSite.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({ actions: ['dynamodb:Scan'], resources: [tables['Profile'].tableArn] })
+);
 backend.publicSite.resources.lambda.addToRolePolicy(
   new iam.PolicyStatement({
     actions: ['dynamodb:PutItem', 'dynamodb:UpdateItem'],
     resources: ['Guest', 'WebsiteConfig', 'WebsiteAnalytics', 'WebsiteGuestbook', 'GalleryUpload', 'SitePassword']
       .map((m) => tables[m].tableArn),
+  })
+);
+// setVendorTaskDone / vendorCheckIn: update only (no put), fields restricted in the handler.
+backend.publicSite.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({
+    actions: ['dynamodb:UpdateItem'],
+    resources: ['VendorTask', 'Vendor'].map((m) => tables[m].tableArn),
   })
 );
 backend.publicSite.resources.lambda.addToRolePolicy(
@@ -211,6 +229,11 @@ backend.sendWeddingEmail.addEnvironment('TABLE_WEDDING', backend.data.resources.
 backend.sendWeddingEmail.addEnvironment('TABLE_EMAIL_CAMPAIGN', backend.data.resources.tables['EmailCampaign'].tableName);
 backend.sendWeddingEmail.addEnvironment('TABLE_EMAIL_SEND_RECORD', backend.data.resources.tables['EmailSendRecord'].tableName);
 backend.sendWeddingEmail.addEnvironment('TABLE_RUN_SHEET_ITEM', backend.data.resources.tables['RunSheetItem'].tableName);
+// Opt-out filtering and unsubscribe links: read the wedding's guests.
+backend.sendWeddingEmail.addEnvironment('TABLE_GUEST', tables['Guest'].tableName);
+backend.sendWeddingEmail.resources.lambda.addToRolePolicy(
+  new iam.PolicyStatement({ actions: ['dynamodb:Query', 'dynamodb:GetItem'], resources: tableArns(['Guest']) })
+);
 
 // Grant DynamoDB access for resetDemo
 backend.resetDemo.resources.lambda.addToRolePolicy(
