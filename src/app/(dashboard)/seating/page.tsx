@@ -6,6 +6,7 @@ import { Download } from 'lucide-react';
 import { exportSeatingPlan } from '@/lib/actions/seating';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { toast } from 'sonner';
+import { PlaceCardsPanel } from '@/components/features/seating/PlaceCardsPanel';
 
 export default function SeatingPage() {
   const { tables, guests, loading, addTable, updateTable, deleteTable, assignPartyToTable } = useSeating();
@@ -69,6 +70,8 @@ export default function SeatingPage() {
           </button>
         </div>
       </div>
+
+      {weddingId && <PlaceCardsPanel weddingId={weddingId} guests={guests} tables={tables} />}
 
       <SeatingCanvas 
         tables={tables}

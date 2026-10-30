@@ -452,7 +452,13 @@ const ops: Record<string, (args: any, event: AppSyncResolverEvent<any>) => Promi
     if (!inServeWindow(wedding.weddingDate)) return { valid: false, outsideWindow: true };
     const guest = await getItem(T.guest, gid);
     if (!guest || guest.weddingId !== access.weddingId) return { valid: false };
-    const table = guest.tableId ? await getItem(T.seatingTable, guest.tableId) : undefined;
+    // Plus-ones normally carry their own tableId; fall back to the primary guest's table.
+    let tableId: string | undefined = guest.tableId;
+    if (!tableId && guest.primaryGuestId) {
+      const primary = await getItem(T.guest, guest.primaryGuestId);
+      if (primary && primary.weddingId === access.weddingId) tableId = primary.tableId;
+    }
+    const table = tableId ? await getItem(T.seatingTable, tableId) : undefined;
     return {
       valid: true,
       firstName: firstWord(guest.firstName),
