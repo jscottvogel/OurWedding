@@ -3,6 +3,7 @@
 import { useVendorPortal } from '@/lib/hooks/useVendorPortal';
 import { FileText, Clock, MapPin, Download, CheckCircle2, Circle } from 'lucide-react';
 import { format } from 'date-fns';
+import { VendorTaskList } from '@/components/features/vendors/VendorTaskList';
 
 export default function VendorPortalPage() {
   const { vendor, wedding, tasks, runSheetItems, loading } = useVendorPortal();
@@ -103,35 +104,25 @@ export default function VendorPortalPage() {
         {/* Right Column - Tasks & Contract */}
         <div className="space-y-8">
           
-          {/* Action Items */}
-          <div className="bg-white rounded-xl shadow-sm border border-light-gray p-6">
-            <h3 className="text-xl font-display text-sage mb-4 flex items-center">
-              <CheckCircle2 className="w-5 h-5 mr-2" /> Your Action Items
-            </h3>
-            
-            {/* Hardcoded setup task for MVP demo */}
-            <div className="space-y-3">
-              <div className="flex items-start">
-                <button className="mt-0.5 text-sage mr-3"><CheckCircle2 className="w-5 h-5" /></button>
-                <div>
-                  <p className="text-sm font-medium line-through text-mid-gray">Sign Vendor Contract</p>
-                </div>
-              </div>
-              <div className="flex items-start">
-                <button className="mt-0.5 text-light-gray hover:text-sage transition-colors mr-3"><Circle className="w-5 h-5" /></button>
-                <div>
-                  <p className="text-sm font-medium text-charcoal">Submit final invoice</p>
-                  <p className="text-xs text-amber-600 mt-1">Due in 2 weeks</p>
-                </div>
-              </div>
-              <div className="flex items-start">
-                <button className="mt-0.5 text-light-gray hover:text-sage transition-colors mr-3"><Circle className="w-5 h-5" /></button>
-                <div>
-                  <p className="text-sm font-medium text-charcoal">Confirm arrival time</p>
-                </div>
+          {/* My tasks (VendorTask) + day-of check-in */}
+          <VendorTaskList vendor={vendor} mode="vendor" />
+
+          {/* Checklist items from the couple's planning checklist that name this vendor */}
+          {tasks.length > 0 && (
+            <div className="bg-white rounded-xl shadow-sm border border-light-gray p-6">
+              <h3 className="text-xl font-display text-sage mb-4 flex items-center">
+                <CheckCircle2 className="w-5 h-5 mr-2" /> From the couple&apos;s checklist
+              </h3>
+              <div className="space-y-3">
+                {tasks.map((t) => (
+                  <div key={t.id} className="flex items-start">
+                    <span className="mt-0.5 text-sage mr-3">{t.isCompleted ? <CheckCircle2 className="w-5 h-5" /> : <Circle className="w-5 h-5 text-light-gray" />}</span>
+                    <p className={`text-sm font-medium ${t.isCompleted ? 'line-through text-mid-gray' : 'text-charcoal'}`}>{t.title}</p>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
+          )}
 
           {/* Payment Status */}
           <div className="bg-white rounded-xl shadow-sm border border-light-gray p-6">

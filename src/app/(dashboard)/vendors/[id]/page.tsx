@@ -8,6 +8,7 @@ import { ArrowLeft, Trash2, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { VendorTaskList } from '@/components/features/vendors/VendorTaskList';
 
 export default function VendorDetailPage({ params }: { params: { id: string } }) {
   const { vendor, loading } = useVendor(params.id);
@@ -80,8 +81,9 @@ export default function VendorDetailPage({ params }: { params: { id: string } })
         <div className="lg:col-span-2">
           <VendorDetail vendor={vendor} onUpdate={handleUpdate} />
         </div>
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-8">
           <PaymentTracker vendor={vendor} onUpdate={handleUpdate} />
+          <VendorTaskList vendor={vendor} mode="planner" />
         </div>
       </div>
       
